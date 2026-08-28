@@ -1,0 +1,502 @@
+[
+  {
+    "invoice_id": "INV-0001",
+    "tier": "A",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0001-ahy4y9",
+    "amount_recovered_paise": 3625000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0002",
+    "tier": "A",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0002-096cv5",
+    "amount_recovered_paise": 2200000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0003",
+    "tier": "A",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0003-85c2tp",
+    "amount_recovered_paise": 3550000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0004",
+    "tier": "A",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0004-7czcyv",
+    "amount_recovered_paise": 775000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0005",
+    "tier": "A",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0005-aql117",
+    "amount_recovered_paise": 3350000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0006",
+    "tier": "A",
+    "simulated_outcome": "repeat_extension",
+    "turns": 5,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0006-4sbl7u",
+    "amount_recovered_paise": 1450000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0007",
+    "tier": "A",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0007-x0a6z8",
+    "amount_recovered_paise": 1925000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0008",
+    "tier": "A",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0008-ci7upn",
+    "amount_recovered_paise": 5400000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0009",
+    "tier": "A",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0009-j0qn8q",
+    "amount_recovered_paise": 1025000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0010",
+    "tier": "A",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0010-jsra11",
+    "amount_recovered_paise": 3625000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0011",
+    "tier": "B",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0012",
+    "tier": "B",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0012-3y03uz",
+    "amount_recovered_paise": 10200000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0013",
+    "tier": "B",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0013-orjdaq",
+    "amount_recovered_paise": 4160000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0014",
+    "tier": "B",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0014-td449u",
+    "amount_recovered_paise": 11680000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0015",
+    "tier": "B",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0016",
+    "tier": "B",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0017",
+    "tier": "B",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0017-l75l9b",
+    "amount_recovered_paise": 12320000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0018",
+    "tier": "B",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0018-lbq76t",
+    "amount_recovered_paise": 3920000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0019",
+    "tier": "B",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0020",
+    "tier": "B",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0020-g8y3p7",
+    "amount_recovered_paise": 11680000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0021",
+    "tier": "B",
+    "simulated_outcome": "repeat_extension",
+    "turns": 5,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0021-lkh0kq",
+    "amount_recovered_paise": 5240000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0022",
+    "tier": "B",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0022-qfsfw1",
+    "amount_recovered_paise": 6560000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0023",
+    "tier": "B",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0024",
+    "tier": "B",
+    "simulated_outcome": "repeat_extension",
+    "turns": 5,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0024-qpnxvz",
+    "amount_recovered_paise": 6440000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0025",
+    "tier": "B",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0026",
+    "tier": "C",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0027",
+    "tier": "C",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0027-wkwikl",
+    "amount_recovered_paise": 18960000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0028",
+    "tier": "C",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0028-gspg72",
+    "amount_recovered_paise": 15360000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0029",
+    "tier": "C",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0029-s2fwc6",
+    "amount_recovered_paise": 10500000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0030",
+    "tier": "C",
+    "simulated_outcome": "repeat_extension",
+    "turns": 5,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0030-aqgupz",
+    "amount_recovered_paise": 12000000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0031",
+    "tier": "C",
+    "simulated_outcome": "repeat_extension",
+    "turns": 5,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0031-u1jpyt",
+    "amount_recovered_paise": 4620000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0032",
+    "tier": "C",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0033",
+    "tier": "C",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0034",
+    "tier": "C",
+    "simulated_outcome": "repeat_extension",
+    "turns": 5,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0034-wawr46",
+    "amount_recovered_paise": 6360000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0035",
+    "tier": "C",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0035-20voeo",
+    "amount_recovered_paise": 9540000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0036",
+    "tier": "C",
+    "simulated_outcome": "repeat_extension",
+    "turns": 5,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0036-um28mo",
+    "amount_recovered_paise": 14520000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0037",
+    "tier": "C",
+    "simulated_outcome": "repeat_extension",
+    "turns": 5,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0037-k2n1sy",
+    "amount_recovered_paise": 18900000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0038",
+    "tier": "C",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0038-8zjubv",
+    "amount_recovered_paise": 7080000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0039",
+    "tier": "C",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0039-7wnk83",
+    "amount_recovered_paise": 15120000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0040",
+    "tier": "C",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0041",
+    "tier": "D",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0041-6cs6e8",
+    "amount_recovered_paise": 16490000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0042",
+    "tier": "D",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0043",
+    "tier": "D",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0043-jrxq63",
+    "amount_recovered_paise": 34000000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0044",
+    "tier": "D",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0044-mihkxs",
+    "amount_recovered_paise": 20315000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0045",
+    "tier": "D",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0045-j1hrqt",
+    "amount_recovered_paise": 23290000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0046",
+    "tier": "D",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0046-yf62ax",
+    "amount_recovered_paise": 34000000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0047",
+    "tier": "D",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0047-12jc10",
+    "amount_recovered_paise": 17595000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0048",
+    "tier": "D",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0048-ida7mq",
+    "amount_recovered_paise": 34000000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0049",
+    "tier": "D",
+    "simulated_outcome": "clean_settlement",
+    "turns": 2,
+    "status": "settled",
+    "payment_link": "https://rzp.io/l/mock-INV-0049-bsd4q2",
+    "amount_recovered_paise": 15130000,
+    "error": null
+  },
+  {
+    "invoice_id": "INV-0050",
+    "tier": "D",
+    "simulated_outcome": "dispute",
+    "turns": 2,
+    "status": "disputed",
+    "payment_link": null,
+    "amount_recovered_paise": 0,
+    "error": null
+  }
+]

@@ -1,0 +1,5428 @@
+[
+  {
+    "debtor_id": "DEBTOR-001",
+    "company_name": "Arora Traders",
+    "contact_name": "Aryan Maharaj",
+    "contact_email": "arora1@arora.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-001-H001",
+        "amount": 105000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H002",
+        "amount": 151000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H003",
+        "amount": 146000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H004",
+        "amount": 144000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H005",
+        "amount": 153000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H006",
+        "amount": 129000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H007",
+        "amount": 177000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H008",
+        "amount": 149000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H009",
+        "amount": 149000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H010",
+        "amount": 107000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H011",
+        "amount": 160000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H012",
+        "amount": 111000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H013",
+        "amount": 170000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H014",
+        "amount": 167000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H015",
+        "amount": 105000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H016",
+        "amount": 122000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-10-10",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-001-H017",
+        "amount": 128000,
+        "due_date": "2025-11-14",
+        "paid_date": "2025-11-12",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-002",
+    "company_name": "Reddy Enterprises",
+    "contact_name": "Udant Dewan",
+    "contact_email": "reddy2@reddy.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-002-H001",
+        "amount": 116000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-002-H002",
+        "amount": 102000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-002-H003",
+        "amount": 88000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-002-H004",
+        "amount": 98000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-002-H005",
+        "amount": 120000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-002-H006",
+        "amount": 108000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-002-H007",
+        "amount": 108000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-002-H008",
+        "amount": 113000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-002-H009",
+        "amount": 85000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-002-H010",
+        "amount": 92000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-15",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-003",
+    "company_name": "Sharma Industries",
+    "contact_name": "Gagan Sami",
+    "contact_email": "sharma3@sharma.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-003-H001",
+        "amount": 138000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H002",
+        "amount": 222000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H003",
+        "amount": 196000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H004",
+        "amount": 226000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H005",
+        "amount": 200000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H006",
+        "amount": 188000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H007",
+        "amount": 129000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H008",
+        "amount": 213000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H009",
+        "amount": 224000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H010",
+        "amount": 199000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H011",
+        "amount": 134000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H012",
+        "amount": 157000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H013",
+        "amount": 187000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H014",
+        "amount": 216000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H015",
+        "amount": 124000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H016",
+        "amount": 117000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-10-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-003-H017",
+        "amount": 179000,
+        "due_date": "2025-11-14",
+        "paid_date": "2025-11-13",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-004",
+    "company_name": "Birla Enterprises",
+    "contact_name": "Ayushman Chander",
+    "contact_email": "birla4@birla.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-004-H001",
+        "amount": 38000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-22",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H002",
+        "amount": 53000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H003",
+        "amount": 45000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H004",
+        "amount": 60000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H005",
+        "amount": 54000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H006",
+        "amount": 35000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-23",
+        "status": "paid_late",
+        "days_late": 4
+      },
+      {
+        "invoice_id": "DEBTOR-004-H007",
+        "amount": 45000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H008",
+        "amount": 58000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H009",
+        "amount": 40000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H010",
+        "amount": 49000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H011",
+        "amount": 45000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H012",
+        "amount": 47000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-004-H013",
+        "amount": 46000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-13",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-005",
+    "company_name": "Jain Pvt Ltd",
+    "contact_name": "Viraj Tiwari",
+    "contact_email": "jain5@jain.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-005-H001",
+        "amount": 134000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-005-H002",
+        "amount": 130000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-005-H003",
+        "amount": 85000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-005-H004",
+        "amount": 132000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-005-H005",
+        "amount": 111000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-005-H006",
+        "amount": 76000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-005-H007",
+        "amount": 80000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-005-H008",
+        "amount": 106000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-005-H009",
+        "amount": 69000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-005-H010",
+        "amount": 69000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-14",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-006",
+    "company_name": "Rastogi Exports",
+    "contact_name": "Rushil Saini",
+    "contact_email": "rastogi6@rastogi.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-006-H001",
+        "amount": 94000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-006-H002",
+        "amount": 97000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-006-H003",
+        "amount": 88000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-006-H004",
+        "amount": 69000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-006-H005",
+        "amount": 76000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-006-H006",
+        "amount": 81000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-006-H007",
+        "amount": 96000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-006-H008",
+        "amount": 76000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-006-H009",
+        "amount": 57000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-15",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-007",
+    "company_name": "Bajaj Traders",
+    "contact_name": "Saumya Mall",
+    "contact_email": "bajaj7@bajaj.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-007-H001",
+        "amount": 41000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-007-H002",
+        "amount": 48000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-007-H003",
+        "amount": 67000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-21",
+        "status": "paid_late",
+        "days_late": 1
+      },
+      {
+        "invoice_id": "DEBTOR-007-H004",
+        "amount": 43000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-007-H005",
+        "amount": 61000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-007-H006",
+        "amount": 51000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-007-H007",
+        "amount": 62000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-007-H008",
+        "amount": 57000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-007-H009",
+        "amount": 73000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-007-H010",
+        "amount": 41000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-007-H011",
+        "amount": 70000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-18",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-008",
+    "company_name": "Sharma & Sons",
+    "contact_name": "Nathaniel Sami",
+    "contact_email": "sharma8@sharma.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-008-H001",
+        "amount": 232000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H002",
+        "amount": 204000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H003",
+        "amount": 131000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H004",
+        "amount": 230000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H005",
+        "amount": 241000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H006",
+        "amount": 137000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H007",
+        "amount": 227000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H008",
+        "amount": 229000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H009",
+        "amount": 140000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H010",
+        "amount": 217000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H011",
+        "amount": 219000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H012",
+        "amount": 220000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H013",
+        "amount": 138000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H014",
+        "amount": 131000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H015",
+        "amount": 226000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H016",
+        "amount": 143000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-10-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H017",
+        "amount": 162000,
+        "due_date": "2025-11-14",
+        "paid_date": "2025-11-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H018",
+        "amount": 146000,
+        "due_date": "2025-12-14",
+        "paid_date": "2025-12-09",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-008-H019",
+        "amount": 142000,
+        "due_date": "2026-01-13",
+        "paid_date": "2026-01-11",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-009",
+    "company_name": "Chopra Traders",
+    "contact_name": "Arunima Dugal",
+    "contact_email": "chopra9@chopra.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-009-H001",
+        "amount": 42000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-009-H002",
+        "amount": 45000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-009-H003",
+        "amount": 34000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-009-H004",
+        "amount": 37000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-009-H005",
+        "amount": 54000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-009-H006",
+        "amount": 48000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-009-H007",
+        "amount": 53000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-009-H008",
+        "amount": 55000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-009-H009",
+        "amount": 43000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-19",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-010",
+    "company_name": "Naidu & Sons",
+    "contact_name": "Gayathri Chaudry",
+    "contact_email": "naidu10@naidu.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-010-H001",
+        "amount": 135000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-22",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H002",
+        "amount": 124000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H003",
+        "amount": 137000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H004",
+        "amount": 155000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H005",
+        "amount": 140000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H006",
+        "amount": 162000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H007",
+        "amount": 141000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H008",
+        "amount": 111000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H009",
+        "amount": 122000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H010",
+        "amount": 157000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H011",
+        "amount": 103000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H012",
+        "amount": 161000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-010-H013",
+        "amount": 175000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-16",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-011",
+    "company_name": "Mehta Pvt Ltd",
+    "contact_name": "Lajita Chatterjee",
+    "contact_email": "mehta11@mehta.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-011-H001",
+        "amount": 128000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-011-H002",
+        "amount": 242000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-09-02",
+        "status": "paid_late",
+        "days_late": 12
+      },
+      {
+        "invoice_id": "DEBTOR-011-H003",
+        "amount": 137000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-10-06",
+        "status": "paid_late",
+        "days_late": 16
+      },
+      {
+        "invoice_id": "DEBTOR-011-H004",
+        "amount": 139000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-011-H005",
+        "amount": 209000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-011-H006",
+        "amount": 199000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-011-H007",
+        "amount": 202000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-011-H008",
+        "amount": 238000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-011-H009",
+        "amount": 230000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-04-01",
+        "status": "paid_late",
+        "days_late": 13
+      },
+      {
+        "invoice_id": "DEBTOR-011-H010",
+        "amount": 193000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-011-H011",
+        "amount": 219000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-15",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-012",
+    "company_name": "Tripathi Industries",
+    "contact_name": "Hemangini Lalla",
+    "contact_email": "tripathi12@tripathi.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-012-H001",
+        "amount": 154000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H002",
+        "amount": 202000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H003",
+        "amount": 210000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H004",
+        "amount": 215000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H005",
+        "amount": 205000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-12-09",
+        "status": "paid_late",
+        "days_late": 20
+      },
+      {
+        "invoice_id": "DEBTOR-012-H006",
+        "amount": 194000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H007",
+        "amount": 161000,
+        "due_date": "2025-01-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 15
+      },
+      {
+        "invoice_id": "DEBTOR-012-H008",
+        "amount": 215000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-03-06",
+        "status": "paid_late",
+        "days_late": 17
+      },
+      {
+        "invoice_id": "DEBTOR-012-H009",
+        "amount": 141000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H010",
+        "amount": 205000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H011",
+        "amount": 168000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H012",
+        "amount": 169000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H013",
+        "amount": 210000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H014",
+        "amount": 132000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H015",
+        "amount": 162000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H016",
+        "amount": 145000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-11-04",
+        "status": "paid_late",
+        "days_late": 20
+      },
+      {
+        "invoice_id": "DEBTOR-012-H017",
+        "amount": 185000,
+        "due_date": "2025-11-14",
+        "paid_date": "2025-11-11",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-012-H018",
+        "amount": 190000,
+        "due_date": "2025-12-14",
+        "paid_date": "2025-12-11",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-013",
+    "company_name": "Reddy Imports",
+    "contact_name": "Tripti Yadav",
+    "contact_email": "reddy13@reddy.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-013-H001",
+        "amount": 60000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-08-10",
+        "status": "paid_late",
+        "days_late": 19
+      },
+      {
+        "invoice_id": "DEBTOR-013-H002",
+        "amount": 52000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-09-11",
+        "status": "paid_late",
+        "days_late": 21
+      },
+      {
+        "invoice_id": "DEBTOR-013-H003",
+        "amount": 98000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-013-H004",
+        "amount": 87000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-013-H005",
+        "amount": 58000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-12-05",
+        "status": "paid_late",
+        "days_late": 16
+      },
+      {
+        "invoice_id": "DEBTOR-013-H006",
+        "amount": 49000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-013-H007",
+        "amount": 60000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-02-07",
+        "status": "paid_late",
+        "days_late": 20
+      },
+      {
+        "invoice_id": "DEBTOR-013-H008",
+        "amount": 73000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-013-H009",
+        "amount": 77000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-013-H010",
+        "amount": 72000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-013-H011",
+        "amount": 88000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-013-H012",
+        "amount": 79000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-013-H013",
+        "amount": 85000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-013-H014",
+        "amount": 98000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-013-H015",
+        "amount": 78000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-13",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-014",
+    "company_name": "Bajaj & Co",
+    "contact_name": "Kritika Brar",
+    "contact_email": "bajaj14@bajaj.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-014-H001",
+        "amount": 191000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-014-H002",
+        "amount": 219000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-09-03",
+        "status": "paid_late",
+        "days_late": 13
+      },
+      {
+        "invoice_id": "DEBTOR-014-H003",
+        "amount": 246000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-014-H004",
+        "amount": 151000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-014-H005",
+        "amount": 233000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-014-H006",
+        "amount": 168000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-01-04",
+        "status": "paid_late",
+        "days_late": 16
+      },
+      {
+        "invoice_id": "DEBTOR-014-H007",
+        "amount": 243000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-014-H008",
+        "amount": 238000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-014-H009",
+        "amount": 191000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-04-09",
+        "status": "paid_late",
+        "days_late": 21
+      },
+      {
+        "invoice_id": "DEBTOR-014-H010",
+        "amount": 232000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-014-H011",
+        "amount": 175000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-17",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-015",
+    "company_name": "Patel Industries",
+    "contact_name": "Janaki Handa",
+    "contact_email": "patel15@patel.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-015-H001",
+        "amount": 107000,
+        "due_date": "2024-07-22",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 11
+      },
+      {
+        "invoice_id": "DEBTOR-015-H002",
+        "amount": 112000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-015-H003",
+        "amount": 136000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-015-H004",
+        "amount": 155000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-015-H005",
+        "amount": 157000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-015-H006",
+        "amount": 165000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-015-H007",
+        "amount": 117000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-015-H008",
+        "amount": 155000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-015-H009",
+        "amount": 153000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-30",
+        "status": "paid_late",
+        "days_late": 11
+      },
+      {
+        "invoice_id": "DEBTOR-015-H010",
+        "amount": 124000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-015-H011",
+        "amount": 140000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-015-H012",
+        "amount": 185000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-015-H013",
+        "amount": 121000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-12",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-016",
+    "company_name": "Bhatt Industries",
+    "contact_name": "Chakradev Kari",
+    "contact_email": "bhatt16@bhatt.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-016-H001",
+        "amount": 194000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H002",
+        "amount": 128000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H003",
+        "amount": 186000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H004",
+        "amount": 174000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-11-01",
+        "status": "paid_late",
+        "days_late": 12
+      },
+      {
+        "invoice_id": "DEBTOR-016-H005",
+        "amount": 157000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-28",
+        "status": "paid_late",
+        "days_late": 9
+      },
+      {
+        "invoice_id": "DEBTOR-016-H006",
+        "amount": 235000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-28",
+        "status": "paid_late",
+        "days_late": 9
+      },
+      {
+        "invoice_id": "DEBTOR-016-H007",
+        "amount": 146000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H008",
+        "amount": 129000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H009",
+        "amount": 165000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H010",
+        "amount": 187000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H011",
+        "amount": 122000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H012",
+        "amount": 216000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-26",
+        "status": "paid_late",
+        "days_late": 9
+      },
+      {
+        "invoice_id": "DEBTOR-016-H013",
+        "amount": 233000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H014",
+        "amount": 238000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H015",
+        "amount": 184000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H016",
+        "amount": 190000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-10-11",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H017",
+        "amount": 143000,
+        "due_date": "2025-11-14",
+        "paid_date": "2025-11-24",
+        "status": "paid_late",
+        "days_late": 10
+      },
+      {
+        "invoice_id": "DEBTOR-016-H018",
+        "amount": 180000,
+        "due_date": "2025-12-14",
+        "paid_date": "2025-12-30",
+        "status": "paid_late",
+        "days_late": 16
+      },
+      {
+        "invoice_id": "DEBTOR-016-H019",
+        "amount": 171000,
+        "due_date": "2026-01-13",
+        "paid_date": "2026-01-10",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-016-H020",
+        "amount": 152000,
+        "due_date": "2026-02-12",
+        "paid_date": "2026-02-08",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-017",
+    "company_name": "Shukla Industries",
+    "contact_name": "Fariq Kaul",
+    "contact_email": "shukla17@shukla.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-017-H001",
+        "amount": 162000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-31",
+        "status": "paid_late",
+        "days_late": 9
+      },
+      {
+        "invoice_id": "DEBTOR-017-H002",
+        "amount": 229000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-017-H003",
+        "amount": 250000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-017-H004",
+        "amount": 226000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-017-H005",
+        "amount": 240000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-017-H006",
+        "amount": 213000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-28",
+        "status": "paid_late",
+        "days_late": 9
+      },
+      {
+        "invoice_id": "DEBTOR-017-H007",
+        "amount": 243000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-26",
+        "status": "paid_late",
+        "days_late": 8
+      },
+      {
+        "invoice_id": "DEBTOR-017-H008",
+        "amount": 158000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-017-H009",
+        "amount": 206000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-017-H010",
+        "amount": 151000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-017-H011",
+        "amount": 246000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-18",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-018",
+    "company_name": "Gupta Distributors",
+    "contact_name": "Lajita Mall",
+    "contact_email": "gupta18@gupta.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-018-H001",
+        "amount": 112000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H002",
+        "amount": 91000,
+        "due_date": "2024-08-21",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 16
+      },
+      {
+        "invoice_id": "DEBTOR-018-H003",
+        "amount": 124000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H004",
+        "amount": 143000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H005",
+        "amount": 115000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-12-06",
+        "status": "paid_late",
+        "days_late": 17
+      },
+      {
+        "invoice_id": "DEBTOR-018-H006",
+        "amount": 109000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H007",
+        "amount": 131000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H008",
+        "amount": 103000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H009",
+        "amount": 117000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H010",
+        "amount": 153000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H011",
+        "amount": 79000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H012",
+        "amount": 102000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H013",
+        "amount": 86000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H014",
+        "amount": 147000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H015",
+        "amount": 130000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-11",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H016",
+        "amount": 114000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-10-28",
+        "status": "paid_late",
+        "days_late": 13
+      },
+      {
+        "invoice_id": "DEBTOR-018-H017",
+        "amount": 80000,
+        "due_date": "2025-11-14",
+        "paid_date": "2025-11-28",
+        "status": "paid_late",
+        "days_late": 14
+      },
+      {
+        "invoice_id": "DEBTOR-018-H018",
+        "amount": 119000,
+        "due_date": "2025-12-14",
+        "paid_date": "2025-12-10",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-018-H019",
+        "amount": 138000,
+        "due_date": "2026-01-13",
+        "paid_date": "2026-01-08",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-019",
+    "company_name": "Tripathi Pvt Ltd",
+    "contact_name": "Janya Gaba",
+    "contact_email": "tripathi19@tripathi.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-019-H001",
+        "amount": 160000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-08-03",
+        "status": "paid_late",
+        "days_late": 12
+      },
+      {
+        "invoice_id": "DEBTOR-019-H002",
+        "amount": 120000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-09-07",
+        "status": "paid_late",
+        "days_late": 17
+      },
+      {
+        "invoice_id": "DEBTOR-019-H003",
+        "amount": 202000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-019-H004",
+        "amount": 214000,
+        "due_date": "2024-10-20",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 15
+      },
+      {
+        "invoice_id": "DEBTOR-019-H005",
+        "amount": 140000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-019-H006",
+        "amount": 138000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-019-H007",
+        "amount": 219000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-019-H008",
+        "amount": 159000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-019-H009",
+        "amount": 151000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-15",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-020",
+    "company_name": "Bansal Distributors",
+    "contact_name": "Isha Kadakia",
+    "contact_email": "bansal20@bansal.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-020-H001",
+        "amount": 132000,
+        "due_date": "2024-07-22",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 11
+      },
+      {
+        "invoice_id": "DEBTOR-020-H002",
+        "amount": 192000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-020-H003",
+        "amount": 155000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-020-H004",
+        "amount": 115000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-020-H005",
+        "amount": 166000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-020-H006",
+        "amount": 156000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-020-H007",
+        "amount": 204000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-020-H008",
+        "amount": 226000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-020-H009",
+        "amount": 224000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-020-H010",
+        "amount": 169000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-30",
+        "status": "paid_late",
+        "days_late": 12
+      },
+      {
+        "invoice_id": "DEBTOR-020-H011",
+        "amount": 180000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-020-H012",
+        "amount": 213000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-14",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-021",
+    "company_name": "Jain Exports",
+    "contact_name": "Ekbal Garg",
+    "contact_email": "jain21@jain.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-021-H001",
+        "amount": 100000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-021-H002",
+        "amount": 100000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-021-H003",
+        "amount": 85000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-021-H004",
+        "amount": 86000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-021-H005",
+        "amount": 107000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-021-H006",
+        "amount": 56000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-29",
+        "status": "paid_late",
+        "days_late": 10
+      },
+      {
+        "invoice_id": "DEBTOR-021-H007",
+        "amount": 105000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-021-H008",
+        "amount": 90000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-021-H009",
+        "amount": 76000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-25",
+        "status": "paid_late",
+        "days_late": 6
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-022",
+    "company_name": "Anand Industries",
+    "contact_name": "Nihal Shere",
+    "contact_email": "anand22@anand.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-022-H001",
+        "amount": 169000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-31",
+        "status": "paid_late",
+        "days_late": 9
+      },
+      {
+        "invoice_id": "DEBTOR-022-H002",
+        "amount": 150000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-022-H003",
+        "amount": 113000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-022-H004",
+        "amount": 164000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-022-H005",
+        "amount": 124000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-022-H006",
+        "amount": 192000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-022-H007",
+        "amount": 192000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-022-H008",
+        "amount": 155000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-022-H009",
+        "amount": 144000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-27",
+        "status": "paid_late",
+        "days_late": 8
+      },
+      {
+        "invoice_id": "DEBTOR-022-H010",
+        "amount": 134000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-14",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-023",
+    "company_name": "Desai & Co",
+    "contact_name": "Anamika Kanda",
+    "contact_email": "desai23@desai.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-023-H001",
+        "amount": 151000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-22",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-023-H002",
+        "amount": 171000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-023-H003",
+        "amount": 195000,
+        "due_date": "2024-09-20",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 11
+      },
+      {
+        "invoice_id": "DEBTOR-023-H004",
+        "amount": 217000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-023-H005",
+        "amount": 191000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-12-05",
+        "status": "paid_late",
+        "days_late": 16
+      },
+      {
+        "invoice_id": "DEBTOR-023-H006",
+        "amount": 201000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-023-H007",
+        "amount": 194000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-023-H008",
+        "amount": 175000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-023-H009",
+        "amount": 131000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-18",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-024",
+    "company_name": "Ambani Industries",
+    "contact_name": "Daksh Karnik",
+    "contact_email": "ambani24@ambani.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-024-H001",
+        "amount": 245000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H002",
+        "amount": 265000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H003",
+        "amount": 235000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-10-07",
+        "status": "paid_late",
+        "days_late": 17
+      },
+      {
+        "invoice_id": "DEBTOR-024-H004",
+        "amount": 177000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H005",
+        "amount": 196000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H006",
+        "amount": 150000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H007",
+        "amount": 250000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H008",
+        "amount": 224000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H009",
+        "amount": 265000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H010",
+        "amount": 181000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-05-07",
+        "status": "paid_late",
+        "days_late": 19
+      },
+      {
+        "invoice_id": "DEBTOR-024-H011",
+        "amount": 241000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H012",
+        "amount": 167000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H013",
+        "amount": 194000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H014",
+        "amount": 235000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-09-04",
+        "status": "paid_late",
+        "days_late": 19
+      },
+      {
+        "invoice_id": "DEBTOR-024-H015",
+        "amount": 167000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H016",
+        "amount": 245000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-10-27",
+        "status": "paid_late",
+        "days_late": 12
+      },
+      {
+        "invoice_id": "DEBTOR-024-H017",
+        "amount": 262000,
+        "due_date": "2025-11-14",
+        "paid_date": "2025-11-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-024-H018",
+        "amount": 224000,
+        "due_date": "2025-12-14",
+        "paid_date": "2025-12-11",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-025",
+    "company_name": "Mehta Imports",
+    "contact_name": "Diya Rattan",
+    "contact_email": "mehta25@mehta.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-025-H001",
+        "amount": 171000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-08-08",
+        "status": "paid_late",
+        "days_late": 17
+      },
+      {
+        "invoice_id": "DEBTOR-025-H002",
+        "amount": 207000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-09-06",
+        "status": "paid_late",
+        "days_late": 16
+      },
+      {
+        "invoice_id": "DEBTOR-025-H003",
+        "amount": 134000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H004",
+        "amount": 144000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H005",
+        "amount": 152000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H006",
+        "amount": 197000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H007",
+        "amount": 211000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H008",
+        "amount": 163000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H009",
+        "amount": 142000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-30",
+        "status": "paid_late",
+        "days_late": 11
+      },
+      {
+        "invoice_id": "DEBTOR-025-H010",
+        "amount": 147000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H011",
+        "amount": 210000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H012",
+        "amount": 113000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H013",
+        "amount": 174000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H014",
+        "amount": 210000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H015",
+        "amount": 190000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H016",
+        "amount": 212000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-10-11",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H017",
+        "amount": 125000,
+        "due_date": "2025-11-14",
+        "paid_date": "2025-11-10",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H018",
+        "amount": 126000,
+        "due_date": "2025-12-14",
+        "paid_date": "2025-12-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-025-H019",
+        "amount": 193000,
+        "due_date": "2026-01-13",
+        "paid_date": "2026-01-12",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-026",
+    "company_name": "Pandey Distributors",
+    "contact_name": "Dominic Kakar",
+    "contact_email": "pandey26@pandey.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-026-H001",
+        "amount": 172000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-026-H002",
+        "amount": 180000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-026-H003",
+        "amount": 172000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-10-29",
+        "status": "paid_late",
+        "days_late": 39
+      },
+      {
+        "invoice_id": "DEBTOR-026-H004",
+        "amount": 143000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-026-H005",
+        "amount": 121000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-026-H006",
+        "amount": 181000,
+        "due_date": "2024-12-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 36
+      },
+      {
+        "invoice_id": "DEBTOR-026-H007",
+        "amount": 173000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-03-01",
+        "status": "paid_late",
+        "days_late": 42
+      },
+      {
+        "invoice_id": "DEBTOR-026-H008",
+        "amount": 236000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-03-25",
+        "status": "paid_late",
+        "days_late": 36
+      },
+      {
+        "invoice_id": "DEBTOR-026-H009",
+        "amount": 123000,
+        "due_date": "2025-03-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 61
+      },
+      {
+        "invoice_id": "DEBTOR-026-H010",
+        "amount": 175000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-026-H011",
+        "amount": 169000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-026-H012",
+        "amount": 177000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-14",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-027",
+    "company_name": "Singh Traders",
+    "contact_name": "Simon Tata",
+    "contact_email": "singh27@singh.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-027-H001",
+        "amount": 214000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-08-25",
+        "status": "paid_late",
+        "days_late": 34
+      },
+      {
+        "invoice_id": "DEBTOR-027-H002",
+        "amount": 186000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-027-H003",
+        "amount": 233000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-027-H004",
+        "amount": 180000,
+        "due_date": "2024-10-20",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 28
+      },
+      {
+        "invoice_id": "DEBTOR-027-H005",
+        "amount": 221000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-027-H006",
+        "amount": 230000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-027-H007",
+        "amount": 131000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-02-20",
+        "status": "paid_late",
+        "days_late": 33
+      },
+      {
+        "invoice_id": "DEBTOR-027-H008",
+        "amount": 249000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-027-H009",
+        "amount": 166000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-04-16",
+        "status": "paid_late",
+        "days_late": 28
+      },
+      {
+        "invoice_id": "DEBTOR-027-H010",
+        "amount": 139000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-05-20",
+        "status": "paid_late",
+        "days_late": 32
+      },
+      {
+        "invoice_id": "DEBTOR-027-H011",
+        "amount": 170000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-06-14",
+        "status": "paid_late",
+        "days_late": 27
+      },
+      {
+        "invoice_id": "DEBTOR-027-H012",
+        "amount": 211000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-027-H013",
+        "amount": 238000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-08-13",
+        "status": "paid_late",
+        "days_late": 27
+      },
+      {
+        "invoice_id": "DEBTOR-027-H014",
+        "amount": 218000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-09-12",
+        "status": "paid_late",
+        "days_late": 27
+      },
+      {
+        "invoice_id": "DEBTOR-027-H015",
+        "amount": 251000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-11",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-027-H016",
+        "amount": 164000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-11-14",
+        "status": "paid_late",
+        "days_late": 30
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-028",
+    "company_name": "Jain Imports",
+    "contact_name": "Tara Dhar",
+    "contact_email": "jain28@jain.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-028-H001",
+        "amount": 141000,
+        "due_date": "2024-07-22",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 32
+      },
+      {
+        "invoice_id": "DEBTOR-028-H002",
+        "amount": 87000,
+        "due_date": "2024-08-21",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 27
+      },
+      {
+        "invoice_id": "DEBTOR-028-H003",
+        "amount": 151000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-10-18",
+        "status": "paid_late",
+        "days_late": 28
+      },
+      {
+        "invoice_id": "DEBTOR-028-H004",
+        "amount": 103000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-028-H005",
+        "amount": 125000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-028-H006",
+        "amount": 117000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-028-H007",
+        "amount": 113000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-02-11",
+        "status": "paid_late",
+        "days_late": 24
+      },
+      {
+        "invoice_id": "DEBTOR-028-H008",
+        "amount": 169000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-028-H009",
+        "amount": 92000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-04-22",
+        "status": "paid_late",
+        "days_late": 34
+      },
+      {
+        "invoice_id": "DEBTOR-028-H010",
+        "amount": 89000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-028-H011",
+        "amount": 152000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-028-H012",
+        "amount": 145000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-07-17",
+        "status": "paid_late",
+        "days_late": 30
+      },
+      {
+        "invoice_id": "DEBTOR-028-H013",
+        "amount": 108000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-028-H014",
+        "amount": 122000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-09-13",
+        "status": "paid_late",
+        "days_late": 28
+      },
+      {
+        "invoice_id": "DEBTOR-028-H015",
+        "amount": 139000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-028-H016",
+        "amount": 109000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-11-18",
+        "status": "paid_late",
+        "days_late": 34
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-029",
+    "company_name": "Mitra Exports",
+    "contact_name": "Liam Koshy",
+    "contact_email": "mitra29@mitra.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-029-H001",
+        "amount": 118000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-029-H002",
+        "amount": 91000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-029-H003",
+        "amount": 121000,
+        "due_date": "2024-09-20",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 45
+      },
+      {
+        "invoice_id": "DEBTOR-029-H004",
+        "amount": 96000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-12-01",
+        "status": "paid_late",
+        "days_late": 42
+      },
+      {
+        "invoice_id": "DEBTOR-029-H005",
+        "amount": 123000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-029-H006",
+        "amount": 143000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-01-30",
+        "status": "paid_late",
+        "days_late": 42
+      },
+      {
+        "invoice_id": "DEBTOR-029-H007",
+        "amount": 83000,
+        "due_date": "2025-01-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 35
+      },
+      {
+        "invoice_id": "DEBTOR-029-H008",
+        "amount": 148000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-03-15",
+        "status": "paid_late",
+        "days_late": 26
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-030",
+    "company_name": "Kapoor & Co",
+    "contact_name": "Priya Rastogi",
+    "contact_email": "kapoor30@kapoor.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-030-H001",
+        "amount": 175000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-09-13",
+        "status": "paid_late",
+        "days_late": 53
+      },
+      {
+        "invoice_id": "DEBTOR-030-H002",
+        "amount": 175000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-030-H003",
+        "amount": 103000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-11-09",
+        "status": "paid_late",
+        "days_late": 50
+      },
+      {
+        "invoice_id": "DEBTOR-030-H004",
+        "amount": 119000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-12-08",
+        "status": "paid_late",
+        "days_late": 49
+      },
+      {
+        "invoice_id": "DEBTOR-030-H005",
+        "amount": 110000,
+        "due_date": "2024-11-19",
+        "paid_date": "2025-01-07",
+        "status": "paid_late",
+        "days_late": 49
+      },
+      {
+        "invoice_id": "DEBTOR-030-H006",
+        "amount": 108000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-02-06",
+        "status": "paid_late",
+        "days_late": 49
+      },
+      {
+        "invoice_id": "DEBTOR-030-H007",
+        "amount": 169000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-03-05",
+        "status": "paid_late",
+        "days_late": 46
+      },
+      {
+        "invoice_id": "DEBTOR-030-H008",
+        "amount": 100000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-030-H009",
+        "amount": 142000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-030-H010",
+        "amount": 169000,
+        "due_date": "2025-04-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 53
+      },
+      {
+        "invoice_id": "DEBTOR-030-H011",
+        "amount": 138000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-07-01",
+        "status": "paid_late",
+        "days_late": 44
+      },
+      {
+        "invoice_id": "DEBTOR-030-H012",
+        "amount": 185000,
+        "due_date": "2025-06-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 53
+      },
+      {
+        "invoice_id": "DEBTOR-030-H013",
+        "amount": 149000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-030-H014",
+        "amount": 192000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-030-H015",
+        "amount": 179000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-10",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-030-H016",
+        "amount": 125000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-12-15",
+        "status": "paid_late",
+        "days_late": 61
+      },
+      {
+        "invoice_id": "DEBTOR-030-H017",
+        "amount": 137000,
+        "due_date": "2025-11-14",
+        "paid_date": "2025-11-11",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-030-H018",
+        "amount": 137000,
+        "due_date": "2025-12-14",
+        "paid_date": "2026-02-01",
+        "status": "paid_late",
+        "days_late": 49
+      },
+      {
+        "invoice_id": "DEBTOR-030-H019",
+        "amount": 123000,
+        "due_date": "2026-01-13",
+        "paid_date": "2026-03-29",
+        "status": "paid_late",
+        "days_late": 75
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-031",
+    "company_name": "Chopra Imports",
+    "contact_name": "Theodore Devi",
+    "contact_email": "chopra31@chopra.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-031-H001",
+        "amount": 54000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-21",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-031-H002",
+        "amount": 37000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-09-27",
+        "status": "paid_late",
+        "days_late": 37
+      },
+      {
+        "invoice_id": "DEBTOR-031-H003",
+        "amount": 62000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-10-30",
+        "status": "paid_late",
+        "days_late": 40
+      },
+      {
+        "invoice_id": "DEBTOR-031-H004",
+        "amount": 73000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-031-H005",
+        "amount": 55000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-12-24",
+        "status": "paid_late",
+        "days_late": 35
+      },
+      {
+        "invoice_id": "DEBTOR-031-H006",
+        "amount": 41000,
+        "due_date": "2024-12-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 33
+      },
+      {
+        "invoice_id": "DEBTOR-031-H007",
+        "amount": 49000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-031-H008",
+        "amount": 50000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-03-23",
+        "status": "paid_late",
+        "days_late": 34
+      },
+      {
+        "invoice_id": "DEBTOR-031-H009",
+        "amount": 64000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-05-05",
+        "status": "paid_late",
+        "days_late": 47
+      },
+      {
+        "invoice_id": "DEBTOR-031-H010",
+        "amount": 61000,
+        "due_date": "2025-04-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 38
+      },
+      {
+        "invoice_id": "DEBTOR-031-H011",
+        "amount": 37000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-07-15",
+        "status": "paid_late",
+        "days_late": 58
+      },
+      {
+        "invoice_id": "DEBTOR-031-H012",
+        "amount": 59000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-031-H013",
+        "amount": 38000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-17",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-032",
+    "company_name": "Khanna & Co",
+    "contact_name": "Gavin Batta",
+    "contact_email": "khanna32@khanna.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-032-H001",
+        "amount": 154000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-09-03",
+        "status": "paid_late",
+        "days_late": 43
+      },
+      {
+        "invoice_id": "DEBTOR-032-H002",
+        "amount": 146000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-032-H003",
+        "amount": 161000,
+        "due_date": "2024-09-20",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 44
+      },
+      {
+        "invoice_id": "DEBTOR-032-H004",
+        "amount": 89000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-032-H005",
+        "amount": 118000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-032-H006",
+        "amount": 83000,
+        "due_date": "2024-12-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 52
+      },
+      {
+        "invoice_id": "DEBTOR-032-H007",
+        "amount": 108000,
+        "due_date": "2025-01-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 53
+      },
+      {
+        "invoice_id": "DEBTOR-032-H008",
+        "amount": 164000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-03-31",
+        "status": "paid_late",
+        "days_late": 42
+      },
+      {
+        "invoice_id": "DEBTOR-032-H009",
+        "amount": 111000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-16",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-033",
+    "company_name": "Rao Enterprises",
+    "contact_name": "Michael Dutta",
+    "contact_email": "rao33@rao.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-033-H001",
+        "amount": 78000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-09-01",
+        "status": "paid_late",
+        "days_late": 41
+      },
+      {
+        "invoice_id": "DEBTOR-033-H002",
+        "amount": 65000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-09-26",
+        "status": "paid_late",
+        "days_late": 36
+      },
+      {
+        "invoice_id": "DEBTOR-033-H003",
+        "amount": 57000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-033-H004",
+        "amount": 49000,
+        "due_date": "2024-10-20",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 39
+      },
+      {
+        "invoice_id": "DEBTOR-033-H005",
+        "amount": 44000,
+        "due_date": "2024-11-19",
+        "paid_date": "2025-01-01",
+        "status": "paid_late",
+        "days_late": 43
+      },
+      {
+        "invoice_id": "DEBTOR-033-H006",
+        "amount": 49000,
+        "due_date": "2024-12-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 30
+      },
+      {
+        "invoice_id": "DEBTOR-033-H007",
+        "amount": 66000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-02-20",
+        "status": "paid_late",
+        "days_late": 33
+      },
+      {
+        "invoice_id": "DEBTOR-033-H008",
+        "amount": 65000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-033-H009",
+        "amount": 44000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-04-24",
+        "status": "paid_late",
+        "days_late": 36
+      },
+      {
+        "invoice_id": "DEBTOR-033-H010",
+        "amount": 77000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-033-H011",
+        "amount": 62000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-033-H012",
+        "amount": 61000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-033-H013",
+        "amount": 69000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-15",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-034",
+    "company_name": "Shukla Pvt Ltd",
+    "contact_name": "Devansh Rajan",
+    "contact_email": "shukla34@shukla.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-034-H001",
+        "amount": 45000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-034-H002",
+        "amount": 63000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-034-H003",
+        "amount": 47000,
+        "due_date": "2024-09-20",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 35
+      },
+      {
+        "invoice_id": "DEBTOR-034-H004",
+        "amount": 73000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-034-H005",
+        "amount": 82000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-12-19",
+        "status": "paid_late",
+        "days_late": 30
+      },
+      {
+        "invoice_id": "DEBTOR-034-H006",
+        "amount": 60000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-034-H007",
+        "amount": 74000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-034-H008",
+        "amount": 70000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-034-H009",
+        "amount": 41000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-034-H010",
+        "amount": 42000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-05-15",
+        "status": "paid_late",
+        "days_late": 27
+      },
+      {
+        "invoice_id": "DEBTOR-034-H011",
+        "amount": 48000,
+        "due_date": "2025-05-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 29
+      },
+      {
+        "invoice_id": "DEBTOR-034-H012",
+        "amount": 41000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-07-21",
+        "status": "paid_late",
+        "days_late": 34
+      },
+      {
+        "invoice_id": "DEBTOR-034-H013",
+        "amount": 80000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-08-13",
+        "status": "paid_late",
+        "days_late": 27
+      },
+      {
+        "invoice_id": "DEBTOR-034-H014",
+        "amount": 62000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-09-18",
+        "status": "paid_late",
+        "days_late": 33
+      },
+      {
+        "invoice_id": "DEBTOR-034-H015",
+        "amount": 82000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-11",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-034-H016",
+        "amount": 60000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-11-27",
+        "status": "paid_late",
+        "days_late": 43
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-035",
+    "company_name": "Kapoor Enterprises",
+    "contact_name": "Upadhriti Wadhwa",
+    "contact_email": "kapoor35@kapoor.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-035-H001",
+        "amount": 144000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-09-02",
+        "status": "paid_late",
+        "days_late": 42
+      },
+      {
+        "invoice_id": "DEBTOR-035-H002",
+        "amount": 127000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-035-H003",
+        "amount": 129000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-035-H004",
+        "amount": 91000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-035-H005",
+        "amount": 145000,
+        "due_date": "2024-11-19",
+        "paid_date": "2025-01-11",
+        "status": "paid_late",
+        "days_late": 53
+      },
+      {
+        "invoice_id": "DEBTOR-035-H006",
+        "amount": 128000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-035-H007",
+        "amount": 179000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-03-16",
+        "status": "paid_late",
+        "days_late": 57
+      },
+      {
+        "invoice_id": "DEBTOR-035-H008",
+        "amount": 176000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-04-10",
+        "status": "paid_late",
+        "days_late": 52
+      },
+      {
+        "invoice_id": "DEBTOR-035-H009",
+        "amount": 94000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-035-H010",
+        "amount": 125000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-04-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-035-H011",
+        "amount": 162000,
+        "due_date": "2025-05-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 47
+      },
+      {
+        "invoice_id": "DEBTOR-035-H012",
+        "amount": 151000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-07-29",
+        "status": "paid_late",
+        "days_late": 42
+      },
+      {
+        "invoice_id": "DEBTOR-035-H013",
+        "amount": 176000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-09-09",
+        "status": "paid_late",
+        "days_late": 54
+      },
+      {
+        "invoice_id": "DEBTOR-035-H014",
+        "amount": 100000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-10-15",
+        "status": "paid_late",
+        "days_late": 60
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-036",
+    "company_name": "Tata Corporation",
+    "contact_name": "Advay Contractor",
+    "contact_email": "tata36@tata.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-036-H001",
+        "amount": 135000,
+        "due_date": "2024-07-22",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 28
+      },
+      {
+        "invoice_id": "DEBTOR-036-H002",
+        "amount": 216000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-036-H003",
+        "amount": 187000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-036-H004",
+        "amount": 136000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-11-16",
+        "status": "paid_late",
+        "days_late": 27
+      },
+      {
+        "invoice_id": "DEBTOR-036-H005",
+        "amount": 221000,
+        "due_date": "2024-11-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 26
+      },
+      {
+        "invoice_id": "DEBTOR-036-H006",
+        "amount": 211000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-01-17",
+        "status": "paid_late",
+        "days_late": 29
+      },
+      {
+        "invoice_id": "DEBTOR-036-H007",
+        "amount": 148000,
+        "due_date": "2025-01-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 25
+      },
+      {
+        "invoice_id": "DEBTOR-036-H008",
+        "amount": 199000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-12",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-037",
+    "company_name": "Srivastava Enterprises",
+    "contact_name": "Harini Choudhury",
+    "contact_email": "srivastava37@srivastava.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-037-H001",
+        "amount": 121000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-09-15",
+        "status": "paid_late",
+        "days_late": 55
+      },
+      {
+        "invoice_id": "DEBTOR-037-H002",
+        "amount": 114000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-10-19",
+        "status": "paid_late",
+        "days_late": 59
+      },
+      {
+        "invoice_id": "DEBTOR-037-H003",
+        "amount": 184000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-037-H004",
+        "amount": 138000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-037-H005",
+        "amount": 139000,
+        "due_date": "2024-11-19",
+        "paid_date": "2025-01-11",
+        "status": "paid_late",
+        "days_late": 53
+      },
+      {
+        "invoice_id": "DEBTOR-037-H006",
+        "amount": 186000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-037-H007",
+        "amount": 113000,
+        "due_date": "2025-01-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 57
+      },
+      {
+        "invoice_id": "DEBTOR-037-H008",
+        "amount": 194000,
+        "due_date": "2025-02-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 51
+      },
+      {
+        "invoice_id": "DEBTOR-037-H009",
+        "amount": 106000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-04-17",
+        "status": "paid_late",
+        "days_late": 29
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-038",
+    "company_name": "Rajput Corporation",
+    "contact_name": "Radhika Dugar",
+    "contact_email": "rajput38@rajput.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-038-H001",
+        "amount": 160000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-038-H002",
+        "amount": 89000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-038-H003",
+        "amount": 131000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-038-H004",
+        "amount": 121000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-12-03",
+        "status": "paid_late",
+        "days_late": 44
+      },
+      {
+        "invoice_id": "DEBTOR-038-H005",
+        "amount": 93000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-038-H006",
+        "amount": 92000,
+        "due_date": "2024-12-19",
+        "paid_date": "2024-12-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-038-H007",
+        "amount": 132000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-038-H008",
+        "amount": 107000,
+        "due_date": "2025-02-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 42
+      },
+      {
+        "invoice_id": "DEBTOR-038-H009",
+        "amount": 157000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-05-14",
+        "status": "paid_late",
+        "days_late": 56
+      },
+      {
+        "invoice_id": "DEBTOR-038-H010",
+        "amount": 82000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-05-31",
+        "status": "paid_late",
+        "days_late": 43
+      },
+      {
+        "invoice_id": "DEBTOR-038-H011",
+        "amount": 152000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-07-14",
+        "status": "paid_late",
+        "days_late": 57
+      },
+      {
+        "invoice_id": "DEBTOR-038-H012",
+        "amount": 86000,
+        "due_date": "2025-06-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 48
+      },
+      {
+        "invoice_id": "DEBTOR-038-H013",
+        "amount": 159000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-038-H014",
+        "amount": 101000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-038-H015",
+        "amount": 144000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-10-29",
+        "status": "paid_late",
+        "days_late": 44
+      },
+      {
+        "invoice_id": "DEBTOR-038-H016",
+        "amount": 114000,
+        "due_date": "2025-10-15",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 40
+      },
+      {
+        "invoice_id": "DEBTOR-038-H017",
+        "amount": 133000,
+        "due_date": "2025-11-14",
+        "paid_date": "2026-01-12",
+        "status": "paid_late",
+        "days_late": 59
+      },
+      {
+        "invoice_id": "DEBTOR-038-H018",
+        "amount": 121000,
+        "due_date": "2025-12-14",
+        "paid_date": "2025-12-09",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-039",
+    "company_name": "Arora Industries",
+    "contact_name": "Aarush Lall",
+    "contact_email": "arora39@arora.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-039-H001",
+        "amount": 185000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-09-06",
+        "status": "paid_late",
+        "days_late": 46
+      },
+      {
+        "invoice_id": "DEBTOR-039-H002",
+        "amount": 126000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-039-H003",
+        "amount": 213000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-039-H004",
+        "amount": 188000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-10-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-039-H005",
+        "amount": 199000,
+        "due_date": "2024-11-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 54
+      },
+      {
+        "invoice_id": "DEBTOR-039-H006",
+        "amount": 187000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-02-02",
+        "status": "paid_late",
+        "days_late": 45
+      },
+      {
+        "invoice_id": "DEBTOR-039-H007",
+        "amount": 163000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-03-15",
+        "status": "paid_late",
+        "days_late": 56
+      },
+      {
+        "invoice_id": "DEBTOR-039-H008",
+        "amount": 200000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-04-11",
+        "status": "paid_late",
+        "days_late": 53
+      },
+      {
+        "invoice_id": "DEBTOR-039-H009",
+        "amount": 141000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-039-H010",
+        "amount": 216000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-05-30",
+        "status": "paid_late",
+        "days_late": 42
+      },
+      {
+        "invoice_id": "DEBTOR-039-H011",
+        "amount": 159000,
+        "due_date": "2025-05-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 39
+      },
+      {
+        "invoice_id": "DEBTOR-039-H012",
+        "amount": 164000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-06-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-039-H013",
+        "amount": 189000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-07-12",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-039-H014",
+        "amount": 193000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-039-H015",
+        "amount": 226000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-09-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-039-H016",
+        "amount": 163000,
+        "due_date": "2025-10-15",
+        "paid_date": "2025-10-15",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-040",
+    "company_name": "Saxena Imports",
+    "contact_name": "Yashica Cherian",
+    "contact_email": "saxena40@saxena.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-040-H001",
+        "amount": 151000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-09-02",
+        "status": "paid_late",
+        "days_late": 42
+      },
+      {
+        "invoice_id": "DEBTOR-040-H002",
+        "amount": 192000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-040-H003",
+        "amount": 203000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-11-20",
+        "status": "paid_late",
+        "days_late": 61
+      },
+      {
+        "invoice_id": "DEBTOR-040-H004",
+        "amount": 188000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-12-03",
+        "status": "paid_late",
+        "days_late": 44
+      },
+      {
+        "invoice_id": "DEBTOR-040-H005",
+        "amount": 112000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-040-H006",
+        "amount": 163000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-01-30",
+        "status": "paid_late",
+        "days_late": 42
+      },
+      {
+        "invoice_id": "DEBTOR-040-H007",
+        "amount": 168000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-040-H008",
+        "amount": 159000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-040-H009",
+        "amount": 140000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-03-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-040-H010",
+        "amount": 156000,
+        "due_date": "2025-04-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 48
+      },
+      {
+        "invoice_id": "DEBTOR-040-H011",
+        "amount": 165000,
+        "due_date": "2025-05-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 45
+      },
+      {
+        "invoice_id": "DEBTOR-040-H012",
+        "amount": 166000,
+        "due_date": "2025-06-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 82
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-041",
+    "company_name": "Swamy Industries",
+    "contact_name": "Yashica Issac",
+    "contact_email": "swamy41@swamy.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-041-H001",
+        "amount": 114000,
+        "due_date": "2024-07-22",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 71
+      },
+      {
+        "invoice_id": "DEBTOR-041-H002",
+        "amount": 78000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-041-H003",
+        "amount": 81000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-041-H004",
+        "amount": 110000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-12-18",
+        "status": "paid_late",
+        "days_late": 59
+      },
+      {
+        "invoice_id": "DEBTOR-041-H005",
+        "amount": 72000,
+        "due_date": "2024-11-19",
+        "paid_date": "2025-01-16",
+        "status": "paid_late",
+        "days_late": 58
+      },
+      {
+        "invoice_id": "DEBTOR-041-H006",
+        "amount": 105000,
+        "due_date": "2024-12-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 68
+      },
+      {
+        "invoice_id": "DEBTOR-041-H007",
+        "amount": 103000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-03-12",
+        "status": "paid_late",
+        "days_late": 53
+      },
+      {
+        "invoice_id": "DEBTOR-041-H008",
+        "amount": 80000,
+        "due_date": "2025-02-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 50
+      },
+      {
+        "invoice_id": "DEBTOR-041-H009",
+        "amount": 109000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-05-30",
+        "status": "paid_late",
+        "days_late": 72
+      },
+      {
+        "invoice_id": "DEBTOR-041-H010",
+        "amount": 99000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-06-08",
+        "status": "paid_late",
+        "days_late": 51
+      },
+      {
+        "invoice_id": "DEBTOR-041-H011",
+        "amount": 106000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-07-29",
+        "status": "paid_late",
+        "days_late": 72
+      },
+      {
+        "invoice_id": "DEBTOR-041-H012",
+        "amount": 67000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-08-15",
+        "status": "paid_late",
+        "days_late": 59
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-042",
+    "company_name": "Saxena & Sons",
+    "contact_name": "Kashvi Edwin",
+    "contact_email": "saxena42@saxena.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-042-H001",
+        "amount": 104000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-07-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-042-H002",
+        "amount": 101000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-10-19",
+        "status": "paid_late",
+        "days_late": 59
+      },
+      {
+        "invoice_id": "DEBTOR-042-H003",
+        "amount": 53000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-11-23",
+        "status": "paid_late",
+        "days_late": 64
+      },
+      {
+        "invoice_id": "DEBTOR-042-H004",
+        "amount": 84000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-12-27",
+        "status": "paid_late",
+        "days_late": 68
+      },
+      {
+        "invoice_id": "DEBTOR-042-H005",
+        "amount": 58000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-17",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-042-H006",
+        "amount": 68000,
+        "due_date": "2024-12-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 68
+      },
+      {
+        "invoice_id": "DEBTOR-042-H007",
+        "amount": 107000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-042-H008",
+        "amount": 81000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-04-09",
+        "status": "paid_late",
+        "days_late": 51
+      },
+      {
+        "invoice_id": "DEBTOR-042-H009",
+        "amount": 102000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-05-25",
+        "status": "paid_late",
+        "days_late": 67
+      },
+      {
+        "invoice_id": "DEBTOR-042-H010",
+        "amount": 60000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-06-08",
+        "status": "paid_late",
+        "days_late": 51
+      },
+      {
+        "invoice_id": "DEBTOR-042-H011",
+        "amount": 80000,
+        "due_date": "2025-05-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 68
+      },
+      {
+        "invoice_id": "DEBTOR-042-H012",
+        "amount": 67000,
+        "due_date": "2025-06-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 70
+      },
+      {
+        "invoice_id": "DEBTOR-042-H013",
+        "amount": 97000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-09-11",
+        "status": "paid_late",
+        "days_late": 56
+      },
+      {
+        "invoice_id": "DEBTOR-042-H014",
+        "amount": 71000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-09-04",
+        "status": "paid_late",
+        "days_late": 19
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-043",
+    "company_name": "Roy Corporation",
+    "contact_name": "Ekiya Suresh",
+    "contact_email": "roy43@roy.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-043-H001",
+        "amount": 220000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-10-05",
+        "status": "paid_late",
+        "days_late": 75
+      },
+      {
+        "invoice_id": "DEBTOR-043-H002",
+        "amount": 210000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-11-06",
+        "status": "paid_late",
+        "days_late": 77
+      },
+      {
+        "invoice_id": "DEBTOR-043-H003",
+        "amount": 203000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-043-H004",
+        "amount": 168000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-12-30",
+        "status": "paid_late",
+        "days_late": 71
+      },
+      {
+        "invoice_id": "DEBTOR-043-H005",
+        "amount": 149000,
+        "due_date": "2024-11-19",
+        "paid_date": "2025-01-31",
+        "status": "paid_late",
+        "days_late": 73
+      },
+      {
+        "invoice_id": "DEBTOR-043-H006",
+        "amount": 244000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-03-10",
+        "status": "paid_late",
+        "days_late": 81
+      },
+      {
+        "invoice_id": "DEBTOR-043-H007",
+        "amount": 182000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-04-09",
+        "status": "paid_late",
+        "days_late": 81
+      },
+      {
+        "invoice_id": "DEBTOR-043-H008",
+        "amount": 179000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-13",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-043-H009",
+        "amount": 169000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-05-29",
+        "status": "paid_late",
+        "days_late": 71
+      },
+      {
+        "invoice_id": "DEBTOR-043-H010",
+        "amount": 211000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-07-01",
+        "status": "paid_late",
+        "days_late": 74
+      },
+      {
+        "invoice_id": "DEBTOR-043-H011",
+        "amount": 238000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-043-H012",
+        "amount": 224000,
+        "due_date": "2025-06-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 70
+      },
+      {
+        "invoice_id": "DEBTOR-043-H013",
+        "amount": 227000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-10-09",
+        "status": "paid_late",
+        "days_late": 84
+      },
+      {
+        "invoice_id": "DEBTOR-043-H014",
+        "amount": 219000,
+        "due_date": "2025-08-16",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 78
+      },
+      {
+        "invoice_id": "DEBTOR-043-H015",
+        "amount": 208000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-11-22",
+        "status": "paid_late",
+        "days_late": 68
+      },
+      {
+        "invoice_id": "DEBTOR-043-H016",
+        "amount": 197000,
+        "due_date": "2025-10-15",
+        "paid_date": "2026-01-08",
+        "status": "paid_late",
+        "days_late": 85
+      },
+      {
+        "invoice_id": "DEBTOR-043-H017",
+        "amount": 222000,
+        "due_date": "2025-11-14",
+        "paid_date": "2026-02-14",
+        "status": "paid_late",
+        "days_late": 92
+      },
+      {
+        "invoice_id": "DEBTOR-043-H018",
+        "amount": 188000,
+        "due_date": "2025-12-14",
+        "paid_date": "2026-03-24",
+        "status": "paid_late",
+        "days_late": 100
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-044",
+    "company_name": "Goel & Sons",
+    "contact_name": "Isaac Patil",
+    "contact_email": "goel44@goel.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-044-H001",
+        "amount": 85000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-10-02",
+        "status": "paid_late",
+        "days_late": 72
+      },
+      {
+        "invoice_id": "DEBTOR-044-H002",
+        "amount": 108000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-10-21",
+        "status": "paid_late",
+        "days_late": 61
+      },
+      {
+        "invoice_id": "DEBTOR-044-H003",
+        "amount": 108000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-12-01",
+        "status": "paid_late",
+        "days_late": 72
+      },
+      {
+        "invoice_id": "DEBTOR-044-H004",
+        "amount": 121000,
+        "due_date": "2024-10-20",
+        "paid_date": "2025-01-11",
+        "status": "paid_late",
+        "days_late": 83
+      },
+      {
+        "invoice_id": "DEBTOR-044-H005",
+        "amount": 100000,
+        "due_date": "2024-11-19",
+        "paid_date": "2025-02-07",
+        "status": "paid_late",
+        "days_late": 80
+      },
+      {
+        "invoice_id": "DEBTOR-044-H006",
+        "amount": 86000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-02-28",
+        "status": "paid_late",
+        "days_late": 71
+      },
+      {
+        "invoice_id": "DEBTOR-044-H007",
+        "amount": 122000,
+        "due_date": "2025-01-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 83
+      },
+      {
+        "invoice_id": "DEBTOR-044-H008",
+        "amount": 84000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-05-09",
+        "status": "paid_late",
+        "days_late": 81
+      },
+      {
+        "invoice_id": "DEBTOR-044-H009",
+        "amount": 115000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-06-03",
+        "status": "paid_late",
+        "days_late": 76
+      },
+      {
+        "invoice_id": "DEBTOR-044-H010",
+        "amount": 117000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-06-17",
+        "status": "paid_late",
+        "days_late": 60
+      },
+      {
+        "invoice_id": "DEBTOR-044-H011",
+        "amount": 83000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-07-26",
+        "status": "paid_late",
+        "days_late": 69
+      },
+      {
+        "invoice_id": "DEBTOR-044-H012",
+        "amount": 103000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-08-17",
+        "status": "paid_late",
+        "days_late": 61
+      },
+      {
+        "invoice_id": "DEBTOR-044-H013",
+        "amount": 101000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-10-13",
+        "status": "paid_late",
+        "days_late": 88
+      },
+      {
+        "invoice_id": "DEBTOR-044-H014",
+        "amount": 94000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-11-10",
+        "status": "paid_late",
+        "days_late": 86
+      },
+      {
+        "invoice_id": "DEBTOR-044-H015",
+        "amount": 101000,
+        "due_date": "2025-09-15",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 61
+      },
+      {
+        "invoice_id": "DEBTOR-044-H016",
+        "amount": 81000,
+        "due_date": "2025-10-15",
+        "paid_date": "2026-01-09",
+        "status": "paid_late",
+        "days_late": 86
+      },
+      {
+        "invoice_id": "DEBTOR-044-H017",
+        "amount": 71000,
+        "due_date": "2025-11-14",
+        "paid_date": "2026-01-14",
+        "status": "paid_late",
+        "days_late": 61
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-045",
+    "company_name": "Arora & Co",
+    "contact_name": "Wriddhish Bhardwaj",
+    "contact_email": "arora45@arora.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-045-H001",
+        "amount": 111000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-09-24",
+        "status": "paid_late",
+        "days_late": 64
+      },
+      {
+        "invoice_id": "DEBTOR-045-H002",
+        "amount": 119000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-11-13",
+        "status": "paid_late",
+        "days_late": 84
+      },
+      {
+        "invoice_id": "DEBTOR-045-H003",
+        "amount": 137000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-20",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-045-H004",
+        "amount": 87000,
+        "due_date": "2024-10-20",
+        "paid_date": "2025-01-11",
+        "status": "paid_late",
+        "days_late": 83
+      },
+      {
+        "invoice_id": "DEBTOR-045-H005",
+        "amount": 156000,
+        "due_date": "2024-11-19",
+        "paid_date": "2024-11-18",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-045-H006",
+        "amount": 142000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-03-22",
+        "status": "paid_late",
+        "days_late": 93
+      },
+      {
+        "invoice_id": "DEBTOR-045-H007",
+        "amount": 135000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-04-19",
+        "status": "paid_late",
+        "days_late": 91
+      },
+      {
+        "invoice_id": "DEBTOR-045-H008",
+        "amount": 101000,
+        "due_date": "2025-02-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 71
+      },
+      {
+        "invoice_id": "DEBTOR-045-H009",
+        "amount": 124000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-05-23",
+        "status": "paid_late",
+        "days_late": 65
+      },
+      {
+        "invoice_id": "DEBTOR-045-H010",
+        "amount": 130000,
+        "due_date": "2025-04-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 82
+      },
+      {
+        "invoice_id": "DEBTOR-045-H011",
+        "amount": 101000,
+        "due_date": "2025-05-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 77
+      },
+      {
+        "invoice_id": "DEBTOR-045-H012",
+        "amount": 100000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-09-09",
+        "status": "paid_late",
+        "days_late": 84
+      },
+      {
+        "invoice_id": "DEBTOR-045-H013",
+        "amount": 87000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-10-16",
+        "status": "paid_late",
+        "days_late": 91
+      },
+      {
+        "invoice_id": "DEBTOR-045-H014",
+        "amount": 129000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-10-26",
+        "status": "paid_late",
+        "days_late": 71
+      },
+      {
+        "invoice_id": "DEBTOR-045-H015",
+        "amount": 93000,
+        "due_date": "2025-09-15",
+        "paid_date": "2025-11-25",
+        "status": "paid_late",
+        "days_late": 71
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-046",
+    "company_name": "Desai Industries",
+    "contact_name": "Farhan Chada",
+    "contact_email": "desai46@desai.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-046-H001",
+        "amount": 187000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-10-07",
+        "status": "paid_late",
+        "days_late": 77
+      },
+      {
+        "invoice_id": "DEBTOR-046-H002",
+        "amount": 224000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-11-06",
+        "status": "paid_late",
+        "days_late": 77
+      },
+      {
+        "invoice_id": "DEBTOR-046-H003",
+        "amount": 125000,
+        "due_date": "2024-09-20",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 99
+      },
+      {
+        "invoice_id": "DEBTOR-046-H004",
+        "amount": 166000,
+        "due_date": "2024-10-20",
+        "paid_date": "2025-01-02",
+        "status": "paid_late",
+        "days_late": 74
+      },
+      {
+        "invoice_id": "DEBTOR-046-H005",
+        "amount": 195000,
+        "due_date": "2024-11-19",
+        "paid_date": "2025-02-12",
+        "status": "paid_late",
+        "days_late": 85
+      },
+      {
+        "invoice_id": "DEBTOR-046-H006",
+        "amount": 123000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-02-28",
+        "status": "paid_late",
+        "days_late": 71
+      },
+      {
+        "invoice_id": "DEBTOR-046-H007",
+        "amount": 128000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-04-11",
+        "status": "paid_late",
+        "days_late": 83
+      },
+      {
+        "invoice_id": "DEBTOR-046-H008",
+        "amount": 221000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-05-11",
+        "status": "paid_late",
+        "days_late": 83
+      },
+      {
+        "invoice_id": "DEBTOR-046-H009",
+        "amount": 193000,
+        "due_date": "2025-03-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 87
+      },
+      {
+        "invoice_id": "DEBTOR-046-H010",
+        "amount": 204000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-07-09",
+        "status": "paid_late",
+        "days_late": 82
+      },
+      {
+        "invoice_id": "DEBTOR-046-H011",
+        "amount": 146000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-08-04",
+        "status": "paid_late",
+        "days_late": 78
+      },
+      {
+        "invoice_id": "DEBTOR-046-H012",
+        "amount": 145000,
+        "due_date": "2025-06-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 80
+      },
+      {
+        "invoice_id": "DEBTOR-046-H013",
+        "amount": 234000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-09-27",
+        "status": "paid_late",
+        "days_late": 72
+      },
+      {
+        "invoice_id": "DEBTOR-046-H014",
+        "amount": 157000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-11-09",
+        "status": "paid_late",
+        "days_late": 85
+      },
+      {
+        "invoice_id": "DEBTOR-046-H015",
+        "amount": 234000,
+        "due_date": "2025-09-15",
+        "paid_date": "2026-02-23",
+        "status": "paid_late",
+        "days_late": 161
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-047",
+    "company_name": "Malhotra Enterprises",
+    "contact_name": "Ekapad Walia",
+    "contact_email": "malhotra47@malhotra.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-047-H001",
+        "amount": 95000,
+        "due_date": "2024-07-22",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 66
+      },
+      {
+        "invoice_id": "DEBTOR-047-H002",
+        "amount": 97000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-08-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-047-H003",
+        "amount": 87000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-09-19",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-047-H004",
+        "amount": 72000,
+        "due_date": "2024-10-20",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 64
+      },
+      {
+        "invoice_id": "DEBTOR-047-H005",
+        "amount": 75000,
+        "due_date": "2024-11-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 65
+      },
+      {
+        "invoice_id": "DEBTOR-047-H006",
+        "amount": 96000,
+        "due_date": "2024-12-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 55
+      },
+      {
+        "invoice_id": "DEBTOR-047-H007",
+        "amount": 76000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-01-14",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-047-H008",
+        "amount": 102000,
+        "due_date": "2025-02-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 52
+      },
+      {
+        "invoice_id": "DEBTOR-047-H009",
+        "amount": 104000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-05-12",
+        "status": "paid_late",
+        "days_late": 54
+      },
+      {
+        "invoice_id": "DEBTOR-047-H010",
+        "amount": 76000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-06-05",
+        "status": "paid_late",
+        "days_late": 48
+      },
+      {
+        "invoice_id": "DEBTOR-047-H011",
+        "amount": 113000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-07-24",
+        "status": "paid_late",
+        "days_late": 67
+      },
+      {
+        "invoice_id": "DEBTOR-047-H012",
+        "amount": 122000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-08-21",
+        "status": "paid_late",
+        "days_late": 65
+      },
+      {
+        "invoice_id": "DEBTOR-047-H013",
+        "amount": 101000,
+        "due_date": "2025-07-17",
+        "paid_date": "2025-09-08",
+        "status": "paid_late",
+        "days_late": 53
+      },
+      {
+        "invoice_id": "DEBTOR-047-H014",
+        "amount": 91000,
+        "due_date": "2025-08-16",
+        "paid_date": "2025-08-15",
+        "status": "paid_on_time"
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-048",
+    "company_name": "Roy & Sons",
+    "contact_name": "Kabir Soman",
+    "contact_email": "roy48@roy.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-048-H001",
+        "amount": 216000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-09-23",
+        "status": "paid_late",
+        "days_late": 63
+      },
+      {
+        "invoice_id": "DEBTOR-048-H002",
+        "amount": 229000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-11-08",
+        "status": "paid_late",
+        "days_late": 79
+      },
+      {
+        "invoice_id": "DEBTOR-048-H003",
+        "amount": 129000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-12-04",
+        "status": "paid_late",
+        "days_late": 75
+      },
+      {
+        "invoice_id": "DEBTOR-048-H004",
+        "amount": 128000,
+        "due_date": "2024-10-20",
+        "paid_date": "2025-01-11",
+        "status": "paid_late",
+        "days_late": 83
+      },
+      {
+        "invoice_id": "DEBTOR-048-H005",
+        "amount": 134000,
+        "due_date": "2024-11-19",
+        "paid_date": "2025-02-11",
+        "status": "paid_late",
+        "days_late": 84
+      },
+      {
+        "invoice_id": "DEBTOR-048-H006",
+        "amount": 140000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-03-11",
+        "status": "paid_late",
+        "days_late": 82
+      },
+      {
+        "invoice_id": "DEBTOR-048-H007",
+        "amount": 181000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-04-06",
+        "status": "paid_late",
+        "days_late": 78
+      },
+      {
+        "invoice_id": "DEBTOR-048-H008",
+        "amount": 217000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-05-06",
+        "status": "paid_late",
+        "days_late": 78
+      },
+      {
+        "invoice_id": "DEBTOR-048-H009",
+        "amount": 149000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-05-21",
+        "status": "paid_late",
+        "days_late": 63
+      },
+      {
+        "invoice_id": "DEBTOR-048-H010",
+        "amount": 165000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-07-07",
+        "status": "paid_late",
+        "days_late": 80
+      },
+      {
+        "invoice_id": "DEBTOR-048-H011",
+        "amount": 162000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-048-H012",
+        "amount": 173000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-08-19",
+        "status": "paid_late",
+        "days_late": 63
+      },
+      {
+        "invoice_id": "DEBTOR-048-H013",
+        "amount": 146000,
+        "due_date": "2025-07-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 80
+      },
+      {
+        "invoice_id": "DEBTOR-048-H014",
+        "amount": 203000,
+        "due_date": "2025-08-16",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 72
+      },
+      {
+        "invoice_id": "DEBTOR-048-H015",
+        "amount": 153000,
+        "due_date": "2025-09-15",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 94
+      },
+      {
+        "invoice_id": "DEBTOR-048-H016",
+        "amount": 219000,
+        "due_date": "2025-10-15",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 64
+      },
+      {
+        "invoice_id": "DEBTOR-048-H017",
+        "amount": 126000,
+        "due_date": "2025-11-14",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 89
+      },
+      {
+        "invoice_id": "DEBTOR-048-H018",
+        "amount": 239000,
+        "due_date": "2025-12-14",
+        "paid_date": "2026-04-06",
+        "status": "paid_late",
+        "days_late": 113
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-049",
+    "company_name": "Modi Pvt Ltd",
+    "contact_name": "Alka Wable",
+    "contact_email": "modi49@modi.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-049-H001",
+        "amount": 92000,
+        "due_date": "2024-07-22",
+        "paid_date": "2024-09-20",
+        "status": "paid_late",
+        "days_late": 60
+      },
+      {
+        "invoice_id": "DEBTOR-049-H002",
+        "amount": 64000,
+        "due_date": "2024-08-21",
+        "paid_date": "2024-11-07",
+        "status": "paid_late",
+        "days_late": 78
+      },
+      {
+        "invoice_id": "DEBTOR-049-H003",
+        "amount": 103000,
+        "due_date": "2024-09-20",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 73
+      },
+      {
+        "invoice_id": "DEBTOR-049-H004",
+        "amount": 55000,
+        "due_date": "2024-10-20",
+        "paid_date": "2024-12-28",
+        "status": "paid_late",
+        "days_late": 69
+      },
+      {
+        "invoice_id": "DEBTOR-049-H005",
+        "amount": 66000,
+        "due_date": "2024-11-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 61
+      },
+      {
+        "invoice_id": "DEBTOR-049-H006",
+        "amount": 62000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-03-08",
+        "status": "paid_late",
+        "days_late": 79
+      },
+      {
+        "invoice_id": "DEBTOR-049-H007",
+        "amount": 102000,
+        "due_date": "2025-01-18",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 72
+      },
+      {
+        "invoice_id": "DEBTOR-049-H008",
+        "amount": 102000,
+        "due_date": "2025-02-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 62
+      },
+      {
+        "invoice_id": "DEBTOR-049-H009",
+        "amount": 108000,
+        "due_date": "2025-03-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 54
+      }
+    ]
+  },
+  {
+    "debtor_id": "DEBTOR-050",
+    "company_name": "Desai Distributors",
+    "contact_name": "Siddharth Zacharia",
+    "contact_email": "desai50@desai.in",
+    "historical_invoices": [
+      {
+        "invoice_id": "DEBTOR-050-H001",
+        "amount": 106000,
+        "due_date": "2024-07-22",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 88
+      },
+      {
+        "invoice_id": "DEBTOR-050-H002",
+        "amount": 102000,
+        "due_date": "2024-08-21",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 69
+      },
+      {
+        "invoice_id": "DEBTOR-050-H003",
+        "amount": 87000,
+        "due_date": "2024-09-20",
+        "paid_date": "2024-12-07",
+        "status": "paid_late",
+        "days_late": 78
+      },
+      {
+        "invoice_id": "DEBTOR-050-H004",
+        "amount": 104000,
+        "due_date": "2024-10-20",
+        "paid_date": "2025-01-10",
+        "status": "paid_late",
+        "days_late": 82
+      },
+      {
+        "invoice_id": "DEBTOR-050-H005",
+        "amount": 114000,
+        "due_date": "2024-11-19",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 72
+      },
+      {
+        "invoice_id": "DEBTOR-050-H006",
+        "amount": 149000,
+        "due_date": "2024-12-19",
+        "paid_date": "2025-02-23",
+        "status": "paid_late",
+        "days_late": 66
+      },
+      {
+        "invoice_id": "DEBTOR-050-H007",
+        "amount": 94000,
+        "due_date": "2025-01-18",
+        "paid_date": "2025-04-03",
+        "status": "paid_late",
+        "days_late": 75
+      },
+      {
+        "invoice_id": "DEBTOR-050-H008",
+        "amount": 114000,
+        "due_date": "2025-02-17",
+        "paid_date": "2025-02-15",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-050-H009",
+        "amount": 90000,
+        "due_date": "2025-03-19",
+        "paid_date": "2025-05-28",
+        "status": "paid_late",
+        "days_late": 70
+      },
+      {
+        "invoice_id": "DEBTOR-050-H010",
+        "amount": 81000,
+        "due_date": "2025-04-18",
+        "paid_date": "2025-06-21",
+        "status": "paid_late",
+        "days_late": 64
+      },
+      {
+        "invoice_id": "DEBTOR-050-H011",
+        "amount": 107000,
+        "due_date": "2025-05-18",
+        "paid_date": "2025-05-16",
+        "status": "paid_on_time"
+      },
+      {
+        "invoice_id": "DEBTOR-050-H012",
+        "amount": 147000,
+        "due_date": "2025-06-17",
+        "paid_date": "2025-09-01",
+        "status": "paid_late",
+        "days_late": 76
+      },
+      {
+        "invoice_id": "DEBTOR-050-H013",
+        "amount": 89000,
+        "due_date": "2025-07-17",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 70
+      },
+      {
+        "invoice_id": "DEBTOR-050-H014",
+        "amount": 88000,
+        "due_date": "2025-08-16",
+        "paid_date": null,
+        "status": "disputed",
+        "days_late": 74
+      }
+    ]
+  }
+]

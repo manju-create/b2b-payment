@@ -1,0 +1,16 @@
+{
+  "total_invoices": 50,
+  "total_outstanding_amount": 10030000,
+  "tier_breakdown": {
+    "A": 10,
+    "B": 15,
+    "C": 15,
+    "D": 10
+  },
+  "outcome_distribution": {
+    "clean_settlement": 30,
+    "dispute": 12,
+    "repeat_extension": 8
+  },
+  "generated_at": "2025-08-26"
+}

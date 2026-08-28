@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RecoverFlow — Merchant Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #F1F5F9; color: #1E293B; min-height: 100vh; }
+
+/* Header */
+.header { background: #0F172A; padding: 0 28px; height: 60px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+.header-logo { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+.header-tag  { background: #334155; color: #94A3B8; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.3px; }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.btn-start { background: #2563EB; color: #fff; border: none; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.15s; display: flex; align-items: center; gap: 6px; }
+.btn-start:hover    { background: #1D4ED8; }
+.btn-start:disabled { background: #475569; cursor: not-allowed; }
+.refresh-badge { font-size: 12px; color: #64748B; display: flex; align-items: center; gap-5px; gap: 5px; }
+.pulse-dot { width: 7px; height: 7px; background: #22C55E; border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* Main grid */
+.main { padding: 24px 28px; max-width: 1600px; margin: 0 auto; display: grid; grid-template-columns: 1fr 280px; gap: 24px; }
+.content { display: flex; flex-direction: column; gap: 20px; }
+.sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+/* Cards */
+.card { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; margin-bottom: 14px; }
+
+/* Metric bar */
+.metric-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.metric { background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.metric-value { font-size: 26px; font-weight: 800; letter-spacing: -1px; color: #1E293B; line-height: 1; margin-bottom: 6px; }
+.metric-label { font-size: 12px; color: #64748B; font-weight: 500; }
+.metric-value.green  { color: #16A34A; }
+.metric-value.blue   { color: #2563EB; }
+.metric-value.yellow { color: #D97706; }
+.metric-value.red    { color: #DC2626; }
+
+/* Progress bar */
+.progress-section { background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.progress-header  { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.progress-title   { font-size: 13px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; }
+.progress-pct     { font-size: 16px; font-weight: 700; color: #16A34A; }
+.progress-bar     { height: 10px; background: #F1F5F9; border-radius: 999px; overflow: hidden; }
+.progress-fill    { height: 100%; background: linear-gradient(90deg, #16A34A, #22C55E); border-radius: 999px; transition: width 0.6s ease; }
+
+/* Status badges */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge.settled          { background: #DCFCE7; color: #166534; }
+.badge.partially_settled{ background: #D1FAE5; color: #065F46; }
+.badge.awaiting_payment { background: #E0E7FF; color: #3730A3; }
+.badge.disputed         { background: #FEF9C3; color: #854D0E; }
+.badge.active           { background: #DBEAFE; color: #1E40AF; }
+.badge.pending          { background: #F1F5F9; color: #64748B; }
+.badge.escalated        { background: #FEE2E2; color: #991B1B; }
+.tier-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+.tier-A { background: #DCFCE7; color: #166534; }
+.tier-B { background: #DBEAFE; color: #1E40AF; }
+.tier-C { background: #FEF9C3; color: #854D0E; }
+.tier-D { background: #FEE2E2; color: #991B1B; }
+
+/* Table */
+.table-wrap { overflow-x: auto; border-radius: 14px; }
+table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); font-size: 13px; }
+thead tr { background: #F8FAFC; }
+th { padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #64748B; white-space: nowrap; cursor: pointer; user-select: none; }
+th:hover { color: #2563EB; }
+td { padding: 11px 14px; border-top: 1px solid #F1F5F9; color: #334155; white-space: nowrap; }
+tr:hover td { background: #F8FAFC; }
+.action-link { color: #2563EB; text-decoration: none; font-weight: 600; font-size: 12px; margin-right: 8px; }
+.action-link:hover { text-decoration: underline; }
+
+/* Deferred table */
+.sim-btn { background: #F1F5F9; border: none; border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; color: #334155; font-family: 'Inter', sans-serif; transition: background 0.12s; }
+.sim-btn:hover { background: #E2E8F0; }
+
+/* Tier breakdown */
+.tier-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.tier-row:last-child { margin-bottom: 0; }
+.tier-name  { width: 50px; font-size: 12px; font-weight: 700; }
+.tier-bar   { flex: 1; height: 8px; background: #F1F5F9; border-radius: 999px; overflow: hidden; }
+.tier-fill  { height: 100%; border-radius: 999px; }
+.tier-count { font-size: 12px; color: #64748B; width: 30px; text-align: right; }
+
+/* Trust events feed */
+.event-item { display: flex; gap: 8px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #F1F5F9; font-size: 12px; line-height: 1.4; color: #334155; }
+.event-item:last-child { border-bottom: none; }
+.event-icon { font-size: 14px; flex-shrink: 0; }
+.no-events  { font-size: 12px; color: #94A3B8; font-style: italic; }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 16px; padding: 24px; width: 90%; max-width: 480px; max-height: 80vh; overflow-y: auto; }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #1E293B; }
+.modal-body  { font-size: 13px; color: #475569; white-space: pre-wrap; line-height: 1.6; max-height: 50vh; overflow-y: auto; }
+.modal-close { float: right; background: none; border: none; font-size: 18px; cursor: pointer; color: #64748B; }
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.btn-ontime { flex: 1; padding: 10px; background: #16A34A; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+.btn-late   { flex: 1; padding: 10px; background: #F59E0B; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+
+/* Toast */
+.toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 300; }
+.toast { background: #1E293B; color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: slideIn 0.3s ease; max-width: 360px; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  .metric-bar { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <span class="header-logo">🔄 RecoverFlow</span>
+  <span class="header-tag">Merchant Dashboard</span>
+  <div class="header-right">
+    <div class="refresh-badge"><div class="pulse-dot"></div> Live • refreshes every 5s</div>
+    <button class="btn-start" id="start-btn" onclick="startBatch()">▶ Start Batch</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="content">
+
+    <!-- Metric bar -->
+    <div class="metric-bar">
+      <div class="metric"><div class="metric-value" id="m-total">—</div><div class="metric-label">Total Outstanding</div></div>
+      <div class="metric"><div class="metric-value green" id="m-recovered">—</div><div class="metric-label">Recovered</div></div>
+      <div class="metric"><div class="metric-value blue" id="m-settled">— / —</div><div class="metric-label">Settled</div></div>
+      <div class="metric"><div class="metric-value yellow" id="m-disputed">—</div><div class="metric-label">Disputed</div></div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-section">
+      <div class="progress-header">
+        <span class="progress-title">Recovery Progress</span>
+        <span class="progress-pct" id="prog-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+
+    <!-- Invoice table -->
+    <div class="table-wrap">
+      <table id="inv-table">
+        <thead>
+          <tr>
+            <th onclick="sortTable('invoice_id')">Invoice ⇅</th>
+            <th onclick="sortTable('company_name')">Debtor ⇅</th>
+            <th onclick="sortTable('invoice_amount_paise')">Amount ⇅</th>
+            <th onclick="sortTable('dpd')">DPD ⇅</th>
+            <th onclick="sortTable('tier')">Tier ⇅</th>
+            <th onclick="sortTable('score')">Score ⇅</th>
+            <th onclick="sortTable('status')">Status ⇅</th>
+            <th onclick="sortTable('recovered_paise')">Recovered ⇅</th>
+            <th>Plan</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="inv-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Deferred payments -->
+    <div class="card">
+      <div class="card-title">📅 Scheduled Deferred Payments</div>
+      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <thead><tr style="background:#F8FAFC;">
+          <th style="padding:8px 12px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Invoice</th>
+          <th style="padding:8px 12px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Debtor</th>
+          <th style="padding:8px 12px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Amount Due</th>
+          <th style="padding:8px 12px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Due Date</th>
+          <th style="padding:8px 12px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Status</th>
+          <th style="padding:8px 12px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Action</th>
+        </tr></thead>
+        <tbody id="deferred-tbody"></tbody>
+      </table>
+      <div id="no-deferred" style="font-size:13px; color:#94A3B8; font-style:italic; padding:10px 12px;">No deferred payments scheduled yet.</div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">Tier Breakdown</div>
+      <div id="tier-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔔 Trust Score Events</div>
+      <div id="event-feed"><div class="no-events">No events yet.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Audit modal -->
+<div class="modal-overlay" id="audit-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('audit-modal')">✕</button>
+    <div class="modal-title" id="audit-title">Audit Log</div>
+    <div class="modal-body" id="audit-body"></div>
+  </div>
+</div>
+
+<!-- Simulate modal -->
+<div class="modal-overlay" id="sim-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('sim-modal')">✕</button>
+    <div class="modal-title" id="sim-title">Simulate Deferred Payment</div>
+    <div class="modal-body">Mark this deferred payment as received. This updates the debtor's trust score.</div>
+    <div class="modal-actions">
+      <button class="btn-ontime" onclick="simulatePayment(true)">✅ Paid On Time</button>
+      <button class="btn-late"   onclick="simulatePayment(false)">⚠️ Paid Late</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ── Helpers ──────────────────────────────────────────────────────────────────
+let invoicesData = [];
+let sortKey = "invoice_id";
+let sortAsc = true;
+let simInvoiceId = null;
+let totalOutstandingPaise = 0;
+
+function fmtRupees(paise) {
+  if (!paise) return "₹0";
+  const r = Math.floor(paise / 100);
+  let s = String(r);
+  if (s.length <= 3) return "₹" + s;
+  let result = s.slice(-3); s = s.slice(0, -3);
+  while (s.length > 2) { result = s.slice(-2) + "," + result; s = s.slice(0, -2); }
+  return "₹" + s + "," + result;
+}
+
+function statusBadge(st) {
+  const labels = { settled: "✅ Settled", partially_settled: "🔄 Part. Settled",
+    awaiting_payment: "⏳ Awaiting Payment",
+    disputed: "⚠️ Disputed", active: "🔵 Active", pending: "⏳ Pending", escalated: "⬆️ Escalated" };
+  return `<span class="badge ${st}">${labels[st] || st}</span>`;
+}
+
+function tierBadge(t) {
+  return `<span class="tier-badge tier-${t}">${t}</span>`;
+}
+
+function toast(msg) {
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.textContent = msg;
+  document.getElementById("toast-container").appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function openModal(id) { document.getElementById(id).classList.add("show"); }
+function closeModal(id) { document.getElementById(id).classList.remove("show"); }
+
+// ── Batch start ──────────────────────────────────────────────────────────────
+async function startBatch() {
+  const btn = document.getElementById("start-btn");
+  btn.disabled = true; btn.textContent = "⏳ Loading…";
+  try {
+    const res = await fetch("/api/batch/start", { method: "POST" });
+    const data = await res.json();
+    totalOutstandingPaise = data.total_outstanding_paise || 0;
+    btn.textContent = "✅ Batch loaded";
+    toast(`✅ ${data.total} invoices loaded`);
+    await refreshStatus();
+  } catch (e) { btn.disabled = false; btn.textContent = "▶ Start Batch"; toast("❌ Failed to start batch"); }
+}
+
+// ── Refresh status ───────────────────────────────────────────────────────────
+async function refreshStatus() {
+  try {
+    const [statusRes, deferredRes, eventsRes] = await Promise.all([
+      fetch("/api/batch/status"), fetch("/api/deferred/status"), fetch("/api/tier-events")
+    ]);
+    const status   = await statusRes.json();
+    const deferred = await deferredRes.json();
+    const events   = await eventsRes.json();
+
+    updateMetrics(status);
+    updateTable(status.invoices || []);
+    updateDeferred(deferred.deferred_payments || []);
+    updateTierBars(status);
+    updateEventFeed(events.events || []);
+  } catch (e) { console.warn("Refresh failed", e); }
+}
+
+function updateMetrics(d) {
+  const total = totalOutstandingPaise || 0;
+  const recovered = d.total_recovered_paise || 0;
+  const pct = total > 0 ? ((recovered / total) * 100).toFixed(1) : 0;
+  document.getElementById("m-total").textContent    = fmtRupees(total);
+  document.getElementById("m-recovered").textContent= fmtRupees(recovered);
+  document.getElementById("m-settled").textContent  = `${(d.settled||0) + (d.partially_settled||0)} / ${d.total_invoices||0}`;
+  document.getElementById("m-disputed").textContent = d.disputed || 0;
+  document.getElementById("prog-pct").textContent   = pct + "%";
+  document.getElementById("prog-fill").style.width  = Math.min(pct, 100) + "%";
+}
+
+function updateTable(invoices) {
+  invoicesData = invoices;
+  renderTable();
+}
+
+function sortTable(key) {
+  if (sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = true; }
+  renderTable();
+}
+
+function renderTable() {
+  const sorted = [...invoicesData].sort((a, b) => {
+    const va = a[sortKey] ?? "", vb = b[sortKey] ?? "";
+    return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+  });
+  const tbody = document.getElementById("inv-tbody");
+  tbody.innerHTML = sorted.map(r => `
+    <tr>
+      <td><code style="font-size:12px;">${r.invoice_id}</code></td>
+      <td>
+        <div style="font-weight:600; font-size:13px;">${r.company_name}</div>
+        <div style="font-size:11px; color:#94A3B8;">${r.debtor_name}</div>
+      </td>
+      <td>${fmtRupees(r.invoice_amount_paise)}</td>
+      <td><span style="color:${r.dpd>60?'#DC2626':'#D97706'};font-weight:600;">${r.dpd}d</span></td>
+      <td>${tierBadge(r.tier)}</td>
+      <td style="font-weight:600;">${(r.score||0).toFixed(1)}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>${r.recovered_paise ? fmtRupees(r.recovered_paise) : "<span style='color:#94A3B8'>—</span>"}</td>
+      <td style="max-width:180px; font-size:12px; color:#334155;">${r.plan_summary || "<span style='color:#94A3B8'>—</span>"}</td>
+      <td>
+        <a class="action-link" href="/chat/${r.invoice_id}" target="_blank">View Chat</a>
+        <a class="action-link" href="#" onclick="showAudit('${r.invoice_id}'); return false;">Audit</a>
+      </td>
+    </tr>`).join("");
+}
+
+function updateDeferred(payments) {
+  const tbody = document.getElementById("deferred-tbody");
+  const noEl  = document.getElementById("no-deferred");
+  if (!payments.length) { tbody.innerHTML = ""; noEl.style.display = "block"; return; }
+  noEl.style.display = "none";
+  tbody.innerHTML = payments.map(([iid, p]) => `
+    <tr style="border-top:1px solid #F1F5F9;">
+      <td style="padding:9px 12px;"><code style="font-size:12px;">${iid}</code></td>
+      <td style="padding:9px 12px;">${p.company_name || p.debtor_name}</td>
+      <td style="padding:9px 12px; font-weight:600;">${p.deferred_display}</td>
+      <td style="padding:9px 12px; color:#D97706;">${p.due_date}</td>
+      <td style="padding:9px 12px;">${statusBadge(p.status === "pending" ? "pending" : p.status === "paid_on_time" ? "settled" : "disputed")}</td>
+      <td style="padding:9px 12px;">
+        ${p.status === "pending"
+          ? `<button class="sim-btn" onclick="openSimModal('${iid}')">Simulate Payment</button>`
+          : `<span style="font-size:12px; color:#94A3B8;">${p.status}</span>`}
+      </td>
+    </tr>`).join("");
+}
+
+function updateTierBars(d) {
+  const total = d.total_invoices || 1;
+  const tiers = [
+    { t: "A", col: "#16A34A", count: 0 },
+    { t: "B", col: "#2563EB", count: 0 },
+    { t: "C", col: "#D97706", count: 0 },
+    { t: "D", col: "#DC2626", count: 0 },
+  ];
+  (d.invoices || []).forEach(inv => {
+    const tr = tiers.find(x => x.t === inv.tier);
+    if (tr) tr.count++;
+  });
+  document.getElementById("tier-bars").innerHTML = tiers.map(tr => `
+    <div class="tier-row">
+      <div class="tier-name">${tierBadge(tr.t)} Tier ${tr.t}</div>
+      <div class="tier-bar"><div class="tier-fill" style="width:${(tr.count/total)*100}%;background:${tr.col};"></div></div>
+      <div class="tier-count">${tr.count}</div>
+    </div>`).join("");
+}
+
+function updateEventFeed(events) {
+  const feed = document.getElementById("event-feed");
+  if (!events.length) { feed.innerHTML = '<div class="no-events">No trust score events yet.</div>'; return; }
+  feed.innerHTML = [...events].reverse().map(e => `
+    <div class="event-item">
+      <span class="event-icon">${e.icon}</span>
+      <span>${e.text}</span>
+    </div>`).join("");
+}
+
+// ── Audit modal ──────────────────────────────────────────────────────────────
+async function showAudit(invoiceId) {
+  document.getElementById("audit-title").textContent = `Audit Log — ${invoiceId}`;
+  document.getElementById("audit-body").textContent  = "Loading…";
+  openModal("audit-modal");
+  const res  = await fetch(`/api/audit/${invoiceId}`);
+  const data = await res.json();
+  document.getElementById("audit-body").textContent = JSON.stringify(data.audit_log, null, 2);
+}
+
+// ── Sim modal ────────────────────────────────────────────────────────────────
+function openSimModal(invoiceId) {
+  simInvoiceId = invoiceId;
+  document.getElementById("sim-title").textContent = `Simulate Deferred Payment — ${invoiceId}`;
+  openModal("sim-modal");
+}
+
+async function simulatePayment(onTime) {
+  closeModal("sim-modal");
+  const res  = await fetch(`/api/deferred/simulate-payment/${simInvoiceId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ on_time: onTime }),
+  });
+  const data = await res.json();
+  if (data.tier_changed) {
+    toast(`🎉 ${data.company_name}: Tier ${data.old_tier} → ${data.new_tier} (${onTime ? "on time" : "late"})`);
+  } else {
+    toast(`✅ Score updated: ${data.old_score} → ${data.new_score} (Tier ${data.new_tier})`);
+  }
+  await refreshStatus();
+}
+
+// ── Polling ──────────────────────────────────────────────────────────────────
+refreshStatus();
+setInterval(refreshStatus, 5000);
+</script>
+</body>
+</html>

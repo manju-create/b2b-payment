@@ -1,0 +1,24 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+*.env
+env/
+venv/
+.venv/
+ENV/
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Logs & output data
+*.log
+
+# Editor & System files
+.vscode/
+.idea/
+.claude/
+.DS_Store

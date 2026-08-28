@@ -1,0 +1,49 @@
+[
+  {
+    "received_at": "2026-08-26T08:36:32.087527+00:00",
+    "event": "order.paid",
+    "payload_summary": {},
+    "action": "ignored"
+  },
+  {
+    "received_at": "2026-08-26T08:36:32.089668+00:00",
+    "event": "payment.captured",
+    "payload_summary": {
+      "payment_id": "pay_TESTABC001",
+      "amount_paise": 1450000,
+      "description": "Partial settlement — INV-0006",
+      "notes": {
+        "invoice_id": "INV-0006"
+      }
+    },
+    "action": "invoice_marked_paid",
+    "invoice_id": "INV-0006"
+  },
+  {
+    "received_at": "2026-08-26T08:36:32.092287+00:00",
+    "event": "payment.captured",
+    "payload_summary": {
+      "payment_id": "pay_TESTABC001",
+      "amount_paise": 1450000,
+      "description": "Partial settlement — INV-0006",
+      "notes": {
+        "invoice_id": "INV-0006"
+      }
+    },
+    "action": "duplicate_ignored"
+  },
+  {
+    "received_at": "2026-08-26T08:36:32.093957+00:00",
+    "event": "payment.captured",
+    "payload_summary": {
+      "payment_id": "pay_UNKNOWN_999",
+      "amount_paise": 5000000,
+      "description": "Test",
+      "notes": {
+        "invoice_id": "INV-9999"
+      }
+    },
+    "action": "invoice_not_found",
+    "invoice_id": "INV-9999"
+  }
+]
