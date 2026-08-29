@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel
@@ -27,12 +27,31 @@ try:
 except ImportError:
     pass
 
-from backend.agent import create_session, open_turn, process_turn   # noqa: E402
-from backend.scoring import update_trust_score, get_score_status     # noqa: E402
+from backend.agent import (  # noqa: E402
+    create_session,
+    open_turn,
+    process_turn,
+    handle_document_verdict,
+    MERCHANT_NAME,
+)
+from backend.document_verifier import verify_document                # noqa: E402
+from backend.scoring import update_trust_score, get_score_status, get_score_breakdown  # noqa: E402
 from backend.razorpay_client import verify_webhook_signature          # noqa: E402
 
 DATA_DIR     = REPO_ROOT / "data"
 FRONTEND_DIR = REPO_ROOT / "frontend"
+
+# Document upload limits (see document_verifier.py)
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024            # 10 MB
+ALLOWED_UPLOAD_TYPES = {                        # mime type → verifier file_type
+    "application/pdf": "pdf",
+    "image/jpeg": "image",
+    "image/png": "image",
+}
+# Situations that trigger document upload. CASHFLOW is the agent's internal
+# label; the verifier expects CANNOT_PAY.
+_UPLOAD_SITUATIONS = {"DISPUTE", "ALREADY_PAID", "CASHFLOW"}
+_SITUATION_NORMALISE = {"CASHFLOW": "CANNOT_PAY"}
 
 # ---------------------------------------------------------------------------
 # In-memory stores
@@ -67,6 +86,25 @@ def _rupees_fmt(paise: int) -> str:
     while len(s) > 2:
         result, s = s[-2:] + "," + result, s[:-2]
     return f"₹{s},{result}"
+
+
+def _should_show_upload_card(s: dict) -> bool:
+    """True when the chat should surface the document-upload card."""
+    if s.get("document_verification"):       # already verified / escalated
+        return False
+    if s.get("payment_order"):               # already committed to payment
+        return False
+    if s.get("pending_upload"):              # LLM requested a document via tool
+        return True
+    return s.get("identified_situation") in _UPLOAD_SITUATIONS
+
+
+def _last_debtor_message(s: dict) -> str:
+    """Return the most recent debtor message, used as the claim fallback."""
+    for m in reversed(s.get("messages", [])):
+        if m.get("role") == "user":
+            return m.get("content", "")
+    return ""
 
 
 # ---------------------------------------------------------------------------
@@ -132,14 +170,21 @@ async def batch_status():
             plan_summary = f"{plan['upfront_display']} now + {plan['deferred_display']} by {plan['deferred_due_date']}"
         elif status == "settled":
             plan_summary = "Paid in full"
+        # Dashboard mirrors the stable trust score the debtor sees in chat
+        # (additive model, frozen at session start), not the legacy weighted
+        # "score" or the live-updating trust score.
+        trust_score = s.get("display_trust_score", s.get("trust_score", s.get("score", 0)))
+        trust_tier  = s.get("display_trust_tier") or (s.get("trust_score_result") or {}).get("tier") or s.get("tier", "")
         invoices_out.append({
             "invoice_id": iid, "debtor_name": s.get("debtor_name", ""),
-            "company_name": s.get("company_name", ""), "tier": s.get("tier", ""),
-            "score": s.get("score", 0), "invoice_amount_paise": s.get("invoice_amount_paise", 0),
+            "company_name": s.get("company_name", ""), "tier": trust_tier,
+            "score": trust_score, "invoice_amount_paise": s.get("invoice_amount_paise", 0),
             "dpd": s.get("dpd", 0), "status": status,
             "recovered_paise": s.get("recovered_paise", 0),
             "razorpay_order_id": s.get("razorpay_order_id"), "session_id": s.get("session_id"),
             "turn_count": s.get("turn_count", 0), "plan_summary": plan_summary,
+            "identified_situation": s.get("identified_situation"),
+            "document": s.get("document_verification"),
         })
     return {**counts, "total_recovered_paise": total_recovered,
             "total_invoices": len(batch_results), "invoices": invoices_out}
@@ -156,14 +201,25 @@ async def negotiate_start(invoice_id: str):
         opening, s = open_turn(s)
         sessions[s["session_id"]] = s
         batch_results[invoice_id] = s
+        # Build score breakdown for the debtor UI trust score card
+        from backend.scoring import get_score_breakdown as _gsb
+        import json as _j
+        debtors_path = DATA_DIR / "debtors.json"
+        debtors_list = _j.loads(debtors_path.read_text()) if debtors_path.exists() else []
+        debtor_rec = next((d for d in debtors_list if d.get("debtor_id") == s["debtor_id"]), {})
+        breakdown = _gsb({"invoices": debtor_rec.get("historical_invoices", [])})
         return {"session_id": s["session_id"], "opening_message": opening,
                 "invoice_amount_paise": s["invoice_amount_paise"],
                 "invoice_amount": s["invoice_amount"],
                 "debtor_name": s["debtor_name"], "company_name": s["company_name"],
                 "dpd": s["dpd"], "tier": s["tier"],
-                "awaiting_intent": s.get("awaiting_intent", False),
-                "awaiting_amount": s.get("awaiting_amount", False),
-                "awaiting_plan_confirmation": s.get("awaiting_plan_confirmation", False)}
+                "score": s["score"],
+                "trust_score": s.get("display_trust_score", s.get("trust_score", s.get("score", 0))),
+                "score_delta": s.get("trust_score_delta", 0),
+                "score_reason": s.get("trust_score_reason", "initial assessment"),
+                "score_projections": s["score_projections"],
+                "score_breakdown": breakdown,
+                "identified_situation": s.get("identified_situation")}
     except ValueError as exc:
         raise HTTPException(404, str(exc))
     except Exception as exc:
@@ -196,7 +252,7 @@ async def negotiate_turn(session_id: str, body: TurnRequest):
                 "debtor_name":     s["debtor_name"],
                 "company_name":    s.get("company_name", ""),
                 "session_id":      session_id,
-                "deferred_amount": plan["deferred_amount"],   # after discount
+                "deferred_amount": plan["deferred_amount"],
                 "deferred_display": plan["deferred_display"],
                 "due_date":        plan["deferred_due_date"],
                 "status":          "pending",
@@ -206,15 +262,16 @@ async def negotiate_turn(session_id: str, body: TurnRequest):
         safe = {
             "agent_reply":     agent_reply,
             "session_status":  s["status"],
+            "trust_score":     s.get("trust_score", s.get("score", 0)),
+            "score_delta":     s.get("trust_score_delta", 0),
+            "score_reason":    s.get("trust_score_reason", "initial assessment"),
             "payment_order":   s.get("payment_order"),
             "razorpay_order_id": s.get("razorpay_order_id"),
             "recovered_paise": s.get("recovered_paise", 0),
             "turn_count":      s["turn_count"],
-            "awaiting_intent": s.get("awaiting_intent", False),
-            "awaiting_amount": s.get("awaiting_amount", False),
-            "awaiting_plan_confirmation": s.get("awaiting_plan_confirmation", False),
-            "pending_plan":    s.get("pending_plan"),
+            "identified_situation": s.get("identified_situation"),
             "agreed_terms":    s.get("agreed_terms"),
+            "show_upload_card": _should_show_upload_card(s),
         }
         body = _json.dumps(safe, ensure_ascii=False)
         from fastapi.responses import Response
@@ -228,7 +285,83 @@ async def get_session(session_id: str):
     s = sessions.get(session_id)
     if not s:
         raise HTTPException(404, f"Session {session_id!r} not found")
-    return JSONResponse(s)
+    # Build score breakdown from debtor's historical invoices
+    from backend.scoring import get_score_breakdown as _gsb
+    import json as _j
+    from pathlib import Path as _P
+    debtors_path = _P(__file__).resolve().parent.parent / "data" / "debtors.json"
+    debtors_list = _j.loads(debtors_path.read_text()) if debtors_path.exists() else []
+    debtor = next((d for d in debtors_list if d.get("debtor_id") == s.get("debtor_id")), {})
+    hist_invoices = debtor.get("historical_invoices", [])
+    breakdown = _gsb({"invoices": hist_invoices})
+    enriched = dict(s)
+    enriched["score_breakdown"]   = breakdown
+    enriched["score_projections"] = s.get("score_projections", {})
+    return JSONResponse(enriched)
+
+
+@app.post("/api/upload-document")
+async def upload_document(
+    session_id: str = Form(...),
+    situation: str = Form(""),
+    file: UploadFile = File(...),
+):
+    """
+    Receive a debtor-uploaded document, verify it, and act on the verdict.
+
+    Multipart fields: file (PDF/JPG/PNG), session_id, situation.
+    `situation` is optional — when absent/unknown it defaults to a generic
+    (GENERAL) verification. The file is processed in memory only.
+    """
+    s = sessions.get(session_id)
+    if not s:
+        raise HTTPException(404, f"Session {session_id!r} not found")
+
+    # Normalise the situation label (frontend may send the agent's CASHFLOW).
+    situation = (situation or "").strip().upper()
+    situation = _SITUATION_NORMALISE.get(situation, situation)
+    if not situation:
+        # Derive from the document the LLM requested, else fall back to GENERAL.
+        situation = (s.get("pending_upload") or {}).get("situation", "GENERAL")
+    if situation not in ("DISPUTE", "ALREADY_PAID", "CANNOT_PAY", "GENERAL"):
+        raise HTTPException(400, f"Invalid situation: {situation!r}")
+
+    content = await file.read()
+    mime = (file.content_type or "").lower()
+
+    if not content:
+        raise HTTPException(400, "Empty file")
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(400, "File exceeds the 10MB limit")
+    if mime not in ALLOWED_UPLOAD_TYPES:
+        raise HTTPException(400, "Only PDF, JPG and PNG are accepted")
+    file_type = ALLOWED_UPLOAD_TYPES[mime]
+
+    invoice = {
+        "invoice_id": s["invoice_id"],
+        "amount": s.get("invoice_amount"),
+        "due_date": (s.get("current_invoice") or {}).get("due_date"),
+        "merchant_name": MERCHANT_NAME,
+    }
+    debtor_claim = s.get("situation_claim") or _last_debtor_message(s)
+
+    s["upload_attempts"] = s.get("upload_attempts", 0) + 1
+
+    result = verify_document(content, file_type, situation, invoice, debtor_claim)
+    agent_reply, s = handle_document_verdict(s, situation, result)
+    s["pending_upload"] = None   # the upload was just fulfilled
+
+    sessions[session_id] = s
+    batch_results[s["invoice_id"]] = s
+
+    final_action = (s.get("document_verification") or {}).get("recommended_action")
+    return {
+        "verdict": s.get("document_verification"),
+        "agent_reply": agent_reply,
+        "session_status": s.get("status"),
+        "show_upload_again": final_action == "REQUEST_BETTER_PROOF",
+        "situation": situation,
+    }
 
 
 def _apply_payment(invoice_id: str, payment_id: str,

@@ -22,7 +22,7 @@ Key tables: invoices, debtors, debtor_history, audit_log, negotiation_turns
 
 ## Architecture
 Invoice ingested → Scoring engine (5-signal weighted model → Tier A/B/C/D) 
-→ Negotiation agent (system prompt parameterised by tier) 
+→ get_negotiation_stance(trust_score) → Negotiation agent (system prompt parameterised by stance)
 → Razorpay payment link generated in chat 
 → Webhook listener confirms payment.captured 
 → Dashboard updates in real-time
@@ -36,14 +36,16 @@ Invoice ingested → Scoring engine (5-signal weighted model → Tier A/B/C/D)
 - dispute_count: 10%
 Score 0-100 → Tier A (85-100), B (60-84), C (35-59), D (0-34)
 
-## Tier guardrails (hard rules — agent cannot breach these)
-| Tier | Pay now (min) | Deferred (max) | Timeline | Discount |
-|------|--------------|----------------|----------|----------|
-| A    | 25%          | 75%            | 60 days  | 15%      |
-| B    | 40%          | 60%            | 45 days  | 10%      |
-| C    | 60%          | 40%            | 30 days  | 5%       |
-| D    | 85%          | 15%            | 15 days  | 0%       |
-Hard floor: every debtor pays minimum 25% now. No exceptions.
+## Negotiation stance (trust-score-driven — replaces TIER_BOUNDS)
+get_negotiation_stance(trust_score) → stance dict
+| Score  | Opening | Target | Floor | Max days | Max discount | Stance             |
+|--------|---------|--------|-------|----------|--------------|--------------------|
+| 85-100 | 30%     | 25%    | 20%   | 60 days  | 15%          | cooperative        |
+| 60-84  | 50%     | 35%    | 20%   | 45 days  | 10%          | firm_but_flexible  |
+| 35-59  | 65%     | 40%    | 20%   | 30 days  |  5%          | skeptical          |
+|  0-34  | 80%     | 50%    | 20%   | 15 days  |  0%          | firm               |
+Universal hard floor: 20% upfront. No exceptions. Tier labels kept for display only.
+NOT used for negotiation logic — grep "tier_bounds" → zero results.
 
 ## What NOT to build
 - No ERP integrations (Tally, SAP, Oracle)

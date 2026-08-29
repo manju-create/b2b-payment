@@ -58,11 +58,26 @@ body { font-family: 'Inter', sans-serif; background: #F1F5F9; color: #1E293B; mi
 .badge.active           { background: #DBEAFE; color: #1E40AF; }
 .badge.pending          { background: #F1F5F9; color: #64748B; }
 .badge.escalated        { background: #FEE2E2; color: #991B1B; }
+.badge.payment_claimed_verified { background: #DCFCE7; color: #166534; }
+.badge.disputed_verified       { background: #DCFCE7; color: #166534; }
+.badge.promise_to_pay          { background: #E0E7FF; color: #3730A3; }
+.badge.verified                { background: #DCFCE7; color: #166534; }
+.badge.not-verified            { background: #FEE2E2; color: #991B1B; }
+.badge.needs-review            { background: #FEF3C7; color: #92400E; }
+.badge.situation-cashflow     { background: #FEF3C7; color: #92400E; }
+.badge.situation-dispute      { background: #FEE2E2; color: #991B1B; }
+.badge.situation-paid         { background: #DBEAFE; color: #1E40AF; }
+.badge.situation-installments { background: #DCFCE7; color: #166534; }
+.badge.situation-unknown      { background: #F1F5F9; color: #64748B; }
 .tier-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; font-size: 12px; font-weight: 700; }
 .tier-A { background: #DCFCE7; color: #166534; }
 .tier-B { background: #DBEAFE; color: #1E40AF; }
 .tier-C { background: #FEF9C3; color: #854D0E; }
 .tier-D { background: #FEE2E2; color: #991B1B; }
+/* Score dot */
+.score-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.score-chg-up   { color: #16A34A; font-weight: 700; font-size: 12px; }
+.score-chg-down { color: #DC2626; font-weight: 700; font-size: 12px; }
 
 /* Table */
 .table-wrap { overflow-x: auto; border-radius: 14px; }
@@ -159,8 +174,10 @@ tr:hover td { background: #F8FAFC; }
             <th onclick="sortTable('tier')">Tier ⇅</th>
             <th onclick="sortTable('score')">Score ⇅</th>
             <th onclick="sortTable('status')">Status ⇅</th>
+            <th>Situation</th>
             <th onclick="sortTable('recovered_paise')">Recovered ⇅</th>
             <th>Plan</th>
+            <th>Document</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -245,12 +262,68 @@ function fmtRupees(paise) {
 function statusBadge(st) {
   const labels = { settled: "✅ Settled", partially_settled: "🔄 Part. Settled",
     awaiting_payment: "⏳ Awaiting Payment",
-    disputed: "⚠️ Disputed", active: "🔵 Active", pending: "⏳ Pending", escalated: "⬆️ Escalated" };
+    disputed: "⚠️ Disputed", active: "🔵 Active", pending: "⏳ Pending", escalated: "⬆️ Escalated",
+    payment_claimed_verified: "✅ Payment Verified", disputed_verified: "✅ Dispute Verified",
+    promise_to_pay: "🤝 Promise to Pay" };
   return `<span class="badge ${st}">${labels[st] || st}</span>`;
 }
 
 function tierBadge(t) {
   return `<span class="tier-badge tier-${t}">${t}</span>`;
+}
+
+function situationBadge(s) {
+  const map = {
+    CASHFLOW:     ["situation-cashflow",     "💰 Cashflow Issue"],
+    DISPUTE:      ["situation-dispute",      "⚠️ Amount Disputed"],
+    ALREADY_PAID: ["situation-paid",         "🔍 Payment Claimed"],
+    INSTALLMENTS: ["situation-installments", "📅 Installment Plan"],
+  };
+  const [cls, label] = map[s] || ["situation-unknown", "🔄 In Conversation"];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function verdictBadge(v) {
+  const map = {
+    VALID:        ["verified",     "✅ Verified"],
+    INVALID:      ["not-verified", "❌ Not verified"],
+    INCONCLUSIVE: ["needs-review", "⚠️ Needs review"],
+  };
+  const [cls, label] = map[v] || ["needs-review", "⚠️ Needs review"];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function documentCell(r) {
+  const doc = r.document;
+  if (!doc) return "<span style='color:#94A3B8'>—</span>";
+
+  let html = `<div>${verdictBadge(doc.verdict)}</div>`;
+  html += `<div style="font-size:11px; color:#94A3B8; margin-top:4px;">📄 Document uploaded</div>`;
+
+  if (doc.merchant_friendly_summary) {
+    html += `<div style="font-size:12px; color:#475569; margin-top:4px; line-height:1.4;">${escapeHtml(doc.merchant_friendly_summary)}</div>`;
+  }
+
+  const extras = [];
+  if (doc.extracted_utr)          extras.push(`UTR: ${doc.extracted_utr}`);
+  if (doc.extracted_amount != null && doc.extracted_amount !== "") extras.push(`Amount on doc: ${doc.extracted_amount}`);
+  if (doc.extracted_date)         extras.push(`Payment date: ${doc.extracted_date}`);
+  if (extras.length) {
+    html += `<div style="font-size:11px; color:#64748B; margin-top:4px; line-height:1.4;">${extras.map(escapeHtml).join("<br>")}</div>`;
+  }
+  if (doc.red_flags && doc.red_flags.length) {
+    html += `<div style="font-size:11px; color:#DC2626; margin-top:4px; line-height:1.4;">⚠️ ${doc.red_flags.map(escapeHtml).join("; ")}</div>`;
+  }
+  return html;
 }
 
 function toast(msg) {
@@ -319,6 +392,27 @@ function sortTable(key) {
   renderTable();
 }
 
+function scoreDot(score) {
+  let col;
+  if (score >= 75)      col = "#16A34A"; // green
+  else if (score >= 50) col = "#2563EB"; // blue
+  else if (score >= 25) col = "#D97706"; // amber
+  else                  col = "#DC2626"; // red
+  return `<span class="score-dot" style="background:${col}"></span>${(score||0).toFixed(1)}`;
+}
+
+function scoreChange(inv) {
+  const old_score = inv.score_before;
+  const new_score = inv.score;
+  if (old_score == null || old_score === new_score) {
+    return scoreDot(new_score);
+  }
+  const up = new_score > old_score;
+  const arrow = up ? "&#8593;" : "&#8595;";
+  const cls   = up ? "score-chg-up" : "score-chg-down";
+  return `${scoreDot(old_score)} <span class="${cls}">&rarr; ${(new_score||0).toFixed(1)} ${arrow}</span>`;
+}
+
 function renderTable() {
   const sorted = [...invoicesData].sort((a, b) => {
     const va = a[sortKey] ?? "", vb = b[sortKey] ?? "";
@@ -335,10 +429,12 @@ function renderTable() {
       <td>${fmtRupees(r.invoice_amount_paise)}</td>
       <td><span style="color:${r.dpd>60?'#DC2626':'#D97706'};font-weight:600;">${r.dpd}d</span></td>
       <td>${tierBadge(r.tier)}</td>
-      <td style="font-weight:600;">${(r.score||0).toFixed(1)}</td>
+      <td style="white-space:nowrap;">${scoreChange(r)}</td>
       <td>${statusBadge(r.status)}</td>
+      <td>${situationBadge(r.identified_situation)}</td>
       <td>${r.recovered_paise ? fmtRupees(r.recovered_paise) : "<span style='color:#94A3B8'>—</span>"}</td>
       <td style="max-width:180px; font-size:12px; color:#334155;">${r.plan_summary || "<span style='color:#94A3B8'>—</span>"}</td>
+      <td style="white-space:normal; max-width:240px;">${documentCell(r)}</td>
       <td>
         <a class="action-link" href="/chat/${r.invoice_id}" target="_blank">View Chat</a>
         <a class="action-link" href="#" onclick="showAudit('${r.invoice_id}'); return false;">Audit</a>
@@ -422,9 +518,9 @@ async function simulatePayment(onTime) {
   });
   const data = await res.json();
   if (data.tier_changed) {
-    toast(`🎉 ${data.company_name}: Tier ${data.old_tier} → ${data.new_tier} (${onTime ? "on time" : "late"})`);
+    toast(`🎉 ${data.company_name}: Tier ${data.old_tier} → ${data.new_tier} | Score ${data.old_score} → ${data.new_score} ${onTime ? '↑' : '↓'}`);
   } else {
-    toast(`✅ Score updated: ${data.old_score} → ${data.new_score} (Tier ${data.new_tier})`);
+    toast(`✅ Score updated: ${data.old_score} → ${data.new_score} ${onTime ? '↑' : '↓'} (Tier ${data.new_tier})`);
   }
   await refreshStatus();
 }

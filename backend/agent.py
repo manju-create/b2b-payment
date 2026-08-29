@@ -1,22 +1,25 @@
 """
 RecoverFlow — Negotiation Agent
 =================================
-Conducts real-time B2B payment negotiations via DeepSeek
-(OpenAI-compatible API) with function-calling.
+Conducts real-time B2B payment recovery conversations as "Aria" — a warm,
+human-sounding financial advisor. The conversation itself is driven by DeepSeek
+(a single intelligent system prompt plus function-calling tools). Python keeps
+only the deterministic parts: tool execution, session state updates, stopping
+rules, and trust-score calculation.
+
 Sessions are in-memory dicts (no DB yet).
 
 Environment
 -----------
-Set DEEPSEEK_API_KEY in your shell or create a .env file at the repo root.
-python-dotenv is used if installed; otherwise the env var must be set manually.
+Requires DEEPSEEK_API_KEY for LLM-driven turns.
 
 Public API
 ----------
 create_session(invoice_id)          -> session_dict
-generate_payment_link(...)         -> order info dict
-process_turn(session, message)      -> (agent_reply: str, session: dict)
+open_turn(session)                  -> (agent_reply, session)
+process_turn(session, message)      -> (agent_reply, session)
+handle_document_verdict(session, situation, result) -> (agent_reply, session)
 simulate_debtor_turn(session, ...)  -> str
-open_turn(session)                  -> (agent_reply: str, session: dict)
 """
 
 from __future__ import annotations
@@ -42,24 +45,29 @@ try:
 except ImportError:
     pass
 
-from backend.scoring import score_debtor  # noqa: E402
+from backend.scoring import (  # noqa: E402
+    score_debtor,
+    get_negotiation_stance,
+    project_score_change,
+    calculate_trust_score,
+)
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
 MERCHANT_NAME = "RecoverFlow Demo Merchant"
+AGENT_NAME = "Aria"
 MODEL = "deepseek-chat"
 MAX_TOKENS = 1024
 DATA_DIR = REPO_ROOT / "data"
 logger = logging.getLogger(__name__)
 
-TIER_BOUNDS: dict[str, dict[str, int]] = {
-    "A": {"min_now_pct": 25, "max_defer_pct": 75, "max_days": 60, "max_discount_pct": 15},
-    "B": {"min_now_pct": 40, "max_defer_pct": 60, "max_days": 45, "max_discount_pct": 10},
-    "C": {"min_now_pct": 60, "max_defer_pct": 40, "max_days": 30, "max_discount_pct":  5},
-    "D": {"min_now_pct": 85, "max_defer_pct": 15, "max_days": 15, "max_discount_pct":  0},
-}
+# Situation labels (used by the document-verification flow + dashboard).
+SITUATION_CASHFLOW = "CASHFLOW"
+SITUATION_DISPUTE = "DISPUTE"
+SITUATION_ALREADY_PAID = "ALREADY_PAID"
+SITUATION_INSTALLMENTS = "INSTALLMENTS"
 
 # ---------------------------------------------------------------------------
 # Data loaders
@@ -110,12 +118,38 @@ def _rupees(paise: int) -> str:
     return f"₹{','.join(groups)},{last3}"
 
 
+def _rupees_digits(paise: int) -> str:
+    """Grouped rupee digits without the ₹ symbol (for prompt templates)."""
+    return _rupees(paise).replace("₹", "").lstrip("-")
+
+
 def format_date(iso: str) -> str:
     """Format an ISO 'YYYY-MM-DD' date as a human-readable string (e.g. '26 Aug 2026')."""
     try:
         return datetime.strptime(iso, "%Y-%m-%d").strftime("%d %b %Y")
     except ValueError:
         return iso
+
+
+def _first_name(name: str) -> str:
+    return (name or "there").strip().split()[0]
+
+
+def _normalize_no_discount_plan(session: dict, plan: dict) -> dict:
+    """Return payment terms with no discount applied."""
+    invoice_paise = session["invoice_amount_paise"]
+    normalized = dict(plan)
+    upfront = normalized.get("upfront_amount", 0)
+    deferred = max(0, invoice_paise - upfront)
+
+    normalized["deferred_amount_raw"] = deferred
+    normalized["deferred_amount"] = deferred
+    normalized["discount_amount"] = 0
+    normalized["total_payable"] = upfront + deferred
+    normalized["deferred_display"] = _rupees(deferred)
+    normalized["discount_display"] = "₹0"
+    normalized["total_display"] = _rupees(upfront + deferred)
+    return normalized
 
 
 def _ts() -> str:
@@ -130,6 +164,107 @@ def _audit(session: dict, event: str, **kwargs) -> None:
         "session_id": session["session_id"],
         **kwargs,
     })
+
+
+# ---------------------------------------------------------------------------
+# Live trust score — recalculated at session start and after every debtor turn
+# ---------------------------------------------------------------------------
+
+def _signal_reason(old_signals: dict, new_signals: dict) -> str:
+    """Technical list of which signals changed between two turns (agent-facing)."""
+    changes: list[str] = []
+    for key in sorted(set(old_signals) | set(new_signals)):
+        before = int(old_signals.get(key, 0))
+        after = int(new_signals.get(key, 0))
+        if after != before:
+            changes.append(f"{key} {after - before:+d}")
+    return ", ".join(changes) if changes else "no signal change"
+
+
+def _friendly_signal_reason(session: dict, old_signals: dict, new_signals: dict) -> str:
+    """Debtor-facing, plain-language reason for the score change this turn."""
+    phrases: list[str] = []
+    for key in sorted(set(old_signals) | set(new_signals)):
+        before = int(old_signals.get(key, 0))
+        after = int(new_signals.get(key, 0))
+        if after == before:
+            continue
+        if key == "voluntary_partial_offer":
+            phrases.append("You offered a partial payment")
+        elif key == "response_engagement":
+            phrases.append("You responded quickly" if after > before else "Slow response")
+        elif key == "negotiation_behaviour":
+            if session.get("accepted_first_offer"):
+                phrases.append("You accepted the first offer")
+            elif session.get("offers_rejected", 0) >= 2:
+                phrases.append("Multiple offers rejected")
+            elif session.get("negotiated_down"):
+                phrases.append("You negotiated the terms down")
+            else:
+                phrases.append("Your negotiation behaviour")
+        elif key == "current_dpd":
+            phrases.append("The invoice is overdue")
+        elif key == "on_time_rate":
+            phrases.append("Your payment history")
+        elif key == "avg_days_late":
+            phrases.append("Your average payment delay")
+        elif key == "dispute_history":
+            phrases.append("Your dispute history")
+        elif key == "repeat_customer":
+            phrases.append("Your purchase history")
+        elif key == "invoice_size_vs_typical":
+            phrases.append("This invoice amount")
+        else:
+            phrases.append(key)
+    return ", ".join(phrases) if phrases else "Your trust score is unchanged"
+
+
+def _refresh_trust_score(session: dict) -> None:
+    """Recompute the live trust score and rebuild the system prompt."""
+    prev = session.get("trust_score_result")
+    result = calculate_trust_score(
+        session["debtor_history"], session["current_invoice"], session
+    )
+
+    if prev is None:
+        delta = 0
+        signal_reason = "initial assessment"
+        friendly_reason = "initial assessment"
+    else:
+        delta = int(result["score"]) - int(prev["score"])
+        signal_reason = _signal_reason(prev.get("signals", {}), result.get("signals", {}))
+        friendly_reason = _friendly_signal_reason(
+            session, prev.get("signals", {}), result.get("signals", {})
+        )
+
+    session["trust_score_result"] = result
+    session["trust_score"] = int(result["score"])
+    session["trust_score_delta"] = delta
+    session["trust_score_reason"] = friendly_reason          # debtor-facing
+    session["trust_score_signal_reason"] = signal_reason      # agent/internal
+
+    _audit(
+        session,
+        "trust_score",
+        score=result["score"],
+        tier=result["tier"],
+        delta=delta,
+        signal_reason=signal_reason,
+        reason=friendly_reason,
+        signals=result["signals"],
+        min_acceptance_pct=result["negotiation_flex"]["min_acceptance_pct"],
+        tone=result["negotiation_flex"]["tone"],
+    )
+
+    # Rebuild the system prompt so the trust block reflects the latest turn.
+    session["system_prompt"] = build_system_prompt(session)
+
+
+def _finalize_turn(session: dict, reply: str) -> tuple[str, dict]:
+    """Refresh the trust score after a debtor turn, then stamp the reply time."""
+    _refresh_trust_score(session)
+    session["last_agent_ts"] = _ts()
+    return reply, session
 
 
 # ---------------------------------------------------------------------------
@@ -151,13 +286,21 @@ def create_session(invoice_id: str) -> dict:
 
     # Always recompute — never trust stale tier field in JSON
     score_result = score_debtor(debtor, invoice)
-    tier = score_result["tier"]
-    score = score_result["score"]
-    bounds = TIER_BOUNDS[tier]
+    tier  = score_result["tier"]
+    score = int(score_result["score"])
+
+    # Negotiate based on trust score, not fixed tier buckets
+    stance = get_negotiation_stance(score)
+
+    projected_full     = project_score_change(score, "full_upfront")
+    projected_partial  = project_score_change(score, "partial_deferred")
+    projected_escalate = project_score_change(score, "escalated")
 
     # Store amounts in paise internally
     invoice_amount_paise = invoice["amount"] * 100
-    min_now_paise = round(invoice_amount_paise * bounds["min_now_pct"] / 100)
+    # Floor is always 20% — universal hard floor
+    HARD_FLOOR_PCT = 20
+    min_now_paise = round(invoice_amount_paise * HARD_FLOOR_PCT / 100)
 
     session: dict[str, Any] = {
         "session_id": str(uuid4()),
@@ -169,28 +312,62 @@ def create_session(invoice_id: str) -> dict:
         "invoice_amount": invoice["amount"],   # rupees, for display/math
         "dpd": invoice["dpd"],
         "simulated_outcome": invoice.get("simulated_outcome", "clean_settlement"),
-        "score": score,
-        "tier": tier,
-        "tier_bounds": bounds,
-        "min_now_paise": min_now_paise,
+        "score":             score,
+        "tier":              tier,              # kept for display only
+        "stance":            stance,            # drives negotiation logic
+        "negotiation_floor": HARD_FLOOR_PCT,
+        "min_now_paise":     min_now_paise,
+        "score_projections": {
+            "full_upfront":     projected_full,
+            "partial_deferred": projected_partial,
+            "escalated":        projected_escalate,
+        },
         "turn_count": 0,
         "max_turns": 8,
         "status": "active",
         "messages": [],
         "audit_log": [],
         "razorpay_order_id": None,
-        "payment_order": None,          # order info dict returned to the frontend
-        "payment_amount": None,         # rupees — the upfront amount for the order
+        "payment_order": None,
+        "payment_amount": None,
         "agreed_terms": None,
         "recovered_paise": 0,
         "system_prompt": "",
-        # --- negotiation-flow state flags ---
-        "awaiting_intent": False,               # True after A/B opening sent
-        "awaiting_amount": False,               # True after debtor chooses partial
-        "awaiting_plan_confirmation": False,    # True after plan presented
-        "pending_plan": None,                   # plan dict awaiting confirmation
+        # --- conversation-flow state ---
+        "identified_situation": None,   # set by flag_dispute / document flow
+        "situation_claim": None,        # the debtor's own words that triggered the situation
+        "dispute_evidence": None,
+        "payment_claim_evidence": None,
+        "promise_to_pay": None,         # set by set_promise_to_pay
+        "pending_upload": None,         # set by request_document_upload
+        # --- document upload / verification state ---
+        "upload_attempts": 0,
+        "document_verification": None,   # latest verify_document() result (merged)
+        "merchant_flag": None,           # one-line merchant dashboard flag
+        # --- live trust-score state ---
+        "debtor_history": debtor,
+        "current_invoice": invoice,
+        "last_agent_ts": None,
+        "last_debtor_ts": None,
+        "voluntary_partial_offered": False,
+        "partial_after_suggested": False,
+        "accepted_first_offer": False,
+        "offers_rejected": 0,
+        "negotiated_down": False,
+        "trust_score_result": None,
+        "trust_score": 0,
+        "trust_score_delta": 0,
+        "trust_score_reason": "initial assessment",
+        "trust_score_signal_reason": "initial assessment",
     }
-    session["system_prompt"] = build_system_prompt(session)
+    _refresh_trust_score(session)  # computes trust score + builds system prompt
+
+    # Freeze the payment-history trust score for display. The live score
+    # (session["trust_score"]) keeps moving with negotiation signals on every
+    # turn, but the debtor card and the merchant dashboard must show the SAME
+    # number — so both read this stable snapshot taken at session start.
+    session["display_trust_score"] = session["trust_score"]
+    session["display_trust_tier"]  = (session["trust_score_result"] or {}).get("tier", tier)
 
     _audit(session, "session_created",
            tier=tier, score=score,
@@ -200,115 +377,166 @@ def create_session(invoice_id: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# PART 2: SYSTEM PROMPT
+# PART 2: SYSTEM PROMPT — a single intelligent prompt (no flow logic)
 # ---------------------------------------------------------------------------
 
+def _render_history(messages: list[dict]) -> str:
+    """Render the conversation so far as a readable transcript for the prompt."""
+    lines: list[str] = []
+    for m in messages:
+        role = "Debtor" if m.get("role") == "user" else "Aria"
+        content = (m.get("content") or "").strip()
+        if content:
+            lines.append(f"{role}: {content}")
+    return "\n".join(lines) if lines else "(no conversation yet)"
+
+
 def build_system_prompt(session: dict) -> str:
-    b = session["tier_bounds"]
-    amount_paise = session["invoice_amount_paise"]
-    min_now_paise = session["min_now_paise"]
+    """Build Aria's system prompt — instructions to a smart human, not a flowchart."""
+    amount = _rupees_digits(session["invoice_amount_paise"])
+    min_amount = _rupees_digits(session.get("min_now_paise", round(session["invoice_amount_paise"] * 0.20)))
+    trust_score = session.get("trust_score", 0)
+    history = _render_history(session.get("messages", []))
 
-    return f"""You are a professional payment recovery assistant for {MERCHANT_NAME}.
-Your goal is to reach a payment settlement on the outstanding invoice below.
+    return f"""You are Aria, a warm and intelligent payment recovery specialist at {MERCHANT_NAME}. You are having a real human conversation with {session['debtor_name']} about their overdue invoice of ₹{amount}.
 
-PERSONA:
-- Empathetic but firm. Acknowledge cash flow difficulties without conceding terms.
-- If asked directly whether you are an AI, confirm you are an automated payment assistant.
-- Never reveal the debtor's internal tier rating (A/B/C/D) to the debtor.
-- Never fabricate invoice details — use only what is provided here.
-- Never make threats not backed by the escalation process described below.
+YOUR PERSONALITY:
+- You speak like a real person — natural, warm, never robotic
+- Short messages — 2 sentences maximum per reply
+- You actually listen and remember everything said in this conversation
+- You never ask for something the debtor already told you
+- You never repeat yourself
+- You adapt completely to what the debtor says
 
-TOOLS AVAILABLE:
-- get_invoice_details: look up invoice details mid-conversation if needed
-- validate_proposed_terms: MUST call before accepting any debtor counter-offer
-- generate_payment_link: call when debtor explicitly agrees to specific terms
-- escalate: call for disputes, human requests, unresponsive debtor, or max turns
+YOUR GOAL:
+Recover as much of ₹{amount} as possible, as soon as possible — but in a way that feels helpful, not pushy. The debtor should feel like you're on their side.
 
-INVOICE:
-  ID       : {session['invoice_id']}
-  Amount   : {_rupees(amount_paise)}
-  Overdue  : {session['dpd']} days
-  Debtor   : {session['debtor_name']} ({session['company_name']})
+WHAT YOU KNOW SO FAR:
+Invoice ID: {session['invoice_id']}
+Amount due: ₹{amount}
+Days overdue: {session['dpd']}
+Debtor trust score: {trust_score}/100 (DO NOT mention this)
+Minimum you can accept: ₹{min_amount} (DO NOT mention this)
 
-AUTHORISED TERMS (do not quote exact percentages to the debtor):
-  Minimum collect now : {b['min_now_pct']}% = {_rupees(min_now_paise)}
-  Maximum defer       : {b['max_defer_pct']}%
-  Maximum defer period: {b['max_days']} days
-  Maximum discount    : {b['max_discount_pct']}%
+CONVERSATION HISTORY:
+{history}
 
-HARD RULES (inviolable):
-1. Cannot offer better terms than above. If debtor demands better, say you are not
-   authorised and offer to escalate to the merchant.
-2. Settlement only occurs when you call generate_payment_link after debtor agrees.
-3. Always call validate_proposed_terms before accepting any counter-offer.
-   If violations exist, you cannot accept those terms.
-4. After {session['max_turns']} turns without settlement, call escalate("max_turns_reached").
-5. If debtor disputes the invoice amount, call escalate("debtor_dispute").
-6. If debtor asks to speak to a human, call escalate("debtor_requested_human").
+HOW TO HANDLE COMMON SITUATIONS:
+Use your own judgment — but here are guidelines:
 
-Begin by greeting the debtor by name, citing the specific invoice, and asking
-how you can help them resolve it today."""
+If they say they'll pay tomorrow or on a specific date:
+→ Believe them, confirm the date, wish them well, end warmly
+→ Do NOT push for payment today
+
+If they offer a partial amount:
+→ If it's reasonable — accept it immediately, sort the rest later
+→ If it's very low — ask what's making it tight, understand first
+→ Never flatly reject an offer
+
+If they say they already paid:
+→ Take it seriously, ask for UTR or transaction reference
+→ Tell them you'll get it checked right away
+
+If they dispute the invoice:
+→ Stop asking for money completely
+→ Ask what specifically looks wrong
+→ Tell them you'll flag it for review
+
+If they give a reason they can't pay:
+→ Acknowledge it genuinely
+→ Work around their reality, not your minimum
+
+If they seem confused or upset:
+→ Slow down, acknowledge how they feel
+→ One simple question at a time
+
+TOOLS AVAILABLE TO YOU:
+- generate_payment_link: use when debtor agrees to pay NOW
+- set_promise_to_pay: use when debtor commits to a future date
+- flag_dispute: use when debtor disputes the invoice
+- request_document_upload: use when you need proof from debtor
+- escalate: use only when debtor is completely unresponsive
+
+RULES:
+- Never mention tier, trust score, minimum thresholds
+- Never use: "kindly", "as per", "please be advised", "I understand that", "I appreciate"
+- Never ask two questions in one message
+- Never repeat what debtor just said back to them
+- If debtor said it already — never ask again
+- Always end on a warm, human note"""
 
 
 # ---------------------------------------------------------------------------
 # PART 3: TOOL DEFINITIONS + HANDLERS
 # ---------------------------------------------------------------------------
 
-# OpenAI function-calling format — each entry wraps the schema under {"type": "function", "function": {...}}
+# OpenAI function-calling format — each entry wraps the schema under
+# {"type": "function", "function": {...}}.
 TOOLS: list[dict] = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_invoice_details",
-            "description": "Retrieve invoice details by invoice_id.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "invoice_id": {
-                        "type": "string",
-                        "description": "Invoice ID e.g. INV-0001",
-                    },
-                },
-                "required": ["invoice_id"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "validate_proposed_terms",
-            "description": (
-                "Validate proposed settlement terms against tier bounds. "
-                "MUST be called before accepting any debtor counter-offer. "
-                "Returns {valid: bool, violations: [str]}."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "now_pct":      {"type": "number",  "description": "% to pay now (0-100)"},
-                    "defer_pct":    {"type": "number",  "description": "% to defer (0-100)"},
-                    "defer_days":   {"type": "integer", "description": "Days for deferred portion"},
-                    "discount_pct": {"type": "number",  "description": "% discount offered (0-100)"},
-                },
-                "required": ["now_pct", "defer_pct", "defer_days", "discount_pct"],
-            },
-        },
-    },
     {
         "type": "function",
         "function": {
             "name": "generate_payment_link",
             "description": (
-                "Create a Razorpay Order for the agreed upfront amount (Checkout JS flow). "
-                "Call only after debtor explicitly agrees and validate_proposed_terms returned valid=true."
+                "Create a payment link for the debtor to pay the agreed amount now. "
+                "Call only when the debtor has explicitly agreed to pay now."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "amount":      {"type": "number", "description": "Amount in rupees"},
-                    "invoice_id":  {"type": "string", "description": "Invoice ID"},
+                    "amount": {"type": "number", "description": "Amount in rupees the debtor agreed to pay now"},
                 },
-                "required": ["amount", "invoice_id"],
+                "required": ["amount"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_promise_to_pay",
+            "description": (
+                "Record the debtor's commitment to pay on a future date. "
+                "Use when the debtor commits to a specific date."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "date": {"type": "string", "description": "The date the debtor committed to pay, e.g. '2026-09-05' or 'next Friday'"},
+                    "amount": {"type": "number", "description": "The amount they committed to pay (optional)"},
+                },
+                "required": ["date"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "flag_dispute",
+            "description": "Flag the invoice as disputed and stop asking for payment. Use when the debtor disputes the invoice.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "reason": {"type": "string", "description": "What the debtor says is wrong with the invoice"},
+                },
+                "required": ["reason"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "request_document_upload",
+            "description": (
+                "Ask the debtor to upload a document as proof (payment receipt, "
+                "invoice copy, bank statement, business closure letter, etc.)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "document_type": {"type": "string", "description": "What kind of document is needed, e.g. 'payment receipt' or 'bank statement'"},
+                    "reason": {"type": "string", "description": "Why the document is needed"},
+                },
+                "required": ["document_type"],
             },
         },
     },
@@ -316,20 +544,11 @@ TOOLS: list[dict] = [
         "type": "function",
         "function": {
             "name": "escalate",
-            "description": "Escalate the negotiation. Returns a closing message.",
+            "description": "Escalate to a human. Use only when the debtor is completely unresponsive.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "reason": {
-                        "type": "string",
-                        "enum": [
-                            "max_turns_reached",
-                            "debtor_dispute",
-                            "debtor_requested_human",
-                            "debtor_unresponsive",
-                        ],
-                        "description": "Reason for escalation",
-                    },
+                    "reason": {"type": "string", "enum": ["debtor_unresponsive"], "description": "Reason for escalation"},
                 },
                 "required": ["reason"],
             },
@@ -361,88 +580,77 @@ def _handle_get_invoice_details(inputs: dict, session: dict) -> dict:
 
 
 def _handle_validate_proposed_terms(inputs: dict, session: dict) -> dict:
-    b = session["tier_bounds"]
-    now_pct      = inputs["now_pct"]
-    defer_pct    = inputs["defer_pct"]
-    defer_days   = inputs["defer_days"]
-    discount_pct = inputs["discount_pct"]
-    tier         = session["tier"]
-
+    now_pct    = inputs["now_pct"]
+    # Accept either now_amount_rupees (rupees) or upfront_offered_paise (paise)
     invoice_paise = session["invoice_amount_paise"]
+    if "now_amount_rupees" in inputs:
+        now_amount = round(inputs["now_amount_rupees"] * 100)
+    elif "upfront_offered_paise" in inputs:
+        now_amount = inputs["upfront_offered_paise"]
+    else:
+        now_amount = round(invoice_paise * now_pct / 100)
 
-    # The exact amount the debtor offered (structured flow passes this so the
-    # deferred remainder is exact). Fall back to deriving it from now_pct for
-    # the free-form LLM path, which only supplies percentages.
-    upfront_offered = inputs.get("upfront_offered_paise")
-    if upfront_offered is None:
-        upfront_offered = round(invoice_paise * now_pct / 100)
+    HARD_FLOOR = 20
+    floor_paise = round(invoice_paise * HARD_FLOOR / 100)
 
-    violations: list[str] = []
+    if now_pct < HARD_FLOOR:
+        return {
+            "valid": False,
+            "violations": [
+                f"Cannot accept below 20% upfront. "
+                f"Minimum is ₹{invoice_paise * 0.20:,.0f}"
+            ],
+        }
 
-    # Minimum upfront check (exact amount — tier percentages validate only)
-    min_now_paise = round(invoice_paise * b["min_now_pct"] / 100)
-    if upfront_offered < min_now_paise:
-        violations.append(
-            f"Upfront {_rupees(upfront_offered)} is below minimum "
-            f"{_rupees(min_now_paise)} ({b['min_now_pct']}% for your account)"
-        )
+    if now_amount > invoice_paise:
+        return {
+            "valid": False,
+            "violations": [
+                f"Amount {_rupees(now_amount)} exceeds invoice total {_rupees(invoice_paise)}"
+            ],
+        }
 
-    # Overpayment check (debtor cannot pay more than the invoice)
-    if upfront_offered > invoice_paise:
-        violations.append(
-            f"Amount {_rupees(upfront_offered)} exceeds invoice "
-            f"total {_rupees(invoice_paise)}"
-        )
+    deferred = invoice_paise - now_amount
+    upfront_pct = round(now_amount / invoice_paise * 100, 1)
+    st = session.get("stance", {})
 
-    # Remaining tier guardrails (used by the free-form LLM path)
-    if defer_pct > b["max_defer_pct"]:
-        violations.append(
-            f"defer_pct {defer_pct}% exceeds maximum {b['max_defer_pct']}% for Tier {tier}"
-        )
-    if defer_days > b["max_days"]:
-        violations.append(
-            f"defer_days {defer_days} exceeds maximum {b['max_days']} days for Tier {tier}"
-        )
-    if discount_pct > b["max_discount_pct"]:
-        violations.append(
-            f"discount_pct {discount_pct}% exceeds maximum {b['max_discount_pct']}% for Tier {tier}"
-        )
-    if abs(now_pct + defer_pct - 100) > 0.5:
-        violations.append(
-            f"now_pct ({now_pct}%) + defer_pct ({defer_pct}%) must sum to 100%"
-        )
-
-    if violations:
-        return {"valid": False, "violations": violations}
-
-    # No violations → compute the actual plan from the REMAINDER.
-    # Tier percentages are never used to compute amounts — the deferred
-    # portion is always invoice_amount minus what the debtor pays now.
-    deferred = invoice_paise - upfront_offered
-    computed_plan = {
-        "upfront_amount":  upfront_offered,
-        "deferred_amount": deferred,
-        "deferred_pct":    round(deferred / invoice_paise * 100, 1),
-        "upfront_pct":     round(upfront_offered / invoice_paise * 100, 1),
-    }
     _audit(session, "terms_validated",
-           now_pct=now_pct, defer_pct=defer_pct,
-           defer_days=defer_days, discount_pct=discount_pct,
-           **computed_plan)
+           now_pct=now_pct, upfront_amount=now_amount, deferred_amount=deferred)
 
-    return {"valid": True, "violations": [], "computed_plan": computed_plan}
+    return {
+        "valid": True,
+        "violations": [],
+        "computed_plan": {
+            "upfront_amount":  now_amount,
+            "upfront_pct":     upfront_pct,
+            "deferred_amount": deferred,
+            "deferred_pct":    round(100 - upfront_pct, 1),
+        },
+        "note": (
+            "above_target" if now_pct >= st.get("target", 0)
+            else "below_target_but_valid"
+        ),
+    }
 
 
 def _handle_generate_payment_link(inputs: dict, session: dict) -> dict:
     """Create a Razorpay Order for the Checkout JS flow.
 
-    Returns the order info dict the frontend needs to open the Checkout modal.
-    Stores the order id + amount on the session and moves it to
-    'awaiting_payment' until the payment.captured webhook confirms settlement.
+    Enforces the 20% floor in Python (the LLM is told the minimum but this is
+    the hard guardrail). Returns the order info dict the frontend needs to open
+    the Checkout modal.
     """
     from backend.razorpay_client import create_order
 
     amount_inr  = inputs["amount"]            # rupees
+    amount_paise = round(amount_inr * 100)
+    min_now = session.get("min_now_paise", round(session["invoice_amount_paise"] * 0.20))
+
+    if amount_paise < min_now:
+        return {"error": "Amount is below the minimum the agent can accept."}
+    if amount_paise > session["invoice_amount_paise"]:
+        return {"error": "Amount exceeds the invoice total."}
+
     invoice_id  = inputs.get("invoice_id", session["invoice_id"])
 
     order = create_order(
@@ -453,18 +661,43 @@ def _handle_generate_payment_link(inputs: dict, session: dict) -> dict:
     )
 
     session["razorpay_order_id"] = order["id"]
-    session["payment_amount"] = amount_inr
-    session["status"] = "awaiting_payment"
+    session["payment_amount"]    = amount_inr
+    session["status"]            = "awaiting_payment"
+
+    # Build agreed_terms if not already set (LLM called this directly)
+    if not session.get("agreed_terms"):
+        invoice_paise = session["invoice_amount_paise"]
+        upfront_paise = amount_paise
+        deferred_paise = max(0, invoice_paise - upfront_paise)
+        st = session.get("stance", {})
+        max_days = st.get("max_days", 30)
+        due_date_str = (date.today() + timedelta(days=max_days)).isoformat()
+        session["agreed_terms"] = _normalize_no_discount_plan(session, {
+            "upfront_amount":      upfront_paise,
+            "upfront_pct":         round(upfront_paise / invoice_paise * 100, 1),
+            "deferred_amount_raw": deferred_paise,
+            "deferred_pct":        round(deferred_paise / invoice_paise * 100, 1),
+            "deferred_days":       max_days,
+            "deferred_due_date":   due_date_str,
+            "upfront_display":     _rupees(upfront_paise),
+            "due_date_display":    format_date(due_date_str),
+        })
+        if deferred_paise > 0:
+            _audit(session, "deferred_scheduled",
+                   deferred_amount=deferred_paise,
+                   due_date=due_date_str)
+    else:
+        session["agreed_terms"] = _normalize_no_discount_plan(session, session["agreed_terms"])
 
     # RAZORPAY_KEY_ID is public — the frontend uses it to open Checkout JS.
     order_info = {
-        "order_id":     order["id"],
-        "amount":       amount_inr,
+        "order_id":       order["id"],
+        "amount":         amount_inr,
         "amount_display": _rupees(round(amount_inr * 100)),
-        "key_id":       os.environ.get("RAZORPAY_KEY_ID", ""),
-        "debtor_name":  session["debtor_name"],
-        "invoice_id":   invoice_id,
-        "session_id":   session["session_id"],
+        "key_id":         os.environ.get("RAZORPAY_KEY_ID", ""),
+        "debtor_name":    session["debtor_name"],
+        "invoice_id":     invoice_id,
+        "session_id":     session["session_id"],
     }
     session["payment_order"] = order_info
 
@@ -474,29 +707,76 @@ def _handle_generate_payment_link(inputs: dict, session: dict) -> dict:
     return order_info
 
 
+def _handle_set_promise_to_pay(inputs: dict, session: dict) -> dict:
+    """Record the debtor's commitment to pay on a future date."""
+    promise_date = inputs.get("date", "")
+    amount = inputs.get("amount")
+    session["promise_to_pay"] = {
+        "date": promise_date,
+        "amount": amount,
+        "recorded_at": _ts(),
+    }
+    session["status"] = "promise_to_pay"
+    _audit(session, "promise_to_pay_set", date=promise_date, amount=amount)
+    return {"status": "promise_to_pay", "date": promise_date, "amount": amount}
+
+
+def _handle_flag_dispute(inputs: dict, session: dict) -> dict:
+    """Flag the invoice as disputed and stop collecting."""
+    reason = inputs.get("reason", "")
+    session["status"] = "disputed"
+    session["identified_situation"] = SITUATION_DISPUTE
+    session["dispute_evidence"] = {"reason": reason}
+    _audit(session, "dispute_flagged", reason=reason)
+    return {"status": "disputed", "reason": reason}
+
+
+def _situation_for_document_type(document_type: str) -> str:
+    """Map a requested document type to a verifier situation label."""
+    d = (document_type or "").lower()
+    if any(w in d for w in ("payment", "receipt", "utr", "transfer", "paid", "transaction")):
+        return "ALREADY_PAID"
+    if any(w in d for w in ("invoice", "dispute", "contract", "agreement", "order", "quotation")):
+        return "DISPUTE"
+    if any(w in d for w in ("bank", "statement", "closure", "medical", "cashflow", "cash flow", "loss", "hardship")):
+        return "CANNOT_PAY"
+    return "GENERAL"
+
+
+def _handle_request_document_upload(inputs: dict, session: dict) -> dict:
+    """Ask the debtor to upload a document; flag the frontend to show the card."""
+    document_type = inputs.get("document_type", "")
+    reason = inputs.get("reason", "")
+    situation = _situation_for_document_type(document_type)
+    session["pending_upload"] = {
+        "document_type": document_type,
+        "reason": reason,
+        "situation": situation,
+    }
+    _audit(session, "document_upload_requested",
+           document_type=document_type, reason=reason, situation=situation)
+    return {"requested": True, "document_type": document_type}
+
+
 _ESCALATION_MESSAGES = {
     "max_turns_reached": (
-        "We've reached the limit of what I can negotiate in this session. "
-        "Our team will follow up with you shortly. Thank you."
+        "I've taken this as far as I can here. Our team will reach out to you shortly."
     ),
     "debtor_dispute": (
-        "I understand you're disputing the invoice. I'll escalate this to our "
-        "merchant team for review — someone will contact you within 24 hours."
+        "I've passed everything across to the team. Sit tight — they'll be in touch within 2 business days."
     ),
     "debtor_requested_human": (
-        "Absolutely understood. I'm escalating this to a human representative "
-        "who will reach out to you shortly."
+        "No problem — I'll connect you with a real person on our team who'll reach out shortly."
     ),
     "debtor_unresponsive": (
-        "We haven't received a response. Our team will follow up through "
-        "other channels."
+        "No rush — I'll leave this with our team and they'll follow up when you're ready."
     ),
 }
 
 
 def _handle_escalate(inputs: dict, session: dict) -> dict:
-    reason = inputs["reason"]
-    session["status"] = "disputed" if reason == "debtor_dispute" else "escalated"
+    reason = inputs.get("reason", "debtor_unresponsive")
+    session["status"] = "escalated"
     _audit(session, "escalation_triggered", reason=reason)
     return {
         "closing_message": _ESCALATION_MESSAGES.get(reason, "This matter has been escalated."),
@@ -509,6 +789,9 @@ def _execute_tool(name: str, tool_input: dict, session: dict) -> Any:
         "get_invoice_details":     _handle_get_invoice_details,
         "validate_proposed_terms": _handle_validate_proposed_terms,
         "generate_payment_link":   _handle_generate_payment_link,
+        "set_promise_to_pay":      _handle_set_promise_to_pay,
+        "flag_dispute":            _handle_flag_dispute,
+        "request_document_upload": _handle_request_document_upload,
         "escalate":                _handle_escalate,
     }
     handler = dispatch.get(name)
@@ -518,296 +801,136 @@ def _execute_tool(name: str, tool_input: dict, session: dict) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# PART 4a: HELPERS FOR STRUCTURED FLOW (no LLM required)
+# PART 4: DOCUMENT VERIFICATION — act on the verifier's verdict
 # ---------------------------------------------------------------------------
+#
+# `situation` here uses the verifier's labels ("DISPUTE" | "ALREADY_PAID" |
+# "CANNOT_PAY" | "GENERAL"). CANNOT_PAY maps to the agent's CASHFLOW situation.
 
-import re as _re
+_MAX_UPLOAD_ATTEMPTS = 2
 
 
-def _build_opening_message(session: dict) -> str:
-    """Return the fixed A/B choice opening text sent to every debtor."""
-    amount_paise = session["invoice_amount_paise"]
+def _flag_for_accept(situation: str, result: dict) -> str:
+    """Build the merchant dashboard flag line for an ACCEPT_CLAIM verdict."""
+    if situation == "ALREADY_PAID":
+        utr = result.get("extracted_utr")
+        return f"✅ Payment proof verified — UTR: {utr}" if utr else "✅ Payment proof verified"
+    if situation == "DISPUTE":
+        disc = result.get("amount_discrepancy")
+        return (
+            f"⚠️ Dispute verified — amount discrepancy: {disc}" if disc
+            else "⚠️ Dispute verified"
+        )
+    return "✅ Unable-to-pay proof verified — installment plan offered"
+
+
+def _pivot_to_negotiation_reply(session: dict) -> str:
+    """Anchor the conversation on a concrete upfront amount instead of closing.
+
+    Used when a document can't be verified — keep the chat open, state the
+    amount we're hoping to collect today, and invite the debtor to negotiate.
+    """
+    stance = session.get("stance", {})
+    opening_pct = stance.get("opening", 50)
+    expected_paise = round(session["invoice_amount_paise"] * opening_pct / 100)
+    expected = _rupees(expected_paise)
     return (
-        f"Hi {session['debtor_name']}, I'm reaching out regarding invoice "
-        f"{session['invoice_id']} for {_rupees(amount_paise)} from {MERCHANT_NAME}, "
-        f"which is {session['dpd']} days overdue.\n\n"
-        f"How would you like to proceed?\n"
-        f"  [A] Pay {_rupees(amount_paise)} in full\n"
-        f"  [B] Pay partially \u2014 discuss a payment arrangement"
+        f"Thanks for sharing that — I couldn't fully verify the document, but "
+        f"let's keep this moving. Based on your account, around {expected} today "
+        f"would settle it. Does that work, or what can you manage?"
     )
 
 
-def parse_amount(message: str) -> int | None:
+def handle_document_verdict(
+    session: dict, situation: str, result: dict
+) -> tuple[str, dict]:
     """
-    Parse a rupee amount from a natural-language string.
-    Returns amount in **paise** (int), or None if nothing parseable found.
+    Act on a document verification result. Returns (agent_reply, session).
 
-    Handles:
-      \u20b950,000  |  50000  |  50k  |  50K  |  50,000
-      "I can pay 50000"  |  "around 60000"  |  "1.5 lakh"
+    Mutates the session: sets status / merchant_flag / document_verification,
+    appends to messages + audit log, and (for CANNOT_PAY ACCEPT) moves the
+    conversation toward an installment offer.
     """
-    msg = message.lower()
-    # strip currency symbols and commas so digits are bare
-    msg = msg.replace("\u20b9", "").replace(",", "").replace("rs.", "").replace("rs", "").replace("inr", "")
+    attempt = session.get("upload_attempts", 0)
+    action = result.get("recommended_action", "ESCALATE_TO_MERCHANT")
 
-    # lakh / lac: e.g. "1.5 lakh" → 150000
-    lakh = _re.search(r"(\d+(?:\.\d+)?)\s*(?:lakh|lac)", msg)
-    if lakh:
-        return round(float(lakh.group(1)) * 100_000 * 100)
+    # Enforce the 2-attempt cap: a second unreadable/inconclusive document
+    # is escalated rather than asking for proof a third time.
+    if action == "REQUEST_BETTER_PROOF" and attempt >= _MAX_UPLOAD_ATTEMPTS:
+        action = "ESCALATE_TO_MERCHANT"
 
-    # k suffix: e.g. "50k" → 50000
-    k_match = _re.search(r"(\d+(?:\.\d+)?)\s*k\b", msg)
-    if k_match:
-        return round(float(k_match.group(1)) * 1_000 * 100)
+    debtor_friendly = (result.get("debtor_friendly_response") or "").strip()
+    merchant_flag: str
 
-    # bare integer or decimal (ignore values that look like percentages < 100)
-    num = _re.search(r"(\d+(?:\.\d+)?)", msg)
-    if num:
-        val = float(num.group(1))
-        if val >= 100:            # \u20b9100 minimum to avoid matching "50%"
-            return round(val * 100)
-
-    return None
-
-
-def _handle_intent_response(session: dict, debtor_message: str, turn: int) -> tuple[str, dict]:
-    """
-    Handle the debtor's A / B intent choice.
-    No LLM call — pure deterministic Python.
-    """
-    _audit(session, "debtor_turn", turn=turn, speaker="debtor", message=debtor_message)
-    msg = debtor_message.strip().lower()
-
-    # ---- Option A: pay in full ----
-    if msg == "a" or any(w in msg for w in ("full", "in full", "pay all", "pay total")):
-        session["awaiting_intent"] = False
-        _audit(session, "intent_selected", intent="full")
-
-        _handle_generate_payment_link(
-            {"amount": session["invoice_amount"],
-             "invoice_id": session["invoice_id"]},
-            session,
+    if action == "ACCEPT_CLAIM":
+        if situation == "ALREADY_PAID":
+            session["status"] = "payment_claimed_verified"
+            merchant_flag = _flag_for_accept(situation, result)
+            reply = (
+                f"{debtor_friendly} I've flagged this to {MERCHANT_NAME} — you "
+                f"won't receive any further payment requests while they confirm."
+            ).strip()
+        elif situation == "DISPUTE":
+            session["status"] = "disputed_verified"
+            merchant_flag = _flag_for_accept(situation, result)
+            reply = (
+                f"{debtor_friendly} I've paused all payment requests and sent "
+                f"this to {MERCHANT_NAME} for review."
+            ).strip()
+        elif situation == "GENERAL":
+            # No specific claim — acknowledge receipt, surface to merchant, and
+            # keep the conversation open.
+            merchant_flag = "📄 Document received — awaiting merchant review"
+            reply = debtor_friendly or "Thanks — I've noted that document down."
+        else:  # CANNOT_PAY — offer an installment plan and proceed to that flow
+            merchant_flag = _flag_for_accept(situation, result)
+            reply = (
+                f"{debtor_friendly} Based on what you've shared, let's work out "
+                f"a plan that's manageable. How does splitting this into 3 "
+                f"payments sound?"
+            ).strip()
+    elif action == "REQUEST_BETTER_PROOF":
+        # Warm, never accusatory. The upload card is shown again for one more
+        # attempt (the server reads the final recommended_action).
+        merchant_flag = "⚠️ Requesting better proof — document inconclusive"
+        reply = debtor_friendly or (
+            "Thanks — could you share a clearer copy so I can verify this properly?"
         )
-        reply = (
-            f"Excellent! You've chosen to pay the full amount of "
-            f"{_rupees(session['invoice_amount_paise'])}. "
-            f"Please click the Pay Now button below to complete your payment securely."
-        )
-        session["messages"].append({"role": "assistant", "content": reply})
-        _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
-        return reply, session
+    else:  # ESCALATE_TO_MERCHANT → pivot to payment negotiation (keep chat open)
+        merchant_flag = "🔴 Manual review needed — document inconclusive"
+        reply = _pivot_to_negotiation_reply(session)
+        _audit(session, "L3_triggered", reason="document_inconclusive",
+               situation=situation, upload_attempt=attempt)
 
-    # ---- Option B: partial payment ----
-    if msg == "b" or any(w in msg for w in ("partial", "partially", "arrangement", "discuss", "some", "payment options", "options")):
-        session["awaiting_intent"] = False
-        session["awaiting_amount"] = True
-        _audit(session, "intent_selected", intent="partial")
+    # Persist the full (merged) result for the dashboard + audit trail.
+    session["document_verification"] = {
+        **result,
+        "situation": situation,
+        "upload_attempt": attempt,
+        "recommended_action": action,   # final action after the attempt cap
+        "merchant_flag": merchant_flag,
+    }
+    session["merchant_flag"] = merchant_flag
 
-        max_days = session["tier_bounds"]["max_days"]
-        reply = (
-            f"Understood. How much are you able to pay right now? "
-            f"(The remaining balance would be due within {max_days} days.)"
-        )
-        session["messages"].append({"role": "user", "content": debtor_message})
-        session["messages"].append({"role": "assistant", "content": reply})
-        _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
-        return reply, session
-
-    # ---- Unrecognised response: re-prompt ----
-    reply = (
-        "Please choose one of the options:\n"
-        "  [A] Pay the full amount\n"
-        "  [B] Discuss a partial payment arrangement"
-    )
     session["messages"].append({"role": "assistant", "content": reply})
-    _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
-    return reply, session
-
-
-def _handle_amount_response(session: dict, debtor_message: str, turn: int) -> tuple[str, dict]:
-    """
-    Handle the debtor's offered rupee amount.
-    Parses with regex, validates against tier bounds, accepts or counters.
-    No LLM call.
-    """
-    _audit(session, "debtor_turn", turn=turn, speaker="debtor", message=debtor_message)
-    session["messages"].append({"role": "user", "content": debtor_message})
-
-    # --- Detect dispute mid-flow ---
-    msg_lower = debtor_message.lower()
-    if any(w in msg_lower for w in ("dispute", "incorrect", "wrong amount", "don't agree", "agreed on less")):
-        _handle_escalate({"reason": "debtor_dispute"}, session)
-        reply = _ESCALATION_MESSAGES["debtor_dispute"]
-        session["messages"].append({"role": "assistant", "content": reply})
-        _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
-        return reply, session
-
-    # --- Parse amount ---
-    offered_paise = parse_amount(debtor_message)
-
-    if offered_paise is None:
-        reply = "Could you share the exact amount you're able to pay right now?"
-        session["messages"].append({"role": "assistant", "content": reply})
-        _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
-        # stay in awaiting_amount
-        return reply, session
-
-    _audit(session, "debtor_offered_amount", amount_paise=offered_paise)
-
-    invoice_paise = session["invoice_amount_paise"]
-    now_pct  = round(offered_paise / invoice_paise * 100, 2)
-    defer_pct = round(100 - now_pct, 2)
-    max_days  = session["tier_bounds"]["max_days"]
-
-    # --- Validate against tier bounds ---
-    validation = _handle_validate_proposed_terms(
-        {"now_pct": now_pct, "defer_pct": defer_pct,
-         "defer_days": max_days, "discount_pct": 0,
-         "upfront_offered_paise": offered_paise},
+    _audit(
         session,
+        "document_verified",
+        situation=situation,
+        verdict=result.get("verdict"),
+        confidence=result.get("confidence"),
+        checks=result.get("checks"),
+        red_flags=result.get("red_flags"),
+        recommended_action=action,
+        upload_attempt=attempt,
     )
-    _audit(session, "offer_valid", valid=validation["valid"],
-           violations=validation["violations"])
-
-    if validation["valid"]:
-        # --- Build payment plan for confirmation (do NOT generate link yet) ---
-        computed = validation["computed_plan"]
-
-        # Pull exact amounts from computed_plan — do NOT recompute from tier %.
-        upfront  = computed["upfront_amount"]
-        deferred = computed["deferred_amount"]
-
-        # Discount applies to the deferred portion only
-        # (never reduce what the debtor is paying now).
-        discount = 0
-        if session["tier_bounds"]["max_discount_pct"] > 0 and deferred > 0:
-            discount = deferred * session["tier_bounds"]["max_discount_pct"] // 100
-        deferred_after_discount = deferred - discount
-
-        deferred_days = max_days
-        due_date_str  = (date.today() + timedelta(days=deferred_days)).isoformat()
-
-        plan = {
-            "upfront_amount":      upfront,
-            "deferred_amount":     deferred_after_discount,   # after discount
-            "deferred_amount_raw": deferred,                  # before discount
-            "discount_amount":     discount,
-            "deferred_pct":        computed["deferred_pct"],
-            "upfront_pct":         computed["upfront_pct"],
-            "deferred_days":       deferred_days,
-            "deferred_due_date":   due_date_str,
-            "total_payable":       upfront + deferred_after_discount,
-            # Display strings
-            "upfront_display":     _rupees(upfront),
-            "deferred_display":    _rupees(deferred_after_discount),
-            "discount_display":    _rupees(discount) if discount else "₹0",
-            "total_display":       _rupees(upfront + deferred_after_discount),
-            "due_date_display":    format_date(due_date_str),
-        }
-
-        # Sanity check — crash loud in dev if the plan doesn't add up.
-        assert plan["upfront_amount"] + plan["deferred_amount_raw"] \
-               == session["invoice_amount_paise"], \
-            f"Plan amounts don't add up to invoice total"
-
-        session["pending_plan"] = plan
-        session["awaiting_amount"] = False
-        session["awaiting_plan_confirmation"] = True
-        _audit(session, "plan_presented", **plan)
-
-        reply = (
-            f"Here is your proposed payment arrangement. Please review and confirm."
-        )
-        _audit(session, "counter_offered", counter=False)
-
-    else:
-        # Offer too low — counter with the minimum (reveal it only now)
-        min_paise  = session["min_now_paise"]
-        min_pct    = session["tier_bounds"]["min_now_pct"]
-        session["awaiting_amount"] = True   # stay in loop
-        reply = (
-            f"I appreciate you working with us. The minimum I\u2019m authorised to accept "
-            f"upfront is {_rupees(min_paise)} ({min_pct}% of the invoice). "
-            f"Would you be able to manage that?"
-        )
-        _audit(session, "counter_offered", counter=True,
-               min_amount_paise=min_paise)
-
-    session["messages"].append({"role": "assistant", "content": reply})
-    _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
-    return reply, session
-
-
-def _handle_plan_confirmation(session: dict, debtor_message: str, turn: int) -> tuple[str, dict]:
-    """
-    Handle the debtor's CONFIRM or RENEGOTIATE response to the payment plan card.
-    No LLM call — pure deterministic Python.
-    """
-    _audit(session, "debtor_turn", turn=turn, speaker="debtor", message=debtor_message)
-    session["messages"].append({"role": "user", "content": debtor_message})
-    msg = debtor_message.strip().lower()
-
-    CONFIRM_WORDS = ("confirm", "agree", "yes", "ok", "okay", "accept", "sure")
-    REJECT_WORDS  = ("no", "change", "renegotiate", "different", "less", "more")
-
-    if any(w in msg for w in CONFIRM_WORDS):
-        plan = session["pending_plan"]
-        session["awaiting_plan_confirmation"] = False
-        session["agreed_terms"] = plan
-        _audit(session, "plan_confirmed", **plan)
-
-        is_full = plan["deferred_amount"] <= 0
-
-        # Create a Razorpay Order for the upfront amount. This moves the
-        # session to 'awaiting_payment'; the payment.captured webhook then
-        # settles it (settled / partially_settled based on the deferred plan).
-        _handle_generate_payment_link(
-            {"amount": plan["upfront_amount"] / 100,
-             "invoice_id": session["invoice_id"]},
-            session,
-        )
-
-        if is_full:
-            # Debtor pays the full invoice upfront \u2014 no deferred entry needed.
-            reply = (
-                f"[Confirmed] Full invoice settled \u2014 no deferred payment required.\n"
-                f"Please click the Pay Now button below to pay "
-                f"{plan['upfront_display']}."
-            )
-        else:
-            _audit(session, "deferred_scheduled",
-                   deferred_amount=plan["deferred_amount"],
-                   due_date=plan["deferred_due_date"])
-            reply = (
-                f"[Confirmed] Your payment plan is confirmed!\n"
-                f"Pay {plan['upfront_display']} now using the Pay Now button below.\n"
-                f"The remaining {plan['deferred_display']} will be due by "
-                f"{plan['deferred_due_date']}.\n"
-                f"Reminder: Paying your deferred amount on time improves your account standing."
-            )
-        session["pending_plan"] = None
-
-    elif any(w in msg for w in REJECT_WORDS):
-        session["awaiting_plan_confirmation"] = False
-        session["awaiting_amount"] = True
-        session["pending_plan"] = None
-        _audit(session, "plan_rejected")
-        reply = "No problem. What amount would you like to offer instead?"
-
-    else:
-        # Ambiguous — re-prompt
-        reply = (
-            "Please reply \u2018CONFIRM\u2019 to accept this arrangement, "
-            "or \u2018renegotiate\u2019 if you\u2019d like to propose a different amount."
-        )
-
-    session["messages"].append({"role": "assistant", "content": reply})
-    _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
+    _audit(session, "agent_turn", turn=session.get("turn_count", 0),
+           speaker="agent", message=reply)
     return reply, session
 
 
 # ---------------------------------------------------------------------------
-# PART 4: TURN FUNCTION
+# PART 5: TURN FUNCTION (LLM-driven)
 # ---------------------------------------------------------------------------
 
 def _get_client() -> OpenAI:
@@ -817,157 +940,181 @@ def _get_client() -> OpenAI:
     return OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
 
 
-def _call_llm(session: dict, client: OpenAI) -> str:
+def _call_llm(session: dict, client: OpenAI, user_message: str) -> str:
+    """Call DeepSeek, run the tool-call loop, and return Aria's final text.
+
+    The conversation history lives in the system prompt, so the API messages
+    carry only the current user message plus any tool round-trips for this turn.
     """
-    Call DeepSeek (OpenAI-compatible) API, handle tool-call loops, return final text.
+    messages: list[dict] = [
+        {"role": "system", "content": session["system_prompt"]},
+        {"role": "user", "content": user_message},
+    ]
 
-    OpenAI tool-call protocol:
-      1. API returns finish_reason="tool_calls" with message.tool_calls list.
-      2. We append the raw assistant message, then one role="tool" message per call.
-      3. Loop until finish_reason="stop" → extract message.content as text.
-
-    System prompt is injected as the first message (role="system") on every
-    request — OpenAI does not have a separate `system` parameter at the top level.
-    """
-    while True:
-        # Build full message list: system prompt first, then conversation history
-        messages_with_system = [
-            {"role": "system", "content": session["system_prompt"]},
-            *session["messages"],
-        ]
-
+    for _ in range(6):   # safety cap on tool-call loops
         response = client.chat.completions.create(
             model=MODEL,
             max_tokens=MAX_TOKENS,
-            messages=messages_with_system,
+            messages=messages,
             tools=TOOLS,
             tool_choice="auto",
         )
 
         choice = response.choices[0]
         msg = choice.message
+        tool_calls = getattr(msg, "tool_calls", None)
 
-        if choice.finish_reason == "stop" or not msg.tool_calls:
-            # Pure text response — done
+        if not tool_calls:
             return (msg.content or "").strip()
 
-        if choice.finish_reason == "tool_calls":
-            # 1. Append the raw assistant message (preserves tool_calls metadata)
-            #    OpenAI SDK objects are not directly JSON-serialisable, so we
-            #    build a plain dict manually.
-            tool_call_dicts = [
-                {
-                    "id": tc.id,
-                    "type": "function",
-                    "function": {
-                        "name": tc.function.name,
-                        "arguments": tc.function.arguments,
-                    },
-                }
-                for tc in msg.tool_calls
-            ]
-            session["messages"].append({
-                "role": "assistant",
-                "content": msg.content,   # may be None or a preamble string
-                "tool_calls": tool_call_dicts,
+        tool_call_dicts = [
+            {
+                "id": tc.id,
+                "type": "function",
+                "function": {
+                    "name": tc.function.name,
+                    "arguments": tc.function.arguments,
+                },
+            }
+            for tc in tool_calls
+        ]
+        messages.append({
+            "role": "assistant",
+            "content": msg.content or "",
+            "tool_calls": tool_call_dicts,
+        })
+
+        for tc in tool_calls:
+            try:
+                tool_input = json.loads(tc.function.arguments or "{}")
+            except json.JSONDecodeError:
+                tool_input = {}
+            result = _execute_tool(tc.function.name, tool_input, session)
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc.id,
+                "content": json.dumps(result),
             })
 
-            # 2. Execute each tool call; append one role="tool" message per call
-            for tc in msg.tool_calls:
-                tool_name = tc.function.name
-                tool_input = json.loads(tc.function.arguments)
-                result = _execute_tool(tool_name, tool_input, session)
-                session["messages"].append({
-                    "role": "tool",
-                    "tool_call_id": tc.id,
-                    "content": json.dumps(result),
-                })
+    return "Thanks — let me get that sorted for you."
 
-            # 3. Loop: send updated history back for the model's next response
-            continue
 
-        # Unexpected finish_reason — return whatever text we have
-        return (msg.content or "").strip()
+def _no_key_reply(session: dict) -> str:
+    """Warm fallback when no API key is configured (e.g. some tests)."""
+    name = _first_name(session["debtor_name"])
+    return (
+        f"Thanks {name} — I've got that. Our payment team will reach out shortly "
+        f"to sort this out for you."
+    )
+
+
+def _is_legal_threat(message: str) -> bool:
+    m = message.lower()
+    return any(w in m for w in ("lawyer", "legal", "consumer forum", "rbi", "advocate", "court"))
+
+
+def _requests_human(message: str) -> bool:
+    m = message.lower()
+    return any(w in m for w in (
+        "talk to a human", "speak to a human", "talk to someone", "speak to someone",
+        "real person", "human representative", "talk to a real", "call me back",
+    ))
 
 
 def process_turn(session: dict, debtor_message: str) -> tuple[str, dict]:
     """
-    Process one debtor message through the negotiation agent.
-
-    Returns (agent_reply, updated_session).
-    Empty debtor_message is treated as non-responsive.
+    Process one debtor message. The conversation is driven by DeepSeek; Python
+    only enforces stopping rules and applies tool results to the session.
     """
     if session["status"] != "active":
         return f"[Session {session['status']} — no further turns]", session
 
     session["turn_count"] += 1
     turn = session["turn_count"]
+    session["last_debtor_ts"] = _ts() if debtor_message.strip() else None
 
-    # --- Non-responsive debtor (silent / empty message) ---
+    # --- Stopping rule: unresponsive (silent / empty message) ---
     if not debtor_message.strip():
         _audit(session, "debtor_turn", turn=turn, speaker="debtor", message="[silent]")
         if turn >= session["max_turns"]:
-            _handle_escalate({"reason": "debtor_unresponsive"}, session)
-            reply = _ESCALATION_MESSAGES["debtor_unresponsive"]
+            session["status"] = "escalated"
+            _audit(session, "stopping_rule", status="escalated", reason="debtor_unresponsive")
+            reply = "No rush — I'll leave this with our team and they'll follow up when you're ready."
         else:
-            reply = (
-                "It looks like we haven't heard from you yet. "
-                "Please reply when you're ready to discuss the outstanding invoice."
-            )
+            reply = "I'm still here when you're ready to talk this through."
         _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
-        return reply, session
+        return _finalize_turn(session, reply)
 
-    # --- Structured state: awaiting A/B intent choice ---
-    if session.get("awaiting_intent"):
-        return _handle_intent_response(session, debtor_message, turn)
-
-    # --- Structured state: awaiting plan confirmation (CONFIRM / renegotiate) ---
-    if session.get("awaiting_plan_confirmation"):
-        return _handle_plan_confirmation(session, debtor_message, turn)
-
-    # --- Structured state: awaiting debtor's offered amount ---
-    if session.get("awaiting_amount"):
-        return _handle_amount_response(session, debtor_message, turn)
-
-    # --- Regular free-form LLM turn ---
-    session["messages"].append({"role": "user", "content": debtor_message})
     _audit(session, "debtor_turn", turn=turn, speaker="debtor", message=debtor_message)
 
-    # Hard turn limit (> not >= so turn 5 still gets a reply)
-    if turn > session["max_turns"]:
-        _handle_escalate({"reason": "max_turns_reached"}, session)
-        reply = _ESCALATION_MESSAGES["max_turns_reached"]
+    # --- Stopping rule: legal threat → legal_hold ---
+    if _is_legal_threat(debtor_message):
+        session["status"] = "legal_hold"
+        reply = "Understood — I'll pass this to our team and we won't contact you further on this."
+        _audit(session, "stopping_rule", status="legal_hold", reason="debtor_legal_threat")
+        session["messages"].append({"role": "user", "content": debtor_message})
+        session["messages"].append({"role": "assistant", "content": reply})
         _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
-        return reply, session
+        return _finalize_turn(session, reply)
 
-    client = _get_client()
-    agent_reply = _call_llm(session, client)
+    # --- Stopping rule: debtor asks for a human ---
+    if _requests_human(debtor_message):
+        session["status"] = "escalated"
+        reply = "No problem — I'll connect you with a real person on our team who'll reach out shortly."
+        _audit(session, "stopping_rule", status="escalated", reason="debtor_requested_human")
+        session["messages"].append({"role": "user", "content": debtor_message})
+        session["messages"].append({"role": "assistant", "content": reply})
+        _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
+        return _finalize_turn(session, reply)
 
-    # After tool-use loop, last message may already be assistant; add text reply
-    last = session["messages"][-1] if session["messages"] else {}
-    if last.get("role") != "assistant" or not isinstance(last.get("content"), str):
-        session["messages"].append({"role": "assistant", "content": agent_reply})
+    # --- LLM-driven turn ---
+    # Build the system prompt from the conversation so far (excludes this turn),
+    # then let DeepSeek reason + call tools.
+    session["system_prompt"] = build_system_prompt(session)
+    session["messages"].append({"role": "user", "content": debtor_message})
 
-    _audit(session, "agent_turn", turn=turn, speaker="agent", message=agent_reply)
-    return agent_reply, session
+    try:
+        client = _get_client()
+        reply = _call_llm(session, client, debtor_message)
+    except EnvironmentError:
+        reply = _no_key_reply(session)
+    except Exception:
+        logger.exception("LLM turn failed")
+        reply = "Sorry, I hit a little snag — could you say that again?"
+
+    if not reply or not reply.strip():
+        reply = "Thanks — let me get that sorted for you."
+
+    session["messages"].append({"role": "assistant", "content": reply})
+    _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
+
+    return _finalize_turn(session, reply)
+
+
+def _build_opening_message(session: dict) -> str:
+    """Return Aria's warm opening — greet and invite the debtor to start."""
+    name = _first_name(session["debtor_name"])
+    amount = _rupees(session["invoice_amount_paise"])
+    return (
+        f"Hi {name}! I'm {AGENT_NAME} from {MERCHANT_NAME} — your invoice of {amount} "
+        f"is a little overdue. Would you like to pay it in full, pay a little now "
+        f"and the rest later, or is something else going on?"
+    )
 
 
 def open_turn(session: dict) -> tuple[str, dict]:
     """
-    Send the structured A/B-choice opening message.
-    Pure Python — no LLM call needed for this fixed template.
-    Sets session["awaiting_intent"] = True.
+    Send Aria's warm opening message. Pure Python — no LLM call needed.
     """
     opening = _build_opening_message(session)
-    session["awaiting_intent"] = True
-    # Seed message history with just the opening so subsequent turns have context
     session["messages"] = [{"role": "assistant", "content": opening}]
+    session["last_agent_ts"] = _ts()
     _audit(session, "agent_turn", turn=0, speaker="agent", message=opening)
     return opening, session
 
 
 # ---------------------------------------------------------------------------
-# PART 5: SIMULATED DEBTOR
+# PART 6: SIMULATED DEBTOR
 # ---------------------------------------------------------------------------
 
 def simulate_debtor_turn(
@@ -976,66 +1123,18 @@ def simulate_debtor_turn(
     turn_override: int | None = None,
 ) -> str:
     """
-    Return a simulated debtor message that matches the current session state.
+    Return a simulated debtor message for demo/batch runs.
 
-    Three outcomes only. Simulator is state-aware:
-      awaiting_intent            → ask about payment options
-      awaiting_amount            → outcome-specific amount response
-      awaiting_plan_confirmation → CONFIRM or renegotiate
+    The LLM-driven agent has no rigid situation stages, so this mostly returns
+    an opening message keyed on the simulated outcome.
     """
     outcome = simulated_outcome or session.get("simulated_outcome", "clean_settlement")
 
-    # ----------------------------------------------------------------
-    # State: A/B opening sent
-    # ----------------------------------------------------------------
-    if session.get("awaiting_intent"):
-        return "What payment options do you have?"
-
-    # ----------------------------------------------------------------
-    # State: plan confirmation card shown
-    # ----------------------------------------------------------------
-    if session.get("awaiting_plan_confirmation"):
-        if outcome == "clean_settlement":
-            return "CONFIRM"
-        if outcome == "repeat_extension":
-            # First pass: renegotiate; subsequent passes: confirm
-            if session.get("_plan_rejected_once"):
-                return "CONFIRM"
-            session["_plan_rejected_once"] = True
-            return "renegotiate"
+    if session.get("turn_count", 0) == 0 and not session.get("messages"):
         if outcome == "dispute":
-            return "renegotiate"   # goes back to amount loop → then disputes
-        return "CONFIRM"  # fallback
-
-    # ----------------------------------------------------------------
-    # State: agent asked "how much can you pay?"
-    # ----------------------------------------------------------------
-    if session.get("awaiting_amount"):
-
-        if outcome == "clean_settlement":
-            min_pct    = session["tier_bounds"]["min_now_pct"]
-            min_amount = int(session["invoice_amount"] * min_pct / 100)
-            return f"I can pay ₹{min_amount:,} right now."
-
-        if outcome == "dispute":
-            return "I don't think this amount is correct, we agreed on less."
-
+            return "I don't think this amount is right — we agreed on less."
         if outcome == "repeat_extension":
-            amount_turn = session.get("_amount_turn_count", 0)
-            session["_amount_turn_count"] = amount_turn + 1
-            scripts = [
-                "Can I get more time to pay? Maybe 90 days?",
-                "I really need at least 75 days, cash is tight.",
-                "What's the minimum I have to pay right now?",
-            ]
-            if amount_turn < len(scripts):
-                return scripts[amount_turn]
-            # Offer minimum so the plan card appears
-            min_pct    = session["tier_bounds"]["min_now_pct"]
-            min_amount = int(session["invoice_amount"] * min_pct / 100)
-            return f"I can pay ₹{min_amount:,} right now."
+            return "Can I get more time to pay this? Maybe in a few installments?"
+        return "Business has been slow, so I can't pay the full amount right now."
 
-    # ----------------------------------------------------------------
-    # Fallback
-    # ----------------------------------------------------------------
     return ""
