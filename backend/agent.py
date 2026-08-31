@@ -2,10 +2,19 @@
 RecoverFlow — Negotiation Agent
 =================================
 Conducts real-time B2B payment recovery conversations as "Aria" — a warm,
-human-sounding financial advisor. The conversation itself is driven by DeepSeek
-(a single intelligent system prompt plus function-calling tools). Python keeps
-only the deterministic parts: tool execution, session state updates, stopping
-rules, and trust-score calculation.
+human-sounding financial advisor.
+
+Clean separation of concerns:
+  * Python (NegotiationEngine + the state machine here) owns EVERY number and
+    every decision — the tier, the floor, the ladder step, the dates, the plan,
+    and the current remaining balance. All arithmetic happens in Python.
+  * DeepSeek does exactly two things and nothing more: (1) it extracts intent +
+    variables from the debtor's message as strict JSON (no math), and (2) it
+    turns a state + instruction + numbers into the reply. It only READS the
+    balance Python injects — it never calculates it.
+  * The final state is forced via tool calling: when the debtor confirms the
+    plan, DeepSeek is forced to call `finalize_agreement`, and Python intercepts
+    it — the LLM writes no further text, and Python injects the payment payload.
 
 Sessions are in-memory dicts (no DB yet).
 
@@ -27,6 +36,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -51,6 +61,7 @@ from backend.scoring import (  # noqa: E402
     project_score_change,
     calculate_trust_score,
 )
+from backend.negotiation_engine import NegotiationEngine  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -58,10 +69,31 @@ from backend.scoring import (  # noqa: E402
 
 MERCHANT_NAME = "RecoverFlow Demo Merchant"
 AGENT_NAME = "Aria"
-MODEL = "deepseek-chat"
-MAX_TOKENS = 1024
+MODEL = "deepseek-reasoner"
+# deepseek-reasoner emits a chain-of-thought (reasoning_content) BEFORE its
+# final answer, and that reasoning counts against max_tokens. 1024 was too small
+# — the model would burn its whole budget on reasoning and return an empty
+# `content` (finish_reason=length). Give it room for both.
+MAX_TOKENS = 8192
+# The terminal "finalize" turn forces a function call. deepseek-reasoner has no
+# function calling, so that one turn uses deepseek-chat (already used by the
+# document verifier) instead of the conversational MODEL above.
+FINALIZE_MODEL = "deepseek-chat"
 DATA_DIR = REPO_ROOT / "data"
+
+# Hard ceiling on how long a settlement plan may run. Enforced in Python,
+# not just the prompt.
+MAX_PLAN_DAYS = 34
+
+# How many times we counter ABOVE an acceptable-but-low offer before we accept
+# the debtor's number. Anchoring high first, then relaxing, recovers more than
+# taking the first figure they volunteer — debtors often hold back their real max.
+MAX_COUNTER_ATTEMPTS = 2
 logger = logging.getLogger(__name__)
+
+# Negotiation engines live here (keyed by session_id) so the session dict stays
+# JSON-serializable — the session stores only engine.to_dict(), never the object.
+_ENGINES: dict[str, NegotiationEngine] = {}
 
 # Situation labels (used by the document-verification flow + dashboard).
 SITUATION_CASHFLOW = "CASHFLOW"
@@ -123,6 +155,11 @@ def _rupees_digits(paise: int) -> str:
     return _rupees(paise).replace("₹", "").lstrip("-")
 
 
+def _inr(amount: float) -> str:
+    """Format a rupee amount (int/float) as ₹ with Indian grouping."""
+    return _rupees(int(round(amount)) * 100)
+
+
 def format_date(iso: str) -> str:
     """Format an ISO 'YYYY-MM-DD' date as a human-readable string (e.g. '26 Aug 2026')."""
     try:
@@ -133,6 +170,72 @@ def format_date(iso: str) -> str:
 
 def _first_name(name: str) -> str:
     return (name or "there").strip().split()[0]
+
+
+def _parse_rupees(number_str: str) -> int:
+    """Parse a digit string (possibly comma-grouped) into integer rupees."""
+    try:
+        return int(round(float(number_str.replace(",", ""))))
+    except ValueError:
+        return 0
+
+
+_AMOUNT_UNIT_MULTIPLIERS = {
+    "k": 1_000,
+    "thousand": 1_000,
+    "thousands": 1_000,
+    "lakh": 100_000,
+    "lakhs": 100_000,
+    "lac": 100_000,
+    "lacs": 100_000,
+}
+
+
+def _extract_amount_rupees(text: str) -> int | None:
+    """Best-effort extract of a rupee amount the debtor committed to pay.
+
+    This is a safety net, not the driver: `_handle_generate_payment_link` uses
+    the debtor's stated amount as the ceiling for the payment link, so the link
+    can never be inflated above what the debtor actually offered.
+    """
+    if not text:
+        return None
+    t = text.lower()
+    found: list[tuple[int, int]] = []  # (character position, rupees)
+
+    # ₹5,000 / ₹5000
+    for m in re.finditer(r"₹\s*([\d,]+(?:\.\d+)?)", t):
+        found.append((m.start(), _parse_rupees(m.group(1))))
+    # rs 5000 / rupees 5000
+    for m in re.finditer(r"\b(?:rs\.?|rupees?)\s+([\d,]+(?:\.\d+)?)", t):
+        found.append((m.start(), _parse_rupees(m.group(1))))
+    # 40k / 5 thousand / 2 lakh
+    for m in re.finditer(
+        r"(\d+(?:\.\d+)?)\s*(k|thousand|thousands|lakh|lakhs|lac|lacs)\b", t
+    ):
+        found.append((
+            m.start(),
+            int(round(float(m.group(1)) * _AMOUNT_UNIT_MULTIPLIERS[m.group(2).lower()])),
+        ))
+    # bare grouped/large number: 40,000 / 2,16,000 / 40000
+    for m in re.finditer(r"\b(\d{1,3}(?:,\d{2,3})+|\d{4,})\b", t):
+        found.append((m.start(), _parse_rupees(m.group(1))))
+
+    if not found:
+        return None
+
+    # Prefer the amount tied to a "now/today" commitment; else the last one.
+    now_pos = -1
+    for tok in ("today itself", "now", "today"):
+        pos = t.find(tok)
+        if pos != -1 and (now_pos == -1 or pos < now_pos):
+            now_pos = pos
+    if now_pos >= 0:
+        found.sort(key=lambda item: abs(item[0] - now_pos))
+    else:
+        found.sort(key=lambda item: item[0], reverse=True)
+
+    return found[0][1]
 
 
 def _normalize_no_discount_plan(session: dict, plan: dict) -> dict:
@@ -220,7 +323,8 @@ def _friendly_signal_reason(session: dict, old_signals: dict, new_signals: dict)
 
 
 def _refresh_trust_score(session: dict) -> None:
-    """Recompute the live trust score and rebuild the system prompt."""
+    """Recompute the live trust score (display only — it does NOT drive the
+    negotiation; the NegotiationEngine, fixed at session start, owns that)."""
     prev = session.get("trust_score_result")
     result = calculate_trust_score(
         session["debtor_history"], session["current_invoice"], session
@@ -256,8 +360,6 @@ def _refresh_trust_score(session: dict) -> None:
         tone=result["negotiation_flex"]["tone"],
     )
 
-    # Rebuild the system prompt so the trust block reflects the latest turn.
-    session["system_prompt"] = build_system_prompt(session)
 
 
 def _finalize_turn(session: dict, reply: str) -> tuple[str, dict]:
@@ -298,9 +400,6 @@ def create_session(invoice_id: str) -> dict:
 
     # Store amounts in paise internally
     invoice_amount_paise = invoice["amount"] * 100
-    # Floor is always 20% — universal hard floor
-    HARD_FLOOR_PCT = 20
-    min_now_paise = round(invoice_amount_paise * HARD_FLOOR_PCT / 100)
 
     session: dict[str, Any] = {
         "session_id": str(uuid4()),
@@ -314,9 +413,27 @@ def create_session(invoice_id: str) -> dict:
         "simulated_outcome": invoice.get("simulated_outcome", "clean_settlement"),
         "score":             score,
         "tier":              tier,              # kept for display only
-        "stance":            stance,            # drives negotiation logic
-        "negotiation_floor": HARD_FLOOR_PCT,
-        "min_now_paise":     min_now_paise,
+        "stance":            stance,            # kept for legacy paths only
+        "debtor_agreed_amount": None,           # today's agreed amount (rupees)
+        "last_debtor_offer": None,              # the debtor's most recent counter-offer (rupees)
+        "recent_agent_messages": [],            # last 3 agent replies (anti-repetition)
+        # --- state machine (Python decides; DeepSeek only speaks) ---
+        "state":                 "opening",     # opening|negotiating|collecting_dates|plan_ready|payment_pending|hardship|promise_to_pay|escalated|settled
+        "negotiation_step":      1,             # 1-4 ask steps; 5 = hardship or escalate
+        "counter_attempts":      0,             # times we've countered above an acceptable offer
+        "current_ask":           None,          # exact amount to ask THIS turn (counter vs ladder)
+        "first_counter_issued":  False,         # set once we've issued our first counter-offer
+        "last_bot_offer":        None,          # the bot's most recent counter amount (rupees)
+        "future_dates":          [],            # confirmed future payment dates (ISO)
+        "installment_plan":      None,          # list of {date, amount, label, status}
+        "plan_shown":            False,
+        "finalize_requested":    False,         # set when the plan is confirmed → forced finalize tool call
+        "reason_collected":      False,         # lock: the reason MCQ is asked at most once
+        "final_ultimatum_requested": False,     # second rejection → terminal final ultimatum
+        "negotiation_complete":  False,
+        "hardship_verified":     False,         # set True when inability-to-pay proof is accepted
+        "upload_requested":      False,         # ask for proof at most once
+        "negotiation_engine":    {},            # serialized NegotiationEngine values
         "score_projections": {
             "full_upfront":     projected_full,
             "partial_deferred": projected_partial,
@@ -360,7 +477,13 @@ def create_session(invoice_id: str) -> dict:
         "trust_score_reason": "initial assessment",
         "trust_score_signal_reason": "initial assessment",
     }
-    _refresh_trust_score(session)  # computes trust score + builds system prompt
+    _refresh_trust_score(session)  # computes the initial trust score
+
+    # Instantiate the negotiation engine ONCE — every number and every decision
+    # from here on comes from Python, never from the model.
+    engine = NegotiationEngine(session["invoice_amount"], session["trust_score"])
+    session["negotiation_engine"] = engine.to_dict()
+    _ENGINES[session["session_id"]] = engine
 
     # Freeze the payment-history trust score for display. The live score
     # (session["trust_score"]) keeps moving with negotiation signals on every
@@ -372,7 +495,12 @@ def create_session(invoice_id: str) -> dict:
     _audit(session, "session_created",
            tier=tier, score=score,
            invoice_amount_paise=invoice_amount_paise,
-           cold_start=score_result["cold_start"])
+           cold_start=score_result["cold_start"],
+           negotiation_tier=engine.tier,
+           min_today=engine.min_today,
+           max_installments=engine.max_installments,
+           gap_days=engine.gap_days,
+           deadline=engine.deadline.isoformat())
     return session
 
 
@@ -380,274 +508,136 @@ def create_session(invoice_id: str) -> dict:
 # PART 2: SYSTEM PROMPT — a single intelligent prompt (no flow logic)
 # ---------------------------------------------------------------------------
 
-def _render_history(messages: list[dict]) -> str:
-    """Render the conversation so far as a readable transcript for the prompt."""
-    lines: list[str] = []
-    for m in messages:
-        role = "Debtor" if m.get("role") == "user" else "Aria"
-        content = (m.get("content") or "").strip()
-        if content:
-            lines.append(f"{role}: {content}")
-    return "\n".join(lines) if lines else "(no conversation yet)"
+def _record_agent_message(session: dict, reply: str) -> None:
+    """Keep the last 3 agent replies so the LLM can avoid repeating itself."""
+    recent = session.setdefault("recent_agent_messages", [])
+    recent.append((reply or "").strip())
+    if len(recent) > 3:
+        del recent[:-3]
 
 
-def build_system_prompt(session: dict) -> str:
-    """Build Aria's system prompt — instructions to a smart human, not a flowchart."""
-    amount = _rupees_digits(session["invoice_amount_paise"])
-    min_amount = _rupees_digits(session.get("min_now_paise", round(session["invoice_amount_paise"] * 0.20)))
-    trust_score = session.get("trust_score", 0)
-    history = _render_history(session.get("messages", []))
+def _render_recent_agent_messages(session: dict) -> str:
+    """Render the agent's last few replies for the anti-repetition prompt block."""
+    recent = [m for m in session.get("recent_agent_messages", []) if m]
+    return "\n".join(f"- {m}" for m in recent) if recent else "(nothing yet)"
 
-    return f"""You are Aria, a warm and intelligent payment recovery specialist at {MERCHANT_NAME}. You are having a real human conversation with {session['debtor_name']} about their overdue invoice of ₹{amount}.
 
-YOUR PERSONALITY:
-- You speak like a real person — natural, warm, never robotic
-- Short messages — 2 sentences maximum per reply
-- You actually listen and remember everything said in this conversation
-- You never ask for something the debtor already told you
-- You never repeat yourself
-- You adapt completely to what the debtor says
+def build_system_prompt(session: dict, context: dict) -> str:
+    """Build Aria's system prompt — conversational guidance plus the numbers.
 
-YOUR GOAL:
-Recover as much of ₹{amount} as possible, as soon as possible — but in a way that feels helpful, not pushy. The debtor should feel like you're on their side.
+    Python owns every number (the ask, the hard floor, the dates); the model
+    never does money math. But the model's job is to actually READ what the
+    debtor said and respond to it — acknowledging their offer, their reason, or
+    their question — rather than sounding like a canned script.
 
-WHAT YOU KNOW SO FAR:
-Invoice ID: {session['invoice_id']}
-Amount due: ₹{amount}
-Days overdue: {session['dpd']}
-Debtor trust score: {trust_score}/100 (DO NOT mention this)
-Minimum you can accept: ₹{min_amount} (DO NOT mention this)
+    The conversation history is NOT embedded here — it is sent to the model as
+    real user/assistant turns alongside this prompt (see `_call_llm`).
+    """
+    recent = _render_recent_agent_messages(session)
 
-CONVERSATION HISTORY:
-{history}
+    state = context["state"]
+    instruction = context["instruction"]
+    nums = context["numbers"]
+    invoice = _inr(nums["invoice_amount"])
 
-HOW TO HANDLE COMMON SITUATIONS:
-Use your own judgment — but here are guidelines:
+    offer = nums.get("debtor_offer")
+    ask = nums.get("step_ask")
+    floor = nums.get("floor")
+    balance = nums.get("current_remaining_balance")
 
-If they say they'll pay tomorrow or on a specific date:
-→ Believe them, confirm the date, wish them well, end warmly
-→ Do NOT push for payment today
+    anchor_lines: list[str] = []
+    if offer is not None:
+        anchor_lines.append(
+            f"The debtor just offered {_inr(offer)}. Acknowledge their number in your own words before you counter."
+        )
+    if ask is not None:
+        anchor_lines.append(f"Your ask this turn is {_inr(ask)}.")
+    if floor is not None:
+        anchor_lines.append(
+            f"Hard floor: never accept or offer less than {_inr(floor)} today."
+        )
+    if balance:
+        anchor_lines.append(
+            f"Current remaining balance after today's payment: {_inr(balance)}. "
+            f"It is computed for you — read it, never recalculate it."
+        )
+    anchors = (
+        "\n".join(f"- {line}" for line in anchor_lines)
+        if anchor_lines else "- Follow the instruction below."
+    )
 
-If they offer a partial amount:
-→ If it's reasonable — accept it immediately, sort the rest later
-→ If it's very low — ask what's making it tight, understand first
-→ Never flatly reject an offer
+    return f"""You are Aria, a warm and intelligent payment recovery specialist at {MERCHANT_NAME}. You are talking to {session['debtor_name']} about their overdue invoice of {invoice}.
 
-If they say they already paid:
-→ Take it seriously, ask for UTR or transaction reference
-→ Tell them you'll get it checked right away
+YOUR ROLE:
+You are negotiating in real time with a real person. Python has worked out the numbers for you, but you must actually READ and RESPOND to what the debtor says — never sound like you are following a script or repeating a canned line.
 
-If they dispute the invoice:
-→ Stop asking for money completely
-→ Ask what specifically looks wrong
-→ Tell them you'll flag it for review
+CURRENT STATE: {state}
 
-If they give a reason they can't pay:
-→ Acknowledge it genuinely
-→ Work around their reality, not your minimum
+NUMBERS FOR THIS TURN:
+{anchors}
 
-If they seem confused or upset:
-→ Slow down, acknowledge how they feel
-→ One simple question at a time
+WHAT TO DO THIS TURN:
+{instruction}
 
-TOOLS AVAILABLE TO YOU:
-- generate_payment_link: use when debtor agrees to pay NOW
-- set_promise_to_pay: use when debtor commits to a future date
-- flag_dispute: use when debtor disputes the invoice
-- request_document_upload: use when you need proof from debtor
-- escalate: use only when debtor is completely unresponsive
+OUTPUT FORMAT:
+Respond with ONLY a valid JSON object — no prose outside the JSON:
+{{"thought_process": "<one short line of internal logic>", "action_type": "negotiate" | "trigger_reason_mcq" | "finalize_agreement", "reply_to_user": "<the exact text to send to the debtor>"}}
+- Use "trigger_reason_mcq" when you must ask the debtor WHY they cannot meet the amount — Python renders the multiple-choice buttons; your reply_to_user is the hook that introduces the question.
+- Use "finalize_agreement" only when the debtor has confirmed the plan.
+- Otherwise use "negotiate".
 
-RULES:
-- Never mention tier, trust score, minimum thresholds
-- Never use: "kindly", "as per", "please be advised", "I understand that", "I appreciate"
-- Never ask two questions in one message
-- Never repeat what debtor just said back to them
-- If debtor said it already — never ask again
-- Always end on a warm, human note"""
+WHAT YOU'VE ALREADY SAID — never repeat; rephrase if you're about to say something similar:
+{recent}
+
+VOICE & TONE:
+- Natural, warm, human. 1-2 sentences. One question per message.
+- Acknowledge the debtor's specific words first — their offer, their reason, or their question — then make your ask.
+- Answer any question the debtor asks, directly and truthfully.
+- You may go as low as the hard floor, but never a rupee below it, and never invent a number that isn't in the numbers above.
+- Never do arithmetic. Every number you need — including the current remaining balance — is given to you above; read it, do not recalculate or invent it.
+- Never mention trust score, tier, percentages, or the word "floor"/"minimum" to the debtor.
+- Never use: "kindly", "as per", "please be advised", "I understand that", "I appreciate".
+- Never send the same message twice."""
 
 
 # ---------------------------------------------------------------------------
-# PART 3: TOOL DEFINITIONS + HANDLERS
+# PART 3: SIDE-EFFECT HANDLERS
 # ---------------------------------------------------------------------------
-
-# OpenAI function-calling format — each entry wraps the schema under
-# {"type": "function", "function": {...}}.
-TOOLS: list[dict] = [
-    {
-        "type": "function",
-        "function": {
-            "name": "generate_payment_link",
-            "description": (
-                "Create a payment link for the debtor to pay the agreed amount now. "
-                "Call only when the debtor has explicitly agreed to pay now."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "amount": {"type": "number", "description": "Amount in rupees the debtor agreed to pay now"},
-                },
-                "required": ["amount"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "set_promise_to_pay",
-            "description": (
-                "Record the debtor's commitment to pay on a future date. "
-                "Use when the debtor commits to a specific date."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "date": {"type": "string", "description": "The date the debtor committed to pay, e.g. '2026-09-05' or 'next Friday'"},
-                    "amount": {"type": "number", "description": "The amount they committed to pay (optional)"},
-                },
-                "required": ["date"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "flag_dispute",
-            "description": "Flag the invoice as disputed and stop asking for payment. Use when the debtor disputes the invoice.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "reason": {"type": "string", "description": "What the debtor says is wrong with the invoice"},
-                },
-                "required": ["reason"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "request_document_upload",
-            "description": (
-                "Ask the debtor to upload a document as proof (payment receipt, "
-                "invoice copy, bank statement, business closure letter, etc.)."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "document_type": {"type": "string", "description": "What kind of document is needed, e.g. 'payment receipt' or 'bank statement'"},
-                    "reason": {"type": "string", "description": "Why the document is needed"},
-                },
-                "required": ["document_type"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "escalate",
-            "description": "Escalate to a human. Use only when the debtor is completely unresponsive.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "reason": {"type": "string", "enum": ["debtor_unresponsive"], "description": "Reason for escalation"},
-                },
-                "required": ["reason"],
-            },
-        },
-    },
-]
-
+#
+# These set session state for the non-negotiation edge cases (dispute, document
+# upload, payment link). They are called by Python in the state machine /
+# process_turn — deepseek-reasoner has no function calling, so the model never
+# invokes them.
 
 # ---- Handlers ---------------------------------------------------------------
 
-def _handle_get_invoice_details(inputs: dict, session: dict) -> dict:
-    invoices = _load_invoices()
-    debtors = _load_debtors()
-    inv_id = inputs["invoice_id"]
-    if inv_id not in invoices:
-        return {"error": f"Invoice {inv_id} not found"}
-    inv = invoices[inv_id]
-    debtor = debtors.get(inv["debtor_id"], {})
-    return {
-        "invoice_id": inv_id,
-        "amount_rupees": inv["amount"],
-        "amount_formatted": _rupees(inv["amount"] * 100),
-        "dpd": inv["dpd"],
-        "due_date": inv["due_date"],
-        "debtor_name": debtor.get("contact_name", "Unknown"),
-        "company_name": debtor.get("company_name", "Unknown"),
-        "merchant_name": MERCHANT_NAME,
-    }
-
-
-def _handle_validate_proposed_terms(inputs: dict, session: dict) -> dict:
-    now_pct    = inputs["now_pct"]
-    # Accept either now_amount_rupees (rupees) or upfront_offered_paise (paise)
-    invoice_paise = session["invoice_amount_paise"]
-    if "now_amount_rupees" in inputs:
-        now_amount = round(inputs["now_amount_rupees"] * 100)
-    elif "upfront_offered_paise" in inputs:
-        now_amount = inputs["upfront_offered_paise"]
-    else:
-        now_amount = round(invoice_paise * now_pct / 100)
-
-    HARD_FLOOR = 20
-    floor_paise = round(invoice_paise * HARD_FLOOR / 100)
-
-    if now_pct < HARD_FLOOR:
-        return {
-            "valid": False,
-            "violations": [
-                f"Cannot accept below 20% upfront. "
-                f"Minimum is ₹{invoice_paise * 0.20:,.0f}"
-            ],
-        }
-
-    if now_amount > invoice_paise:
-        return {
-            "valid": False,
-            "violations": [
-                f"Amount {_rupees(now_amount)} exceeds invoice total {_rupees(invoice_paise)}"
-            ],
-        }
-
-    deferred = invoice_paise - now_amount
-    upfront_pct = round(now_amount / invoice_paise * 100, 1)
-    st = session.get("stance", {})
-
-    _audit(session, "terms_validated",
-           now_pct=now_pct, upfront_amount=now_amount, deferred_amount=deferred)
-
-    return {
-        "valid": True,
-        "violations": [],
-        "computed_plan": {
-            "upfront_amount":  now_amount,
-            "upfront_pct":     upfront_pct,
-            "deferred_amount": deferred,
-            "deferred_pct":    round(100 - upfront_pct, 1),
-        },
-        "note": (
-            "above_target" if now_pct >= st.get("target", 0)
-            else "below_target_but_valid"
-        ),
-    }
-
-
 def _handle_generate_payment_link(inputs: dict, session: dict) -> dict:
-    """Create a Razorpay Order for the Checkout JS flow.
+    """Create a Razorpay Order for TODAY's agreed amount.
 
-    Enforces the 20% floor in Python (the LLM is told the minimum but this is
-    the hard guardrail). Returns the order info dict the frontend needs to open
-    the Checkout modal.
+    Called by Python (the state machine), never by DeepSeek. Hard gates: the
+    plan must have been shown, and the amount must be exactly the debtor's
+    agreed amount — never more, never less.
     """
     from backend.razorpay_client import create_order
 
-    amount_inr  = inputs["amount"]            # rupees
-    amount_paise = round(amount_inr * 100)
-    min_now = session.get("min_now_paise", round(session["invoice_amount_paise"] * 0.20))
+    if not session.get("plan_shown"):
+        return {"error": "Show the plan first before generating the payment link."}
 
-    if amount_paise < min_now:
-        return {"error": "Amount is below the minimum the agent can accept."}
+    agreed_inr = session.get("debtor_agreed_amount")
+    if agreed_inr is None:
+        return {"error": "No agreed amount recorded."}
+
+    amount_inr = inputs.get("amount")
+    if amount_inr is not None:
+        amount_inr = float(amount_inr)
+
+    # The link amount is the debtor's agreed amount, exactly.
+    if amount_inr != float(agreed_inr):
+        _audit(session, "payment_amount_forced_to_agreed",
+               requested_amount=amount_inr, agreed_amount=agreed_inr)
+        amount_inr = float(agreed_inr)
+
+    amount_paise = round(amount_inr * 100)
     if amount_paise > session["invoice_amount_paise"]:
         return {"error": "Amount exceeds the invoice total."}
 
@@ -664,20 +654,18 @@ def _handle_generate_payment_link(inputs: dict, session: dict) -> dict:
     session["payment_amount"]    = amount_inr
     session["status"]            = "awaiting_payment"
 
-    # Build agreed_terms if not already set (LLM called this directly)
+    # agreed_terms was built by set_installment_plan; normalize for safety.
     if not session.get("agreed_terms"):
         invoice_paise = session["invoice_amount_paise"]
         upfront_paise = amount_paise
         deferred_paise = max(0, invoice_paise - upfront_paise)
-        st = session.get("stance", {})
-        max_days = st.get("max_days", 30)
-        due_date_str = (date.today() + timedelta(days=max_days)).isoformat()
+        due_date_str = (date.today() + timedelta(days=MAX_PLAN_DAYS)).isoformat()
         session["agreed_terms"] = _normalize_no_discount_plan(session, {
             "upfront_amount":      upfront_paise,
             "upfront_pct":         round(upfront_paise / invoice_paise * 100, 1),
             "deferred_amount_raw": deferred_paise,
             "deferred_pct":        round(deferred_paise / invoice_paise * 100, 1),
-            "deferred_days":       max_days,
+            "deferred_days":       MAX_PLAN_DAYS,
             "deferred_due_date":   due_date_str,
             "upfront_display":     _rupees(upfront_paise),
             "due_date_display":    format_date(due_date_str),
@@ -707,18 +695,17 @@ def _handle_generate_payment_link(inputs: dict, session: dict) -> dict:
     return order_info
 
 
-def _handle_set_promise_to_pay(inputs: dict, session: dict) -> dict:
-    """Record the debtor's commitment to pay on a future date."""
-    promise_date = inputs.get("date", "")
-    amount = inputs.get("amount")
-    session["promise_to_pay"] = {
-        "date": promise_date,
-        "amount": amount,
-        "recorded_at": _ts(),
-    }
-    session["status"] = "promise_to_pay"
-    _audit(session, "promise_to_pay_set", date=promise_date, amount=amount)
-    return {"status": "promise_to_pay", "date": promise_date, "amount": amount}
+def create_full_payment_order(session: dict) -> dict:
+    """Generate a Razorpay Order for the FULL invoice amount, bypassing negotiation.
+
+    Used by the "Pay in full" button next to the debtor name — the debtor can
+    settle the whole invoice immediately without going through the agent.
+    """
+    full = session["invoice_amount"]
+    session["plan_shown"] = True
+    session["debtor_agreed_amount"] = full
+    session["last_debtor_offer"] = full
+    return _handle_generate_payment_link({"amount": full}, session)
 
 
 def _handle_flag_dispute(inputs: dict, session: dict) -> dict:
@@ -758,48 +745,6 @@ def _handle_request_document_upload(inputs: dict, session: dict) -> dict:
     return {"requested": True, "document_type": document_type}
 
 
-_ESCALATION_MESSAGES = {
-    "max_turns_reached": (
-        "I've taken this as far as I can here. Our team will reach out to you shortly."
-    ),
-    "debtor_dispute": (
-        "I've passed everything across to the team. Sit tight — they'll be in touch within 2 business days."
-    ),
-    "debtor_requested_human": (
-        "No problem — I'll connect you with a real person on our team who'll reach out shortly."
-    ),
-    "debtor_unresponsive": (
-        "No rush — I'll leave this with our team and they'll follow up when you're ready."
-    ),
-}
-
-
-def _handle_escalate(inputs: dict, session: dict) -> dict:
-    reason = inputs.get("reason", "debtor_unresponsive")
-    session["status"] = "escalated"
-    _audit(session, "escalation_triggered", reason=reason)
-    return {
-        "closing_message": _ESCALATION_MESSAGES.get(reason, "This matter has been escalated."),
-        "status": session["status"],
-    }
-
-
-def _execute_tool(name: str, tool_input: dict, session: dict) -> Any:
-    dispatch = {
-        "get_invoice_details":     _handle_get_invoice_details,
-        "validate_proposed_terms": _handle_validate_proposed_terms,
-        "generate_payment_link":   _handle_generate_payment_link,
-        "set_promise_to_pay":      _handle_set_promise_to_pay,
-        "flag_dispute":            _handle_flag_dispute,
-        "request_document_upload": _handle_request_document_upload,
-        "escalate":                _handle_escalate,
-    }
-    handler = dispatch.get(name)
-    if handler is None:
-        return {"error": f"Unknown tool: {name}"}
-    return handler(tool_input, session)
-
-
 # ---------------------------------------------------------------------------
 # PART 4: DOCUMENT VERIFICATION — act on the verifier's verdict
 # ---------------------------------------------------------------------------
@@ -821,7 +766,7 @@ def _flag_for_accept(situation: str, result: dict) -> str:
             f"⚠️ Dispute verified — amount discrepancy: {disc}" if disc
             else "⚠️ Dispute verified"
         )
-    return "✅ Unable-to-pay proof verified — installment plan offered"
+    return "✅ Unable-to-pay proof verified — hardship floor applied (20%)"
 
 
 def _pivot_to_negotiation_reply(session: dict) -> str:
@@ -882,20 +827,33 @@ def handle_document_verdict(
             # keep the conversation open.
             merchant_flag = "📄 Document received — awaiting merchant review"
             reply = debtor_friendly or "Thanks — I've noted that document down."
-        else:  # CANNOT_PAY — offer an installment plan and proceed to that flow
+        else:  # CANNOT_PAY — verified hardship → lower the floor to 20% and continue
             merchant_flag = _flag_for_accept(situation, result)
+            engine = _get_engine(session)
+            new_min = engine.apply_hardship()
+            session["hardship_verified"] = True
+            session["negotiation_engine"] = engine.to_dict()
+            session["state"] = "negotiating"
+            session["negotiation_step"] = 3      # re-open at the hardship floor
+            _audit(session, "hardship_verified", new_min_today=new_min)
             reply = (
-                f"{debtor_friendly} Based on what you've shared, let's work out "
-                f"a plan that's manageable. How does splitting this into 3 "
-                f"payments sound?"
+                f"{debtor_friendly} Given your situation, we can come down to "
+                f"{_inr(new_min)} today (20% of the invoice). Could you manage that?"
             ).strip()
     elif action == "REQUEST_BETTER_PROOF":
         # Warm, never accusatory. The upload card is shown again for one more
         # attempt (the server reads the final recommended_action).
         merchant_flag = "⚠️ Requesting better proof — document inconclusive"
+        _specific_doc = {
+            "CANNOT_PAY": "a clear bank statement (showing your name and recent balance) or a hardship letter",
+            "ALREADY_PAID": "a payment receipt or bank statement showing the UTR/transaction ID",
+            "DISPUTE": "a clear copy of the invoice or agreement showing the correct amount",
+        }.get(situation)
         reply = debtor_friendly or (
             "Thanks — could you share a clearer copy so I can verify this properly?"
         )
+        if _specific_doc and _specific_doc not in reply:
+            reply = f"{reply.rstrip()} {_specific_doc.capitalize()} works best."
     else:  # ESCALATE_TO_MERCHANT → pivot to payment negotiation (keep chat open)
         merchant_flag = "🔴 Manual review needed — document inconclusive"
         reply = _pivot_to_negotiation_reply(session)
@@ -912,7 +870,14 @@ def handle_document_verdict(
     }
     session["merchant_flag"] = merchant_flag
 
+    # Record the upload itself as a debtor turn so the conversation stays
+    # coherent — the assistant reply below otherwise floats with no user turn.
+    session["messages"].append({
+        "role": "user",
+        "content": "[Debtor uploaded a document for verification]",
+    })
     session["messages"].append({"role": "assistant", "content": reply})
+    _record_agent_message(session, reply)
     _audit(
         session,
         "document_verified",
@@ -940,63 +905,33 @@ def _get_client() -> OpenAI:
     return OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
 
 
-def _call_llm(session: dict, client: OpenAI, user_message: str) -> str:
-    """Call DeepSeek, run the tool-call loop, and return Aria's final text.
+def _call_llm(session: dict, client: OpenAI) -> str:
+    """Call DeepSeek (reasoner) and return Aria's final text.
 
-    The conversation history lives in the system prompt, so the API messages
-    carry only the current user message plus any tool round-trips for this turn.
+    The full conversation is sent as real role-tagged turns (user/assistant) so
+    the model remembers exactly what the debtor said and what Aria said, and can
+    continue from where the chat left off. deepseek-reasoner has no function
+    calling — every decision (dispute, document request, plan, link) is made by
+    Python in the state machine, never by the model.
     """
     messages: list[dict] = [
         {"role": "system", "content": session["system_prompt"]},
-        {"role": "user", "content": user_message},
     ]
+    # Append the conversation so far as proper turns. The current turn's user
+    # message is already the last entry in session["messages"] (appended before
+    # this call), so the model sees the whole thread, in order.
+    for m in session.get("messages", []):
+        role = m.get("role")
+        content = (m.get("content") or "").strip()
+        if role in ("user", "assistant") and content:
+            messages.append({"role": role, "content": content})
 
-    for _ in range(6):   # safety cap on tool-call loops
-        response = client.chat.completions.create(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
-            messages=messages,
-            tools=TOOLS,
-            tool_choice="auto",
-        )
-
-        choice = response.choices[0]
-        msg = choice.message
-        tool_calls = getattr(msg, "tool_calls", None)
-
-        if not tool_calls:
-            return (msg.content or "").strip()
-
-        tool_call_dicts = [
-            {
-                "id": tc.id,
-                "type": "function",
-                "function": {
-                    "name": tc.function.name,
-                    "arguments": tc.function.arguments,
-                },
-            }
-            for tc in tool_calls
-        ]
-        messages.append({
-            "role": "assistant",
-            "content": msg.content or "",
-            "tool_calls": tool_call_dicts,
-        })
-
-        for tc in tool_calls:
-            try:
-                tool_input = json.loads(tc.function.arguments or "{}")
-            except json.JSONDecodeError:
-                tool_input = {}
-            result = _execute_tool(tc.function.name, tool_input, session)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tc.id,
-                "content": json.dumps(result),
-            })
-
-    return "Thanks — let me get that sorted for you."
+    response = client.chat.completions.create(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        messages=messages,
+    )
+    return (response.choices[0].message.content or "").strip()
 
 
 def _no_key_reply(session: dict) -> str:
@@ -1021,17 +956,1073 @@ def _requests_human(message: str) -> bool:
     ))
 
 
+# ---------------------------------------------------------------------------
+# Negotiation state machine — Python owns every number and every decision.
+# DeepSeek is only told WHAT to say, never HOW to decide.
+# ---------------------------------------------------------------------------
+
+def _get_engine(session: dict) -> NegotiationEngine:
+    """Return the session's negotiation engine (instantiated once at start)."""
+    eng = _ENGINES.get(session["session_id"])
+    if eng is None:
+        eng = NegotiationEngine(session["invoice_amount"], session.get("trust_score", 0))
+        _ENGINES[session["session_id"]] = eng
+        session["negotiation_engine"] = eng.to_dict()
+    return eng
+
+
+def _extract_iso_dates(text: str) -> list[str]:
+    """Return ISO dates (YYYY-MM-DD) mentioned in the debtor's message."""
+    if not text:
+        return []
+    return re.findall(r"\b(\d{4}-\d{2}-\d{2})\b", text)
+
+
+_CONFIRM_WORDS = (
+    "yes", "ya", "yeah", "yep", "yup", "ok", "okay", "sure", "confirm", "agree",
+    "agreed", "sounds good", "works", "that works", "fine", "deal", "go ahead",
+    "proceed", "perfect", "great", "correct", "done", "👍", "✅",
+)
+
+
+def _is_confirmation(text: str) -> bool:
+    """True if the debtor is confirming the plan (vs renegotiating)."""
+    m = (text or "").lower().strip()
+    if m in ("no", "nope", "nah") or m.startswith("no "):
+        return False
+    return any(w in m for w in _CONFIRM_WORDS)
+
+
+_BARE_REJECTIONS = {
+    "no", "nope", "nah", "n", "no thanks", "no way",
+    "can't", "cant", "cannot", "wont", "won't", "nothing",
+}
+
+
+def _looks_like_reason(text: str) -> bool:
+    """True if the debtor gave an actual reason (not a bare 'no')."""
+    m = (text or "").strip().lower()
+    if m in _BARE_REJECTIONS or len(m) < 8:
+        return False
+    return True
+
+
+_CANNOT_PAY_WORDS = (
+    "no cash", "no money", "no funds", "no balance", "nothing to pay",
+    "broke", "don't have", "dont have", "can't pay anything", "cant pay anything",
+    "no income", "no sales", "no business", "have no money", "no way to pay",
+)
+
+_CEILING_WORDS = (
+    "max", "maximum", "at most", "that's all", "thats all", "all i have",
+    "can't afford", "cant afford", "can't go above", "cant go above", "only have",
+    "my limit", "my budget",
+)
+
+_QUESTION_WORDS = (
+    "what", "how", "why", "which", "where", "who", "when",
+    "what's", "whats", "do i", "can i", "could i", "tell me", "explain",
+)
+
+
+def _signals_cannot_pay(message: str) -> bool:
+    """True if the debtor signals they have no money at all right now."""
+    m = (message or "").lower()
+    return any(w in m for w in _CANNOT_PAY_WORDS)
+
+
+def _signals_ceiling(message: str) -> bool:
+    """True if the debtor states a hard upper limit on what they can pay."""
+    m = (message or "").lower()
+    return any(w in m for w in _CEILING_WORDS)
+
+
+_ALREADY_PAID_WORDS = (
+    "already paid", "paid already", "i've paid", "i have paid", "i paid",
+    "sent the payment", "made the payment", "payment sent", "paid this",
+    "paid it", "i did pay", "already sent", "utr",
+)
+
+_DISPUTE_WORDS = (
+    "dispute", "wrong amount", "not right", "incorrect", "overcharged",
+    "agreed on less", "wrong invoice", "not my invoice", "double charged",
+    "billed twice", "this amount is wrong", "this is wrong",
+)
+
+
+def _signals_already_paid(message: str) -> bool:
+    """True if the debtor claims they've already paid this invoice."""
+    m = (message or "").lower()
+    return any(w in m for w in _ALREADY_PAID_WORDS)
+
+
+def _signals_dispute(message: str) -> bool:
+    """True if the debtor disputes the invoice amount or charges."""
+    m = (message or "").lower()
+    return any(w in m for w in _DISPUTE_WORDS)
+
+
+_FULL_PAYMENT_WORDS = (
+    "pay full", "pay the full", "in full", "full amount", "full payment",
+    "pay it all", "pay everything", "entire amount", "whole amount",
+    "settle the full",
+)
+
+
+def _signals_pay_in_full(message: str) -> bool:
+    """True if the debtor offers to pay the full invoice amount now.
+
+    Negation flips the meaning ("can't pay the full amount" is a hardship
+    signal, not a full-payment offer).
+    """
+    m = (message or "").lower()
+    if any(w in m for w in (
+        "can't pay", "cant pay", "cannot pay", "can not pay", "won't pay",
+        "wont pay", "don't have", "dont have", "can't afford", "cant afford",
+    )):
+        return False
+    return any(w in m for w in _FULL_PAYMENT_WORDS)
+
+
+def _is_question(message: str) -> bool:
+    """True if the debtor is asking a clarifying question (not offering/rejecting).
+
+    A message with a rupee amount is treated as an offer, never a question, even
+    if it happens to contain a question word (e.g. "can I pay 5k?").
+    """
+    m = (message or "").strip().lower()
+    if not m or _extract_amount_rupees(m) is not None:
+        return False
+    if m.endswith("?"):
+        return True
+    return any(w in m for w in _QUESTION_WORDS)
+
+
+# ---------------------------------------------------------------------------
+# Intent extraction — the LLM returns structured JSON; Python owns the math.
+# ---------------------------------------------------------------------------
+#
+# The model is a pure intent/variable extractor here. It returns a JSON object
+# and does NO arithmetic — the remaining balance is computed later in Python
+# (process_turn / _build_context) and injected back into the prompt as a
+# read-only system variable.
+
+_MONTH_NAMES = {
+    "jan": 1, "january": 1,
+    "feb": 2, "february": 2,
+    "mar": 3, "march": 3,
+    "apr": 4, "april": 4,
+    "may": 5,
+    "jun": 6, "june": 6,
+    "jul": 7, "july": 7,
+    "aug": 8, "august": 8,
+    "sep": 9, "sept": 9, "september": 9,
+    "oct": 10, "october": 10,
+    "nov": 11, "november": 11,
+    "dec": 12, "december": 12,
+}
+
+_EXTRACT_INTENT_SYSTEM = (
+    "You extract structured payment intent from a debtor's message. "
+    "Return ONLY a JSON object — no prose, no markdown, no code fences. "
+    'Schema: {"intent": string, "upfront_amount": integer|null, "date": string|null}.\n'
+    'intent is one of: "partial_payment", "full_payment", "cannot_pay", "dispute", '
+    '"already_paid", "confirm", "reject", "question", "other".\n'
+    "upfront_amount is the amount in whole rupees the debtor offers to pay now "
+    '(interpret "lakh", "k", "thousand", and comma grouping). Use null when no amount is given.\n'
+    'date is the payment date the debtor mentions (e.g. "Sept 1"). Use null when none is given.\n'
+    "Do no arithmetic. Extract only what the debtor actually said."
+)
+
+
+def _safe_iso(year: int, month: int, day: int) -> str | None:
+    try:
+        return date(year, month, day).isoformat()
+    except ValueError:
+        return None
+
+
+def _normalize_intent_date(value) -> str | None:
+    """Normalize an LLM-returned date ("Sept 1", "2026-09-01", …) to ISO.
+
+    Returns ISO 'YYYY-MM-DD' (defaulting to the current year when the debtor
+    doesn't give one), or None if the value can't be parsed.
+    """
+    if not value:
+        return None
+    s = str(value).strip().lower()
+    if not s:
+        return None
+    iso = re.fullmatch(r"(\d{4})-(\d{1,2})-(\d{1,2})", s)
+    if iso:
+        return _safe_iso(int(iso.group(1)), int(iso.group(2)), int(iso.group(3)))
+
+    year = date.today().year
+    y = re.search(r"\b(20\d{2})\b", s)
+    if y:
+        year = int(y.group(1))
+    s = re.sub(r"\b(\d{1,2})(?:st|nd|rd|th)\b", r"\1", s)
+    s = re.sub(r"\b(?:20\d{2})\b", " ", s)
+    s = s.replace("of", " ").strip()
+
+    m = re.match(r"([a-z]{3,9})\.?\s+(\d{1,2})", s)
+    if m:
+        mon = _MONTH_NAMES.get(m.group(1))
+        if mon:
+            return _safe_iso(year, mon, int(m.group(2)))
+    m = re.match(r"(\d{1,2})\s+([a-z]{3,9})", s)
+    if m:
+        mon = _MONTH_NAMES.get(m.group(2))
+        if mon:
+            return _safe_iso(year, mon, int(m.group(1)))
+    return None
+
+
+def _parse_intent_json(raw: str) -> dict | None:
+    """Parse the LLM's JSON, tolerating fences/prose, and validate fields."""
+    if not raw:
+        return None
+    text = raw.strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text).strip()
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end <= start:
+        return None
+    try:
+        data = json.loads(text[start:end + 1])
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+
+    intent = str(data.get("intent") or "other").strip().lower()
+
+    upfront = data.get("upfront_amount")
+    if isinstance(upfront, bool):
+        upfront = None
+    elif isinstance(upfront, (int, float)) and upfront > 0:
+        upfront = int(upfront)
+    else:
+        upfront = None
+
+    return {"intent": intent, "upfront_amount": upfront,
+            "date": _normalize_intent_date(data.get("date"))}
+
+
+def _parse_agent_json(raw: str) -> dict:
+    """Parse the agent's JSON reply, falling back to treating raw text as the reply.
+
+    The model is asked to return {"thought_process", "action_type", "reply_to_user"}.
+    If it returns plain text (or malformed JSON), the whole string becomes
+    reply_to_user and action_type defaults to "negotiate" — so a text-only model
+    (or a test double) still works.
+    """
+    if raw:
+        text = raw.strip()
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text).strip()
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end > start:
+            try:
+                data = json.loads(text[start:end + 1])
+                if isinstance(data, dict) and data.get("reply_to_user"):
+                    return {
+                        "thought_process": str(data.get("thought_process") or "").strip(),
+                        "action_type": str(data.get("action_type") or "negotiate").strip().lower(),
+                        "reply_to_user": str(data["reply_to_user"]).strip(),
+                    }
+            except (json.JSONDecodeError, ValueError):
+                pass
+    return {"thought_process": "", "action_type": "negotiate",
+            "reply_to_user": (raw or "").strip()}
+
+
+# The four reasons shown as buttons when the agent must ask WHY the debtor can't
+# pay. Python builds the buttons — the model never generates them.
+MCQ_REASONS = [
+    {"button_id": "client_not_paid", "label": "Client hasn't paid"},
+    {"button_id": "cashflow",         "label": "Cash flow issues"},
+    {"button_id": "dispute",          "label": "Dispute/Damaged goods"},
+    {"button_id": "other",            "label": "Other"},
+]
+
+
+def _extract_intent_regex(message: str, invoice_amount: int | None = None) -> dict:
+    """Deterministic fallback that mirrors the LLM's JSON schema.
+
+    Used when the model is unavailable or returns non-JSON (e.g. in tests).
+    """
+    amount = _extract_amount_rupees(message)
+    dates = _extract_iso_dates(message)
+    if amount is not None:
+        if invoice_amount and amount >= invoice_amount:
+            intent = "full_payment"
+        else:
+            intent = "partial_payment"
+    elif _signals_already_paid(message):
+        intent = "already_paid"
+    elif _signals_dispute(message):
+        intent = "dispute"
+    elif _signals_cannot_pay(message):
+        intent = "cannot_pay"
+    elif _is_confirmation(message):
+        intent = "confirm"
+    elif _is_question(message):
+        intent = "question"
+    else:
+        intent = "other"
+    return {
+        "intent": intent,
+        "upfront_amount": amount,
+        "date": dates[0] if dates else None,
+    }
+
+
+def extract_intent(session: dict, message: str) -> dict:
+    """Extract intent + variables as JSON. LLM first, regex fallback.
+
+    The model is prompted STRICTLY to return JSON and to do no arithmetic. Any
+    failure — missing API key, malformed JSON, or a non-JSON reply — falls back
+    to deterministic regex extraction. The balance is computed later, in Python.
+    """
+    intent: dict | None = None
+    try:
+        client = _get_client()
+        resp = client.chat.completions.create(
+            model=MODEL,
+            max_tokens=512,
+            messages=[
+                {"role": "system", "content": _EXTRACT_INTENT_SYSTEM},
+                {"role": "user", "content": message},
+            ],
+        )
+        raw = (resp.choices[0].message.content or "").strip()
+        intent = _parse_intent_json(raw)
+    except Exception:
+        logger.debug("intent extraction via LLM failed; using regex fallback",
+                     exc_info=True)
+
+    if not intent:
+        intent = _extract_intent_regex(message, session.get("invoice_amount"))
+    return intent
+
+
+def _round_to_100(amount: float) -> int:
+    return int(round(amount / 100) * 100)
+
+
+def _counter_above(offered: int, anchor: int, attempt: int) -> int:
+    """A counter strictly between the debtor's offer and our opening ask.
+
+    Pushes high on the first attempt and relaxes toward their number on later
+    attempts, so we probe for the debtor's true maximum without overplaying.
+    """
+    gap = max(0, anchor - offered)
+    fraction = max(0.30, 0.60 - 0.15 * attempt)
+    counter = _round_to_100(offered + gap * fraction)
+    # Clamp strictly between offered and anchor (rounded to ₹100).
+    return max(offered + 100, min(counter, anchor - 100))
+
+
+def _render_plan_text(session: dict, plan: list[dict], engine: NegotiationEngine) -> str:
+    """Render the settlement plan block shown to the debtor before the link."""
+    name = session["debtor_name"]
+    inv = session["invoice_id"]
+    total = _inr(engine.invoice_amount)
+    lines = [
+        f"Here's your payment plan, {name}:",
+        "",
+        f"📋 Settlement Plan — {inv}",
+        "─────────────────────────────",
+    ]
+    for i in plan:
+        if i["status"] == "pending_payment":
+            lines.append(f"✅ Today ({format_date(i['date'])}):  {_inr(i['amount'])}  ← payment link below")
+        else:
+            lines.append(f"📅 {format_date(i['date'])}:  {_inr(i['amount'])}  ← reminder will be sent")
+    lines += [
+        "─────────────────────────────",
+        f"Total:                 {total} (100% recovered)",
+        "─────────────────────────────",
+        f"All dates are within {MAX_PLAN_DAYS} days.",
+        "Missing a payment will affect your trust score.",
+    ]
+    return "\n".join(lines)
+
+
+def _set_plan_and_terms(session: dict, engine: NegotiationEngine, plan: list[dict]) -> None:
+    """Persist the plan, mark it shown, and build agreed_terms for the dashboard."""
+    session["installment_plan"] = plan
+    session["plan_shown"] = True
+    upfront = plan[0]["amount"]  # rupees
+    invoice = engine.invoice_amount
+    deferred = invoice - upfront
+    last_date = plan[-1]["date"]
+    session["agreed_terms"] = _normalize_no_discount_plan(session, {
+        "upfront_amount":      round(upfront * 100),
+        "upfront_pct":         round(upfront / invoice * 100, 1),
+        "deferred_amount_raw": round(deferred * 100),
+        "deferred_pct":        round(deferred / invoice * 100, 1),
+        "deferred_days":       (date.fromisoformat(last_date) - engine.today).days,
+        "deferred_due_date":   last_date,
+        "upfront_display":     _inr(upfront),
+        "due_date_display":    format_date(last_date),
+    })
+    for i in plan:
+        _audit(session, "installment_scheduled",
+               date=i["date"], amount=i["amount"], status=i["status"])
+    _audit(session, "plan_ready", installments=plan)
+
+
+def _accept_full_payment(session: dict, engine: NegotiationEngine) -> str:
+    """Settle the full invoice today — no dates, no confirm step, send the link."""
+    full = engine.invoice_amount
+    session["debtor_agreed_amount"] = full
+    session["last_debtor_offer"] = full
+    session["future_dates"] = []
+    plan, _status = engine.build_plan(full, [])
+    _set_plan_and_terms(session, engine, plan)
+    order = _handle_generate_payment_link({"amount": full}, session)
+    session["negotiation_complete"] = True
+    if isinstance(order, dict) and "error" in order:
+        return (
+            f"The debtor agreed to pay the full amount {_inr(full)}. Tell them "
+            f"we're preparing their payment link and it will appear shortly."
+        )
+    from_state = session.get("state", "opening")
+    session["state"] = "payment_pending"
+    _audit(session, "state_transition", from_state=from_state,
+           to_state="payment_pending", agreed_amount=full)
+    return (
+        f"The debtor agreed to pay the full amount {_inr(full)}. Tell them the "
+        f"payment link for {_inr(full)} is ready and they can complete payment now."
+    )
+
+
+def _advance_negotiation(session: dict, engine: NegotiationEngine, msg: str,
+                         intent: dict | None = None) -> str:
+    """Run one step of the state machine and return the instruction for DeepSeek.
+
+    `intent` (optional) is the LLM-extracted `{intent, upfront_amount, date}`
+    JSON. When present, its `upfront_amount` and `date` are authoritative over
+    the regex extraction — the model is the extractor, Python stays the decider.
+    """
+    state = session.get("state", "opening")
+    offered = _extract_amount_rupees(msg)
+    if intent and isinstance(intent.get("upfront_amount"), int):
+        offered = intent["upfront_amount"]
+    session["current_ask"] = None   # default; the counter path overrides this
+
+    # Turn-tracking guard: once we've issued a counter-offer, a debtor who comes
+    # back with a number still BELOW that counter is rejecting it. Stop the
+    # arithmetic and ask WHY they can't meet the amount, rather than countering
+    # again or silently accepting their lowball. This fires on the very next
+    # turn after the first counter — independent of the min_upfront floor. The
+    # reason MCQ is asked at most once (reason_collected).
+    if (state == "negotiating"
+            and session.get("first_counter_issued")
+            and not session.get("reason_collected")
+            and offered is not None
+            and session.get("last_bot_offer") is not None
+            and offered < session["last_bot_offer"]):
+        session["last_debtor_offer"] = offered
+        session["state"] = "hardship"
+        session["upload_requested"] = False
+        session["reason_collected"] = True
+        session["reason_mcq_pending"] = True
+        _audit(session, "state_transition", from_state=state,
+               to_state="hardship", reason="offer_below_counter",
+               offered=offered, previous_bot_offer=session["last_bot_offer"])
+        return (
+            f"The debtor offered {_inr(offered)}, below our previous counter of "
+            f"{_inr(session['last_bot_offer'])}. Acknowledge their number warmly "
+            f"and, in one question, ask what's making it hard to get to that amount."
+        )
+
+    # Full payment — the debtor settles the whole invoice today. No counter, no
+    # dates, no confirm step: generate the payment link right away.
+    if (offered is not None and offered >= engine.invoice_amount) or (
+        offered is None and _signals_pay_in_full(msg)
+    ):
+        return _accept_full_payment(session, engine)
+
+    if state == "opening":
+        session["state"] = "negotiating"
+        state = "negotiating"          # keep the local copy in sync for fall-through
+        session["negotiation_step"] = 1
+        _audit(session, "state_transition", from_state="opening",
+               to_state="negotiating", step=1)
+        if offered is not None:
+            # The debtor answered the opening with an amount ("1k"). Treat it as
+            # their first offer and fall through to the negotiating logic below,
+            # which counters upward before settling.
+            session["last_debtor_offer"] = offered
+        else:
+            return f"Ask for {_inr(engine.step1_amount)} today and one future payment."
+
+    if state == "negotiating":
+        # Record every offer (acceptable or not) so we can acknowledge it and,
+        # if we've countered, accept their firm number.
+        if offered is not None:
+            session["last_debtor_offer"] = offered
+
+        # 1) An acceptable offer. Don't accept the first number at face value —
+        #    counter ABOVE it a few times to recover the debtor's true maximum,
+        #    then settle on their best number.
+        if offered is not None and engine.is_acceptable(offered):
+            anchor = engine.step1_amount
+            attempts = session.get("counter_attempts", 0)
+            if (offered >= anchor
+                    or _signals_ceiling(msg)
+                    or attempts >= MAX_COUNTER_ATTEMPTS):
+                # They've met our opening ask, stated a hard ceiling, or we've
+                # already pushed enough — accept their number.
+                session["debtor_agreed_amount"] = offered
+                session["future_dates"] = []
+                session["state"] = "collecting_dates"
+                suggested = engine.suggest_dates(engine.max_installments - 1, offered)
+                nxt = suggested[0] if suggested else engine.deadline.isoformat()
+                _audit(session, "state_transition", from_state="negotiating",
+                       to_state="collecting_dates", agreed_amount=offered)
+                return (
+                    f"The debtor agreed to {_inr(offered)} today. Ask what date works for the "
+                    f"remaining {_inr(engine.invoice_amount - offered)}. Suggest {nxt} as an "
+                    f"option. Remind them the latest possible date is {engine.deadline}."
+                )
+            # Raise the bar: counter above their offer before we settle.
+            counter = _counter_above(offered, anchor, attempts)
+            session["counter_attempts"] = attempts + 1
+            session["current_ask"] = counter
+            # Track the counter so the next turn can detect a rejection: a lower
+            # follow-up offer triggers the reason MCQ instead of another counter.
+            session["first_counter_issued"] = True
+            session["last_bot_offer"] = counter
+            _audit(session, "counter_offer", offered=offered, counter=counter,
+                   attempt=session["counter_attempts"])
+            return (
+                f"The debtor offered {_inr(offered)}. Do not accept it yet — counter with "
+                f"{_inr(counter)} and see if they will go higher. If they hold firm or raise "
+                f"only a little, accept their best number."
+            )
+
+        # 2) They rejected our counter with no new number — they're holding firm
+        #    at their last acceptable offer, so accept that now.
+        prev = session.get("last_debtor_offer")
+        if (offered is None and prev is not None
+                and engine.is_acceptable(prev)
+                and session.get("counter_attempts", 0) > 0
+                and not _signals_cannot_pay(msg)
+                and not _is_question(msg)):
+            session["debtor_agreed_amount"] = prev
+            session["future_dates"] = []
+            session["state"] = "collecting_dates"
+            suggested = engine.suggest_dates(engine.max_installments - 1, prev)
+            nxt = suggested[0] if suggested else engine.deadline.isoformat()
+            _audit(session, "state_transition", from_state="negotiating",
+                   to_state="collecting_dates", agreed_amount=prev)
+            return (
+                f"The debtor is holding firm at {_inr(prev)}. Accept it now. Ask what date "
+                f"works for the remaining {_inr(engine.invoice_amount - prev)}. Suggest {nxt} "
+                f"as an option. Remind them the latest possible date is {engine.deadline}."
+            )
+
+        # 3) A clear inability-to-pay signal (with no concrete offer) → stop
+        #    pushing the number and understand their situation first.
+        if offered is None and _signals_cannot_pay(msg):
+            if session.get("reason_collected"):
+                return _trigger_final_ultimatum(session, engine)
+            session["state"] = "hardship"
+            session["upload_requested"] = False
+            session["reason_collected"] = True
+            session["reason_mcq_pending"] = True
+            _audit(session, "state_transition", from_state="negotiating",
+                   to_state="hardship")
+            return (
+                "The debtor says they have no money to pay right now. Acknowledge this "
+                "warmly and, in one question, ask what's making it hard to pay."
+            )
+
+        # 4) A stated hard ceiling below our floor ("2k max") → stop countering
+        #    and understand their situation, rather than pummeling the ladder.
+        if offered is not None and _signals_ceiling(msg) and not engine.is_acceptable(offered):
+            if session.get("reason_collected"):
+                return _trigger_final_ultimatum(session, engine)
+            session["state"] = "hardship"
+            session["upload_requested"] = False
+            session["reason_collected"] = True
+            session["reason_mcq_pending"] = True
+            _audit(session, "state_transition", from_state="negotiating",
+                   to_state="hardship")
+            return (
+                f"The debtor set a hard ceiling of {_inr(offered)}, below our floor. "
+                f"Acknowledge their limit warmly and ask, in one question, what's making "
+                f"it hard to pay."
+            )
+
+        # 5) A clarifying question (no amount) → answer it; never step the ladder
+        #    or escalate on a question.
+        if offered is None and _is_question(msg):
+            _audit(session, "debtor_question")
+            return (
+                "The debtor asked a question. Answer it directly and honestly, then restate "
+                "what you can offer (your ask). Do not escalate and do not lower your ask."
+            )
+
+        # 6) Rejection (no amount, or an offer below the floor without a hard
+        #    ceiling) → counter-anchor and step down the ladder toward the floor.
+        step = session.get("negotiation_step", 1) + 1
+        session["negotiation_step"] = step
+        _audit(session, "negotiation_step", step=step)
+        if step >= 5:
+            if session.get("reason_collected") or session.get("hardship_verified"):
+                # We already asked why once (or verified hardship) — a further
+                # rejection is terminal. Trapdoor to the final ultimatum.
+                return _trigger_final_ultimatum(session, engine, step=step)
+            # Pivot to a hardship investigation instead of escalating and closing.
+            session["state"] = "hardship"
+            session["upload_requested"] = False
+            session["reason_collected"] = True
+            session["reason_mcq_pending"] = True
+            _audit(session, "state_transition", from_state="negotiating",
+                   to_state="hardship", step=step)
+            return (
+                "The debtor rejected every amount, including the minimum. Ask them, "
+                "warmly and in one question, what's making it hard to pay."
+            )
+        if step == 2:
+            return (
+                f"The debtor pushed back. Acknowledge their reply, then ask for "
+                f"{_inr(engine.step2_amount)} today instead."
+            )
+        if step == 3:
+            return (
+                f"The debtor pushed back again. Acknowledge their reply, then ask for "
+                f"{_inr(engine.step3_amount)} today — explain this is the minimum needed."
+            )
+        return (
+            f"The debtor rejected the minimum. Acknowledge their reply, make one final "
+            f"appeal for {_inr(engine.min_today)}. Mention the escalation consequence."
+        )
+
+    if state == "hardship":
+        # If they now offer any amount, accept it and defer the rest — never loop
+        # back into asking for proof again.
+        if offered is not None and offered > 0:
+            session["last_debtor_offer"] = offered
+            session["debtor_agreed_amount"] = offered
+            session["future_dates"] = []
+            session["state"] = "collecting_dates"
+            suggested = engine.suggest_dates(engine.max_installments - 1, offered)
+            nxt = suggested[0] if suggested else engine.deadline.isoformat()
+            _audit(session, "state_transition", from_state="hardship",
+                   to_state="collecting_dates", agreed_amount=offered)
+            return (
+                f"The debtor agreed to {_inr(offered)} today. Ask what date works for the "
+                f"remaining {_inr(engine.invoice_amount - offered)}. Suggest {nxt} as an "
+                f"option. Remind them the latest possible date is {engine.deadline}."
+            )
+
+        # A question (e.g. "what do you need from me?") → answer it, never escalate.
+        if _is_question(msg):
+            _audit(session, "debtor_question")
+            if session.get("upload_requested"):
+                return (
+                    "The debtor asked what we need from them. Tell them exactly: a clear "
+                    "bank statement or hardship document showing their financial situation "
+                    "(name, recent balance, or a closure/medical letter). Reassure them it is "
+                    "kept confidential and only used to verify their claim."
+                )
+            return (
+                "The debtor asked a question. Answer it directly and warmly, and invite "
+                "them to tell you what's going on."
+            )
+
+        # No amount offered. Ask for proof exactly once, and only when they give
+        # a reason (otherwise they can always upload from the chat). Set the
+        # upload card in Python — the model has no function calling.
+        if not session.get("upload_requested") and _looks_like_reason(msg):
+            session["upload_requested"] = True
+            _handle_request_document_upload(
+                {"document_type": "bank statement",
+                 "reason": "debtor reports they cannot pay"},
+                session,
+            )
+            _audit(session, "upload_requested")
+            return (
+                "The debtor explained why they can't pay. Ask them to upload a bank "
+                "statement or hardship document so we can verify their situation and "
+                "review a lower amount."
+            )
+
+        # No amount and either no reason or proof already requested — stop pushing.
+        session["state"] = "escalated"
+        session["status"] = "escalated"
+        _audit(session, "state_transition", from_state="hardship", to_state="escalated")
+        return (
+            "No agreement could be reached. Close warmly, explain next steps, and do not "
+            "ask for payment again."
+        )
+
+    if state == "collecting_dates":
+        dates = _extract_iso_dates(msg)
+        if intent and intent.get("date") and intent["date"] not in dates:
+            dates.insert(0, intent["date"])
+        if not dates and _is_confirmation(msg):
+            dates = engine.suggest_dates(engine.max_installments - 1)
+
+        bad_date = None
+        for d in dates:
+            try:
+                parsed = date.fromisoformat(d)
+            except ValueError:
+                continue
+            if parsed > engine.deadline:
+                bad_date = d
+                break
+            if parsed > engine.today and d not in session["future_dates"]:
+                session["future_dates"].append(d)
+
+        if bad_date:
+            return (
+                f"The debtor said {bad_date}, which is after our 34-day limit. Explain you "
+                f"can only go up to {engine.deadline}. Ask if that works."
+            )
+
+        required = engine.max_installments - 1
+        if len(session["future_dates"]) >= required:
+            plan, status = engine.build_plan(session["debtor_agreed_amount"], session["future_dates"])
+            if status != "ok":
+                return f"Ask the debtor for a valid future date before {engine.deadline}."
+            _set_plan_and_terms(session, engine, plan)
+            session["state"] = "plan_ready"
+            _audit(session, "state_transition", from_state="collecting_dates",
+                   to_state="plan_ready")
+            plan_text = _render_plan_text(session, plan, engine)
+            return f"Show this exact plan and ask the debtor to confirm:\n{plan_text}"
+
+        suggested = engine.suggest_dates(engine.max_installments - 1)
+        remaining = required - len(session["future_dates"])
+        if len(session["future_dates"]) < len(suggested):
+            nxt = suggested[len(session["future_dates"])]
+        else:
+            nxt = engine.deadline.isoformat()
+        return (
+            f"Ask for {remaining} more future payment date(s). Suggest {nxt} as an option. "
+            f"Remind them the latest possible date is {engine.deadline}."
+        )
+
+    if state == "plan_ready":
+        if _is_confirmation(msg):
+            # The debtor confirmed the plan. End the conversational phase: set the
+            # flag that forces a finalize_agreement tool call. The order + final
+            # message are produced by _finalize_agreement, never by the LLM.
+            session["finalize_requested"] = True
+            session["state"] = "finalizing"
+            _audit(session, "state_transition", from_state="plan_ready",
+                   to_state="finalizing")
+            return "FINALIZE_AGREEMENT"
+        session["state"] = "negotiating"
+        session["negotiation_step"] = 1
+        session["counter_attempts"] = 0
+        session["future_dates"] = []
+        session["plan_shown"] = False
+        _audit(session, "state_transition", from_state="plan_ready",
+               to_state="negotiating")
+        return (
+            f"The debtor wants to change the plan. Ask what amount works for them today "
+            f"(starting from {_inr(engine.step1_amount)})."
+        )
+
+    if state == "payment_pending":
+        return (
+            f"The payment link for {_inr(session.get('debtor_agreed_amount', engine.min_today))} "
+            f"is already shown. Acknowledge the debtor and gently remind them to complete payment."
+        )
+
+    return "This conversation is closed. Do not ask for payment."
+
+
+# ---------------------------------------------------------------------------
+# Finalization — a forced tool call ends the conversation
+# ---------------------------------------------------------------------------
+#
+# Once the debtor confirms the plan ("ya"), the conversational phase must end.
+# The model is FORCED (tool_choice) to call finalize_agreement; the backend
+# intercepts that call, does NOT loop back to the model, and injects a
+# deterministic final message carrying the payment payload. Python owns every
+# number here — the model's tool arguments are echoed from the plan but never
+# trusted for arithmetic.
+
+FINALIZE_AGREEMENT_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "finalize_agreement",
+        "description": (
+            "Finalize the agreed payment plan and produce the payment link. Call "
+            "this exactly once, immediately after the debtor confirms the dates and "
+            "amounts. Do not write any text when calling it."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "upfront_amount": {
+                    "type": "integer",
+                    "description": "Rupees the debtor pays today.",
+                },
+                "deferred_amount": {
+                    "type": "integer",
+                    "description": "Rupees deferred to a later date.",
+                },
+                "deferred_date": {
+                    "type": "string",
+                    "description": "ISO date (YYYY-MM-DD) of the deferred payment.",
+                },
+            },
+            "required": ["upfront_amount", "deferred_amount", "deferred_date"],
+        },
+    },
+}
+
+
+def _finalize_agreement(session: dict, engine: NegotiationEngine) -> str:
+    """Terminal tool implementation — Python owns the final math + message.
+
+    Computes the upfront/deferred split and the deferred date from the already-
+    agreed plan, creates the Razorpay order, and returns a deterministic final
+    message. The model never does this arithmetic.
+    """
+    upfront = session.get("debtor_agreed_amount") or 0
+    invoice = engine.invoice_amount
+    deferred = max(0, invoice - upfront)
+
+    plan = session.get("installment_plan") or []
+    future = [p for p in plan if p.get("status") == "scheduled"]
+    deferred_date = future[-1]["date"] if future else engine.deadline.isoformat()
+
+    order = _handle_generate_payment_link({"amount": upfront}, session)
+    session["negotiation_complete"] = True
+    if isinstance(order, dict) and "error" in order:
+        return "Thanks — we're preparing your payment link and it will appear in a moment."
+
+    session["state"] = "payment_pending"
+    _audit(
+        session,
+        "finalize_agreement",
+        upfront_amount=upfront,
+        deferred_amount=deferred,
+        deferred_date=deferred_date,
+        order_id=session.get("razorpay_order_id"),
+    )
+
+    name = _first_name(session["debtor_name"])
+    if deferred > 0:
+        return (
+            f"Thanks {name} — we're all set! Your payment link for {_inr(upfront)} "
+            f"today is ready below, and the remaining {_inr(deferred)} is scheduled "
+            f"for {format_date(deferred_date)}. The link is valid for 24 hours."
+        )
+    return (
+        f"Thanks {name} — we're all set! Your payment link for {_inr(upfront)} "
+        f"is ready below. It's valid for 24 hours."
+    )
+
+
+def _call_llm_finalize(
+    session: dict, client: OpenAI, upfront: int, deferred: int, deferred_date: str
+) -> list:
+    """Force the model to emit the finalize_agreement tool call (no text)."""
+    system = (
+        "You are Aria, a payment recovery specialist. The debtor has confirmed the "
+        "payment plan. Finalize it now by calling the finalize_agreement function "
+        "with the agreed numbers. Do not write any text — only the function call.\n"
+        f"Upfront amount: {_inr(upfront)}\n"
+        f"Deferred amount: {_inr(deferred)}\n"
+        f"Deferred date: {deferred_date}"
+    )
+    response = client.chat.completions.create(
+        model=FINALIZE_MODEL,
+        max_tokens=256,
+        messages=[{"role": "system", "content": system}],
+        tools=[FINALIZE_AGREEMENT_TOOL],
+        tool_choice={"type": "function", "function": {"name": "finalize_agreement"}},
+    )
+    return response.choices[0].message.tool_calls or []
+
+
+def _handle_finalize_turn(
+    session: dict, engine: NegotiationEngine, turn: int
+) -> tuple[str, dict]:
+    """Intercept the finalize tool call and inject the deterministic final message.
+
+    Best-effort: force the model to call finalize_agreement, then — regardless of
+    whether the model obliged — finalize in Python and stop the LLM from writing
+    any further text.
+    """
+    upfront = session.get("debtor_agreed_amount") or 0
+    deferred = max(0, engine.invoice_amount - upfront)
+    plan = session.get("installment_plan") or []
+    future = [p for p in plan if p.get("status") == "scheduled"]
+    deferred_date = future[-1]["date"] if future else engine.deadline.isoformat()
+
+    try:
+        client = _get_client()
+        tool_calls = _call_llm_finalize(session, client, upfront, deferred, deferred_date)
+        if tool_calls:
+            _audit(session, "finalize_tool_called", tool_calls=[
+                {"name": tc.function.name, "arguments": tc.function.arguments}
+                for tc in tool_calls
+            ])
+    except Exception:
+        logger.debug("finalize tool call failed; finalizing directly", exc_info=True)
+
+    message = _finalize_agreement(session, engine)
+    session["action_type"] = "finalize_agreement"
+    session["messages"].append({"role": "assistant", "content": message})
+    _record_agent_message(session, message)
+    _audit(session, "agent_turn", turn=turn, speaker="agent", message=message,
+           action_type="finalize_agreement")
+    return _finalize_turn(session, message)
+
+
+def _trigger_final_ultimatum(session: dict, engine: NegotiationEngine,
+                             step: int | None = None) -> str:
+    """Second rejection after the reason was collected → terminal escalation.
+
+    Sets the terminal state and a flag so process_turn emits the deterministic
+    final-ultimatum message (no LLM text), rather than re-asking the MCQ.
+    """
+    session["state"] = "escalated"
+    session["status"] = "escalated"
+    session["final_ultimatum_requested"] = True
+    _audit(session, "state_transition", from_state="negotiating",
+           to_state="escalated", reason="final_ultimatum", step=step)
+    return "FINAL_ULTIMATUM"
+
+
+def _final_ultimatum_message(session: dict, engine: NegotiationEngine) -> str:
+    """Deterministic terminal message stating the absolute minimum."""
+    name = _first_name(session["debtor_name"])
+    return (
+        f"{_inr(engine.min_today)} is the absolute minimum I can accept today, {name}. "
+        f"If we can't agree on that, I'll need to pass this to our escalation team."
+    )
+
+
+def _handle_final_ultimatum(session: dict, engine: NegotiationEngine, turn: int):
+    """Emit the final-ultimatum message and end the conversation — no LLM text."""
+    message = _final_ultimatum_message(session, engine)
+    session["action_type"] = "final_ultimatum"
+    session["final_ultimatum_requested"] = False
+    session["messages"].append({"role": "assistant", "content": message})
+    _record_agent_message(session, message)
+    _audit(session, "agent_turn", turn=turn, speaker="agent", message=message,
+           action_type="final_ultimatum")
+    return _finalize_turn(session, message)
+
+
+def _handle_reason_mcq_answer(
+    session: dict, engine: NegotiationEngine, button_id: str
+) -> tuple[str, dict]:
+    """Handle a debtor's reason-MCQ answer: lower the floor and concede.
+
+    The button_id maps to a reason; Python lowers `min_today` via apply_hardship()
+    (the arithmetic stays in the engine), reopens the negotiation at the hardship
+    floor, and lets DeepSeek write the concession message.
+    """
+    session["turn_count"] = session.get("turn_count", 0) + 1
+    turn = session["turn_count"]
+
+    label = next((r["label"] for r in MCQ_REASONS if r["button_id"] == button_id), "Other")
+    session["rejection_reason"] = label
+    session["reason_mcq_pending"] = False
+
+    new_min = engine.apply_hardship()
+    session["hardship_verified"] = True
+    session["negotiation_engine"] = engine.to_dict()
+    session["state"] = "negotiating"
+    session["negotiation_step"] = 3      # re-open at the hardship floor
+    _audit(session, "reason_mcq_answered", button_id=button_id, reason=label,
+           new_min_today=new_min)
+
+    instruction = (
+        f"The debtor explained why they can't pay: {label}. Acknowledge their reason "
+        f"warmly, then explain we can come down to {_inr(new_min)} today and ask if "
+        f"they can manage that."
+    )
+    context = _build_context(session, engine, instruction)
+    session["system_prompt"] = build_system_prompt(session, context)
+    # Mark the MCQ question as answered so the transcript keeps the question +
+    # options visible, but re-renders them non-clickable on a chat preview.
+    for m in reversed(session.get("messages", [])):
+        if m.get("role") == "assistant" and m.get("mcq_options"):
+            m["mcq_answered"] = True
+            m["mcq_selected"] = label
+            break
+    session["messages"].append(
+        {"role": "user", "content": f"Debtor selected reason: {label}"}
+    )
+
+    try:
+        client = _get_client()
+        reply = _parse_agent_json(_call_llm(session, client))["reply_to_user"]
+    except EnvironmentError:
+        reply = f"Given your situation, we can come down to {_inr(new_min)} today. Could you manage that?"
+    except Exception:
+        logger.exception("reason-MCQ concession turn failed")
+        reply = f"Given your situation, we can come down to {_inr(new_min)} today. Could you manage that?"
+
+    if not reply:
+        reply = f"Given your situation, we can come down to {_inr(new_min)} today. Could you manage that?"
+
+    session["action_type"] = "negotiate"
+    session["messages"].append({"role": "assistant", "content": reply})
+    _record_agent_message(session, reply)
+    _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply,
+           action_type="negotiate")
+    return _finalize_turn(session, reply)
+
+
+def _build_context(session: dict, engine: NegotiationEngine, instruction: str) -> dict:
+    """Assemble the numbers + instruction dict passed into the system prompt."""
+    state = session.get("state", "opening")
+    step = session.get("negotiation_step", 1)
+    offered = session.get("debtor_agreed_amount")
+    numbers = engine.get_context_for_agent(step, offered)
+    current_ask = session.get("current_ask")   # set by the counter path, else None
+    if state == "negotiating":
+        step_ask = current_ask if current_ask is not None else {
+            1: engine.step1_amount, 2: engine.step2_amount,
+            3: engine.step3_amount, 4: engine.min_today,
+        }.get(step, engine.min_today)
+    else:
+        step_ask = current_ask if current_ask is not None else (offered if offered else engine.min_today)
+    numbers["step_ask"] = step_ask
+    numbers["floor"] = engine.min_today
+    numbers["debtor_offer"] = session.get("last_debtor_offer")
+    # Remaining balance — computed in Python, never by the model. The debtor's
+    # latest committed amount (offer or agreed) is subtracted from the invoice.
+    committed = session.get("last_debtor_offer") or session.get("debtor_agreed_amount")
+    numbers["current_remaining_balance"] = (
+        max(0, engine.invoice_amount - committed) if committed else None
+    )
+    return {"state": state, "step": step, "instruction": instruction, "numbers": numbers}
+
+
 def process_turn(session: dict, debtor_message: str) -> tuple[str, dict]:
     """
-    Process one debtor message. The conversation is driven by DeepSeek; Python
-    only enforces stopping rules and applies tool results to the session.
+    Process one debtor message. The LLM first extracts intent + variables as
+    JSON; Python computes the remaining balance and advances the state machine;
+    DeepSeek then turns that instruction into a human message.
     """
-    if session["status"] != "active":
+    if session["status"] not in ("active", "promise_to_pay"):
         return f"[Session {session['status']} — no further turns]", session
 
     session["turn_count"] += 1
     turn = session["turn_count"]
     session["last_debtor_ts"] = _ts() if debtor_message.strip() else None
+    session["reason_mcq_pending"] = False   # per-turn flag; set again by the state machine
 
     # --- Stopping rule: unresponsive (silent / empty message) ---
     if not debtor_message.strip():
@@ -1054,6 +2045,7 @@ def process_turn(session: dict, debtor_message: str) -> tuple[str, dict]:
         _audit(session, "stopping_rule", status="legal_hold", reason="debtor_legal_threat")
         session["messages"].append({"role": "user", "content": debtor_message})
         session["messages"].append({"role": "assistant", "content": reply})
+        _record_agent_message(session, reply)
         _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
         return _finalize_turn(session, reply)
 
@@ -1064,29 +2056,93 @@ def process_turn(session: dict, debtor_message: str) -> tuple[str, dict]:
         _audit(session, "stopping_rule", status="escalated", reason="debtor_requested_human")
         session["messages"].append({"role": "user", "content": debtor_message})
         session["messages"].append({"role": "assistant", "content": reply})
+        _record_agent_message(session, reply)
         _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
         return _finalize_turn(session, reply)
 
-    # --- LLM-driven turn ---
-    # Build the system prompt from the conversation so far (excludes this turn),
-    # then let DeepSeek reason + call tools.
-    session["system_prompt"] = build_system_prompt(session)
+    # --- Python decides; DeepSeek only speaks ---
+    engine = _get_engine(session)
+
+    # Extract intent + variables as JSON (LLM, with regex fallback). The model
+    # does NOT do arithmetic here — it only reports what the debtor said.
+    intent = extract_intent(session, debtor_message)
+    session["last_intent"] = intent
+    _audit(session, "intent_extracted", intent=intent)
+
+    # Special cases (already-paid / dispute) are decided in Python now that the
+    # model has no function calling — they override the normal state machine.
+    if _signals_already_paid(debtor_message):
+        _handle_request_document_upload(
+            {"document_type": "payment receipt",
+             "reason": "debtor claims the invoice was already paid"},
+            session,
+        )
+        instruction = (
+            "The debtor says they already paid this invoice. Warmly ask them to "
+            "upload their payment receipt or bank statement (UTR/transaction ID) "
+            "so we can verify it — and reassure them we'll stop the reminders if "
+            "it's confirmed."
+        )
+    elif _signals_dispute(debtor_message):
+        _handle_flag_dispute({"reason": debtor_message}, session)
+        instruction = (
+            "The debtor disputes the invoice. Acknowledge their concern warmly, "
+            "tell them we've paused payment requests and flagged it for review."
+        )
+    else:
+        instruction = _advance_negotiation(session, engine, debtor_message, intent=intent)
+
+    # Terminal: the debtor confirmed the plan. Force the finalize_agreement tool
+    # call and inject the deterministic final message — no further LLM text.
+    if session.get("finalize_requested"):
+        session["messages"].append({"role": "user", "content": debtor_message})
+        return _handle_finalize_turn(session, engine, turn)
+
+    # Terminal: second rejection after the reason was collected — final ultimatum.
+    if session.get("final_ultimatum_requested"):
+        session["messages"].append({"role": "user", "content": debtor_message})
+        return _handle_final_ultimatum(session, engine, turn)
+
+    context = _build_context(session, engine, instruction)
+    session["current_remaining_balance"] = context["numbers"]["current_remaining_balance"]
+    session["system_prompt"] = build_system_prompt(session, context)
     session["messages"].append({"role": "user", "content": debtor_message})
 
     try:
         client = _get_client()
-        reply = _call_llm(session, client, debtor_message)
+        raw_reply = _call_llm(session, client)
     except EnvironmentError:
-        reply = _no_key_reply(session)
+        raw_reply = _no_key_reply(session)
     except Exception:
         logger.exception("LLM turn failed")
-        reply = "Sorry, I hit a little snag — could you say that again?"
+        raw_reply = "Sorry, I hit a little snag — could you say that again?"
 
-    if not reply or not reply.strip():
+    parsed = _parse_agent_json(raw_reply)
+    reply = parsed["reply_to_user"]
+    if not reply:
         reply = "Thanks — let me get that sorted for you."
 
-    session["messages"].append({"role": "assistant", "content": reply})
-    _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply)
+    # Python decides the authoritative action_type; the LLM's is advisory only.
+    if session.get("reason_mcq_pending"):
+        action_type = "trigger_reason_mcq"
+        session["mcq_options"] = MCQ_REASONS
+        session["reason_mcq_pending"] = False
+    else:
+        action_type = "negotiate"
+    session["action_type"] = action_type
+    session["agent_thought_process"] = parsed["thought_process"]
+    session["agent_suggested_action"] = parsed["action_type"]
+
+    assistant_entry = {"role": "assistant", "content": reply}
+    if action_type == "trigger_reason_mcq":
+        # Persist the question + options on the message so the transcript can be
+        # re-rendered (and the buttons made non-clickable once answered).
+        assistant_entry["mcq_options"] = session["mcq_options"]
+        assistant_entry["mcq_answered"] = False
+    session["messages"].append(assistant_entry)
+    _record_agent_message(session, reply)
+    _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply,
+           action_type=action_type, thought_process=parsed["thought_process"])
 
     return _finalize_turn(session, reply)
 
@@ -1108,6 +2164,7 @@ def open_turn(session: dict) -> tuple[str, dict]:
     """
     opening = _build_opening_message(session)
     session["messages"] = [{"role": "assistant", "content": opening}]
+    _record_agent_message(session, opening)
     session["last_agent_ts"] = _ts()
     _audit(session, "agent_turn", turn=0, speaker="agent", message=opening)
     return opening, session

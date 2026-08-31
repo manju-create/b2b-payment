@@ -17,6 +17,9 @@ __pycache__/
 # Logs & output data
 *.log
 
+# Debtor-uploaded documents (persistent volume / S3 — never committed)
+storage/uploads/
+
 # Editor & System files
 .vscode/
 .idea/

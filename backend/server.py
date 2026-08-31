@@ -32,7 +32,18 @@ from backend.agent import (  # noqa: E402
     open_turn,
     process_turn,
     handle_document_verdict,
+    create_full_payment_order,
     MERCHANT_NAME,
+)
+from backend.message_handler import (  # noqa: E402
+    handle_incoming_message,
+    handle_reason_mcq_answer,
+    start_session,
+    get_chat_history,
+    pay_full as mongo_pay_full,
+    apply_payment,
+    handle_document_upload,
+    mongo_available,
 )
 from backend.document_verifier import verify_document                # noqa: E402
 from backend.scoring import update_trust_score, get_score_status, get_score_breakdown  # noqa: E402
@@ -70,6 +81,15 @@ webhook_log:        list[dict]      = []       # every inbound event, for audit
 
 app = FastAPI(title="RecoverFlow", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# Serve uploaded documents from the persistent volume — the `url` recorded in
+# the Mongo `documents` array points here (e.g. /uploads/INV-0016_....pdf).
+try:
+    from fastapi.staticfiles import StaticFiles
+    from backend.storage import upload_dir as _upload_dir
+    app.mount("/uploads", StaticFiles(directory=str(_upload_dir())), name="uploads")
+except Exception:  # noqa: BLE001 — storage optional; metadata url is still recorded
+    pass
 
 
 def _load_json(filename: str) -> Any:
@@ -119,12 +139,31 @@ async def dashboard():
     return HTMLResponse(p.read_text())
 
 
+def _chat_uses_mongo() -> bool:
+    """Chat UI flow selector.
+
+    ``MONGO_ENABLED`` is an optional override:
+      * "true"  → force the MongoDB-backed flow
+      * "false" → force the in-memory demo flow (fast local dev)
+      * unset   → auto: use Mongo when it's reachable, else in-memory
+    """
+    v = os.environ.get("MONGO_ENABLED", "").strip().lower()
+    if v in ("1", "true", "yes", "on"):
+        return True
+    if v in ("0", "false", "no", "off"):
+        return False
+    return mongo_available()
+
+
 @app.get("/chat/{invoice_id}", response_class=HTMLResponse)
 async def chat(invoice_id: str):
     p = FRONTEND_DIR / "debtor" / "index.html"
     if not p.exists():
         raise HTTPException(404, "Chat interface not found")
-    return HTMLResponse(p.read_text().replace("__INVOICE_ID__", invoice_id))
+    html = p.read_text()
+    html = html.replace("__INVOICE_ID__", invoice_id)
+    html = html.replace("__MONGO_ENABLED__", "true" if _chat_uses_mongo() else "false")
+    return HTMLResponse(html)
 
 
 # ---------------------------------------------------------------------------
@@ -272,10 +311,134 @@ async def negotiate_turn(session_id: str, body: TurnRequest):
             "identified_situation": s.get("identified_situation"),
             "agreed_terms":    s.get("agreed_terms"),
             "show_upload_card": _should_show_upload_card(s),
+            "action_type":      s.get("action_type"),
+            "mcq_options":      s.get("mcq_options"),
         }
         body = _json.dumps(safe, ensure_ascii=False)
         from fastapi.responses import Response
         return Response(content=body, media_type="application/json")
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+
+class ReasonMcqBody(BaseModel):
+    button_id: str
+
+
+@app.post("/api/reason-mcq/{session_id}")
+async def reason_mcq(session_id: str, body: ReasonMcqBody):
+    """Receive a reason-MCQ button click: lower the floor and concede."""
+    s = sessions.get(session_id)
+    if not s:
+        raise HTTPException(404, f"Session {session_id!r} not found")
+    from backend.agent import _get_engine, _handle_reason_mcq_answer
+    try:
+        engine = _get_engine(s)
+        agent_reply, s = _handle_reason_mcq_answer(s, engine, body.button_id)
+        sessions[session_id] = s
+        batch_results[s["invoice_id"]] = s
+        return {
+            "agent_reply": agent_reply,
+            "session_status": s["status"],
+            "action_type": s.get("action_type"),
+            "trust_score": s.get("trust_score", s.get("score", 0)),
+        }
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+
+class IncomingMessageBody(BaseModel):
+    invoice_id: str
+    user_text: str = ""
+    user_offer_amount: int | None = None
+
+
+@app.post("/api/message/incoming")
+async def message_incoming(body: IncomingMessageBody):
+    """
+    Inbound debtor-message webhook (MongoDB-backed).
+
+    Runs the negotiation trapdoors before the DeepSeek call, then falls through
+    to the existing agent when no trapdoor fires.
+    """
+    try:
+        return handle_incoming_message(
+            body.invoice_id, body.user_text, body.user_offer_amount
+        )
+    except EnvironmentError as exc:
+        raise HTTPException(503, str(exc))
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+
+class MessageReasonMcqBody(BaseModel):
+    invoice_id: str
+    button_id: str
+
+
+@app.post("/api/message/reason-mcq")
+async def message_reason_mcq(body: MessageReasonMcqBody):
+    """
+    Reason-MCQ button click (MongoDB-backed). Lowers the floor, records the
+    selection in chat_history, and returns DeepSeek's sympathetic reply.
+    """
+    try:
+        return handle_reason_mcq_answer(body.invoice_id, body.button_id)
+    except EnvironmentError as exc:
+        raise HTTPException(503, str(exc))
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+
+@app.post("/api/message/start/{invoice_id}")
+async def message_start(invoice_id: str):
+    """Idempotent Mongo start — seeds the session + opening message if needed."""
+    try:
+        return start_session(invoice_id)
+    except EnvironmentError as exc:
+        raise HTTPException(503, str(exc))
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+
+@app.get("/api/message/history/{invoice_id}")
+async def message_history(invoice_id: str):
+    """Full transcript for a chat preview / page reload."""
+    try:
+        return get_chat_history(invoice_id)
+    except EnvironmentError as exc:
+        raise HTTPException(503, str(exc))
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+
+@app.post("/api/message/pay-full/{invoice_id}")
+async def message_pay_full(invoice_id: str):
+    """Full-amount Razorpay order, bypassing negotiation (Mongo flow)."""
+    try:
+        return mongo_pay_full(invoice_id)
+    except EnvironmentError as exc:
+        raise HTTPException(503, str(exc))
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+
+@app.post("/api/negotiate/pay-full/{session_id}")
+async def pay_full(session_id: str):
+    """
+    Generate a Razorpay Order for the FULL invoice amount, bypassing negotiation.
+
+    Backs the "Pay in full" button next to the debtor name — the debtor can
+    settle the whole invoice immediately without going through the agent.
+    """
+    s = sessions.get(session_id)
+    if not s:
+        raise HTTPException(404, f"Session {session_id!r} not found")
+    try:
+        order = create_full_payment_order(s)
+        sessions[session_id] = s
+        batch_results[s["invoice_id"]] = s
+        return order
     except Exception as exc:
         raise HTTPException(500, str(exc))
 
@@ -302,27 +465,24 @@ async def get_session(session_id: str):
 
 @app.post("/api/upload-document")
 async def upload_document(
-    session_id: str = Form(...),
+    invoice_id: str = Form(""),
+    session_id: str = Form(""),
     situation: str = Form(""),
     file: UploadFile = File(...),
 ):
     """
-    Receive a debtor-uploaded document, verify it, and act on the verdict.
+    Receive a debtor-uploaded document and verify it.
 
-    Multipart fields: file (PDF/JPG/PNG), session_id, situation.
-    `situation` is optional — when absent/unknown it defaults to a generic
-    (GENERAL) verification. The file is processed in memory only.
+    Two routing modes:
+      * ``invoice_id`` → MongoDB flow (production): store externally, record
+        metadata, and freeze disputes to ``escalated_to_human``.
+      * ``session_id`` → in-memory demo flow.
     """
-    s = sessions.get(session_id)
-    if not s:
-        raise HTTPException(404, f"Session {session_id!r} not found")
-
     # Normalise the situation label (frontend may send the agent's CASHFLOW).
     situation = (situation or "").strip().upper()
     situation = _SITUATION_NORMALISE.get(situation, situation)
     if not situation:
-        # Derive from the document the LLM requested, else fall back to GENERAL.
-        situation = (s.get("pending_upload") or {}).get("situation", "GENERAL")
+        situation = "GENERAL"
     if situation not in ("DISPUTE", "ALREADY_PAID", "CANNOT_PAY", "GENERAL"):
         raise HTTPException(400, f"Invalid situation: {situation!r}")
 
@@ -337,31 +497,61 @@ async def upload_document(
         raise HTTPException(400, "Only PDF, JPG and PNG are accepted")
     file_type = ALLOWED_UPLOAD_TYPES[mime]
 
-    invoice = {
-        "invoice_id": s["invoice_id"],
-        "amount": s.get("invoice_amount"),
-        "due_date": (s.get("current_invoice") or {}).get("due_date"),
-        "merchant_name": MERCHANT_NAME,
-    }
-    debtor_claim = s.get("situation_claim") or _last_debtor_message(s)
+    # MongoDB flow (production) — route by invoice_id.
+    if invoice_id:
+        try:
+            result = handle_document_upload(
+                invoice_id, situation, content, file_type, file.filename
+            )
+        except EnvironmentError as exc:
+            raise HTTPException(503, str(exc))
+        except Exception as exc:
+            raise HTTPException(500, str(exc))
 
-    s["upload_attempts"] = s.get("upload_attempts", 0) + 1
+        if result.get("error"):
+            raise HTTPException(404, result["error"])
 
-    result = verify_document(content, file_type, situation, invoice, debtor_claim)
-    agent_reply, s = handle_document_verdict(s, situation, result)
-    s["pending_upload"] = None   # the upload was just fulfilled
+        return {
+            "verdict": result.get("verdict"),
+            "agent_reply": result.get("agent_reply"),
+            "session_status": result.get("status"),
+            "show_upload_again": result.get("show_upload_again"),
+            "situation": result.get("situation"),
+        }
 
-    sessions[session_id] = s
-    batch_results[s["invoice_id"]] = s
+    # In-memory demo flow — route by session_id.
+    if session_id:
+        s = sessions.get(session_id)
+        if not s:
+            raise HTTPException(404, f"Session {session_id!r} not found")
 
-    final_action = (s.get("document_verification") or {}).get("recommended_action")
-    return {
-        "verdict": s.get("document_verification"),
-        "agent_reply": agent_reply,
-        "session_status": s.get("status"),
-        "show_upload_again": final_action == "REQUEST_BETTER_PROOF",
-        "situation": situation,
-    }
+        invoice = {
+            "invoice_id": s["invoice_id"],
+            "amount": s.get("invoice_amount"),
+            "due_date": (s.get("current_invoice") or {}).get("due_date"),
+            "merchant_name": MERCHANT_NAME,
+        }
+        debtor_claim = s.get("situation_claim") or _last_debtor_message(s)
+
+        s["upload_attempts"] = s.get("upload_attempts", 0) + 1
+
+        result = verify_document(content, file_type, situation, invoice, debtor_claim)
+        agent_reply, s = handle_document_verdict(s, situation, result)
+        s["pending_upload"] = None   # the upload was just fulfilled
+
+        sessions[session_id] = s
+        batch_results[s["invoice_id"]] = s
+
+        final_action = (s.get("document_verification") or {}).get("recommended_action")
+        return {
+            "verdict": s.get("document_verification"),
+            "agent_reply": agent_reply,
+            "session_status": s.get("status"),
+            "show_upload_again": final_action == "REQUEST_BETTER_PROOF",
+            "situation": situation,
+        }
+
+    raise HTTPException(400, "invoice_id or session_id is required")
 
 
 def _apply_payment(invoice_id: str, payment_id: str,
@@ -456,34 +646,28 @@ async def webhook_razorpay(request: Request):
         webhook_log.append({**log_entry, "action": "unsupported_event"})
         return {"status": "ok"}
 
-    # ── 3. Extract payment / order identifiers ────────────────────────────
+    # ── 3. Extract payment identifiers + invoice_id from notes ────────────
+    # The order's `notes.invoice_id` (injected at order creation) is the only
+    # reliable way to map an external payment back to the internal database.
     payment = payload.get("payload", {}).get("payment", {}).get("entity", {})
     order_id     = payment.get("order_id", "")
     payment_id   = payment.get("id", "")
     amount_paise = int(payment.get("amount", 0))
+    invoice_id   = (payment.get("notes") or {}).get("invoice_id", "")
     log_entry.update({"payment_id": payment_id, "order_id": order_id,
-                      "amount_paise": amount_paise})
+                      "amount_paise": amount_paise, "invoice_id": invoice_id})
 
     # ── 4. Idempotency ────────────────────────────────────────────────────
     if payment_id and payment_id in processed_webhooks:
         webhook_log.append({**log_entry, "action": "duplicate_ignored"})
         return {"status": "already_processed", "payment_id": payment_id}
 
-    # ── 5. Find session by order_id and apply payment ─────────────────────
-    session = find_session_by_order_id(order_id)
-    if not session:
-        webhook_log.append({**log_entry, "action": "session_not_found"})
+    # ── 5. Apply payment to MongoDB by notes.invoice_id (no in-memory lookup)
+    if not invoice_id:
+        webhook_log.append({**log_entry, "action": "invoice_id_missing"})
         return {"status": "ok"}   # ack 200 so Razorpay does not retry
 
-    # Per-session idempotency: a payment already confirmed via the client
-    # callback should not be applied twice.
-    if session.get("payment_captured"):
-        webhook_log.append({**log_entry, "action": "duplicate_ignored"})
-        return {"status": "already_processed", "payment_id": payment_id}
-
-    invoice_id = session["invoice_id"]
-    result = _apply_payment(invoice_id, payment_id, amount_paise,
-                            "payment_webhook_received")
+    result = apply_payment(invoice_id, payment_id, amount_paise)
     log_entry["action"] = result["action"]
 
     if payment_id:

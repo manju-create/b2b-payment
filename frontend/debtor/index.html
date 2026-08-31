@@ -29,6 +29,10 @@
   .inv-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; }
   .inv-value { font-size: 15px; font-weight: 600; color: #1E293B; }
   .inv-value.overdue { color: #DC2626; }
+  .inv-debtor-row { display: flex; align-items: center; gap: 10px; }
+  .btn-pay-full { background: #16A34A; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: 'Inter', sans-serif; transition: background 0.15s, transform 0.15s; }
+  .btn-pay-full:hover { background: #15803D; transform: translateY(-1px); }
+  .btn-pay-full:disabled { background: #A7F3D0; color: #065F46; cursor: wait; transform: none; }
 
   /* Chat area */
   .chat-area { display: flex; flex-direction: column; gap: 20px; padding-bottom: 24px; }
@@ -57,6 +61,12 @@
   .bubble.rich li { position: relative; padding-left: 18px; }
   .bubble.rich li::before { content: ""; position: absolute; left: 2px; top: 0.7em; width: 5px; height: 5px; border-radius: 50%; background: #2563EB; }
   .bubble.rich strong { font-weight: 700; color: #0F172A; }
+  /* Uploaded document bubble (debtor / right side) */
+  .bubble.debtor.doc-bubble { display: flex; align-items: center; gap: 9px; text-align: left; }
+  .doc-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+  .doc-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .doc-name { font-weight: 600; font-size: 14px; word-break: break-word; }
+  .doc-size { font-size: 12px; opacity: 0.8; }
 
   /* Intent buttons */
   .intent-buttons { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 8px 44px; }
@@ -65,6 +75,11 @@
   .btn-full:hover    { background: #15803D; transform: translateY(-1px); }
   .btn-partial { background: #fff; color: #2563EB; border: 2px solid #2563EB; }
   .btn-partial:hover { background: #EFF6FF; transform: translateY(-1px); }
+  /* Reason MCQ */
+  .reason-mcq { display: flex; flex-direction: column; gap: 8px; padding: 4px 0 8px 44px; max-width: 420px; }
+  .mcq-title { font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 2px; }
+  .reason-mcq button:disabled { opacity: 0.55; cursor: default; }
+  .reason-mcq button.mcq-selected { opacity: 1; border-color: #16A34A; color: #16A34A; background: #ECFDF5; }
 
   /* Plan confirmation card */
   .plan-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px; margin: 4px 0 8px 44px; max-width: 420px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -212,7 +227,10 @@
         </div>
         <div class="inv-field">
           <span class="inv-label">Debtor</span>
-          <span class="inv-value" id="inv-debtor">—</span>
+          <div class="inv-debtor-row">
+            <span class="inv-value" id="inv-debtor">—</span>
+            <button class="btn-pay-full" id="pay-full-btn" onclick="payFull()" title="Pay the full invoice amount">Pay <span id="pay-full-amt">—</span> in full</button>
+          </div>
         </div>
       </div>
 
@@ -300,8 +318,12 @@
 
 <script>
 const INVOICE_ID = "__INVOICE_ID__";
+// Server-injected: "true" only when MONGO_ENABLED is set. When false, the chat
+// uses the in-memory demo flow directly (no MongoDB round-trip / no 3s timeout).
+const MONGO_ENABLED = "__MONGO_ENABLED__" === "true";
 
 let sessionId   = null;
+let useMongo    = false;   // true when the MongoDB-backed flow is reachable
 let debtorName  = "";
 let amountPaise = 0;
 let currentOrder = null;
@@ -346,6 +368,31 @@ function addBubble(role, text, extra) {
   wrap.appendChild(bubble);
   chatArea.appendChild(wrap);
   if (extra) { chatArea.appendChild(extra); }
+  scrollDown();
+  return wrap;
+}
+
+function addDocumentBubble(file) {
+  // Show the uploaded document on the debtor's (right) side like a sent message.
+  const sizeLabel = file.size > 1024 * 1024
+    ? (file.size / (1024 * 1024)).toFixed(1) + " MB"
+    : Math.round(file.size / 1024) + " KB";
+  const wrap = document.createElement("div");
+  wrap.className = "bubble-wrap debtor";
+  const avatar = document.createElement("div");
+  avatar.className = "avatar debtor";
+  avatar.textContent = "👤";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble debtor doc-bubble";
+  bubble.innerHTML = `
+    <span class="doc-icon">📄</span>
+    <span class="doc-meta">
+      <span class="doc-name">${escapeHtml(file.name)}</span>
+      <span class="doc-size">${sizeLabel}</span>
+    </span>`;
+  wrap.appendChild(avatar);
+  wrap.appendChild(bubble);
+  chatArea.appendChild(wrap);
   scrollDown();
   return wrap;
 }
@@ -410,6 +457,76 @@ function showIntentButtons() {
 function removeIntentButtons() {
   const el = document.getElementById("intent-btns");
   if (el) el.remove();
+}
+
+function showReasonMcq(options, answered, selectedLabel) {
+  if (document.getElementById("reason-mcq")) return;   // avoid duplicates
+  const card = document.createElement("div");
+  card.className = "reason-mcq";
+  card.id = "reason-mcq";
+
+  const title = document.createElement("div");
+  title.className = "mcq-title";
+  title.textContent = "Which best describes your situation?";
+  card.appendChild(title);
+
+  // Build buttons via the DOM (textContent + addEventListener) so labels with
+  // apostrophes / quotes can't break an inline onclick handler.
+  (options || []).forEach(o => {
+    const btn = document.createElement("button");
+    btn.className = "btn-intent btn-partial";
+    btn.textContent = o.label;
+    if (answered) {
+      // Replay / preview: keep the question + options visible, non-clickable.
+      btn.disabled = true;
+      if (o.label === selectedLabel) btn.classList.add("mcq-selected");
+    } else {
+      btn.addEventListener("click", () => reasonMcq(o.button_id, o.label));
+    }
+    card.appendChild(btn);
+  });
+
+  chatArea.appendChild(card);
+  scrollDown();
+}
+
+async function reasonMcq(buttonId, label) {
+  // Keep the question + options visible but non-clickable, and highlight the
+  // selection so the transcript still reads as a Q&A after the click.
+  const card = document.getElementById("reason-mcq");
+  if (card) {
+    card.querySelectorAll("button").forEach(b => {
+      b.disabled = true;
+      if (b.textContent === label) b.classList.add("mcq-selected");
+    });
+  }
+  addBubble("debtor", "Debtor selected reason: " + label);
+  const t = showTyping();
+  try {
+    const endpoint = useMongo ? "/api/message/reason-mcq" : `/api/reason-mcq/${sessionId}`;
+    const body     = useMongo
+      ? { invoice_id: INVOICE_ID, button_id: buttonId }
+      : { button_id: buttonId };
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    removeTyping();
+    const agentReply = useMongo ? data.message : data.agent_reply;
+    const status     = useMongo ? data.status : data.session_status;
+    addBubble("agent", agentReply);
+    if (status && TERMINAL_STATUSES.includes(status)) {
+      inputArea.classList.remove("visible");
+    } else {
+      inputArea.classList.add("visible");
+      msgInput.focus();
+    }
+  } catch (err) {
+    removeTyping();
+    addBubble("agent", "⚠️ Connection error. Please try again.");
+  }
 }
 
 function showTyping() {
@@ -567,6 +684,32 @@ function openRazorpayCheckout() {
   rzp.open();
 }
 
+async function payFull() {
+  const btn = document.getElementById("pay-full-btn");
+  if (!btn || btn.disabled) return;
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = "Preparing…";
+  try {
+    const url = useMongo ? `/api/message/pay-full/${INVOICE_ID}` : `/api/negotiate/pay-full/${sessionId}`;
+    const res = await fetch(url, { method: "POST" });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Couldn't prepare payment");
+    }
+    const order = await res.json();
+    if (order.error) throw new Error(order.error);
+    currentOrder = order;
+    openRazorpayCheckout();
+  } catch (err) {
+    addBubble("agent", "⚠️ Couldn't prepare the payment link. Please try again.");
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
+}
+
 function showPaymentSuccess(paymentId) {
   const card = document.getElementById("payment-card");
   if (card) card.remove();
@@ -687,6 +830,7 @@ function handleFile(file) {
 }
 
 async function uploadDocument(file) {
+  addDocumentBubble(file);   // show the document on the debtor (right) side
   if (!document.getElementById("upload-card")) showUploadCard();   // give the feedback a home
   const drop      = document.getElementById("upload-drop");
   const reviewing = document.getElementById("upload-reviewing");
@@ -706,7 +850,11 @@ async function uploadDocument(file) {
 
   const fd = new FormData();
   fd.append("file", file);
-  fd.append("session_id", sessionId);
+  if (useMongo) {
+    fd.append("invoice_id", INVOICE_ID);
+  } else {
+    fd.append("session_id", sessionId);
+  }
   fd.append("situation", currentSituation || "");
 
   try {
@@ -755,28 +903,67 @@ function renderVerdictLine(verdict) {
 const TERMINAL_STATUSES = [
   "settled", "awaiting_payment", "partially_settled", "disputed",
   "payment_claimed_under_review", "payment_claimed_verified",
-  "disputed_verified", "legal_hold", "escalated", "promise_to_pay",
+  "disputed_verified", "legal_hold", "escalated", "escalated_to_human",
 ];
 
+function renderHistory(history) {
+  (history || []).forEach(m => {
+    if (!m || typeof m.content !== "string") return;
+    if (m.role === "user") {
+      addBubble("debtor", m.content);
+    } else if (m.role === "assistant") {
+      addBubble("agent", m.content);
+      // Re-render a persisted reason-MCQ as non-clickable once answered.
+      if (m.mcq_options && m.mcq_options.length) {
+        showReasonMcq(m.mcq_options, !!m.mcq_answered, m.mcq_selected);
+      }
+    }
+  });
+}
+
 async function initChat() {
-  const res  = await fetch(`/api/negotiate/start/${INVOICE_ID}`, { method: "POST" });
-  const data = await res.json();
-  sessionId   = data.session_id;
-  amountPaise = data.invoice_amount_paise;
+  // MongoDB-backed flow is opt-in (MONGO_ENABLED). When disabled, go straight
+  // to the in-memory demo flow — no MongoDB round-trip, no 3s DNS timeout.
+  let data;
+  if (MONGO_ENABLED) {
+    try {
+      const res = await fetch(`/api/message/start/${INVOICE_ID}`, { method: "POST" });
+      if (!res.ok) throw new Error(`mongo start failed: ${res.status}`);
+      data = await res.json();
+      useMongo = true;
+    } catch (err) {
+      const res = await fetch(`/api/negotiate/start/${INVOICE_ID}`, { method: "POST" });
+      data = await res.json();
+      useMongo = false;
+      sessionId = data.session_id;
+    }
+  } else {
+    const res = await fetch(`/api/negotiate/start/${INVOICE_ID}`, { method: "POST" });
+    data = await res.json();
+    useMongo = false;
+    sessionId = data.session_id;
+  }
+
+  amountPaise = data.invoice_amount_paise ?? (data.invoice_amount * 100);
   debtorName  = data.debtor_name;
 
   document.getElementById("inv-id").textContent     = INVOICE_ID;
   document.getElementById("inv-amount").textContent = fmtRupees(amountPaise);
   document.getElementById("inv-dpd").textContent    = data.dpd + " days overdue";
   document.getElementById("inv-debtor").textContent = debtorName;
+  document.getElementById("pay-full-amt").textContent = fmtRupees(amountPaise);
   document.getElementById("invoice-card").style.display = "flex";
 
   renderTrustCard(data.trust_score ?? data.score);
 
-  // Highlight the partial-pay option before the opening message.
+  // Highlight the partial-pay option before the conversation.
   showPartialPayHint();
 
-  addBubble("agent", data.opening_message);
+  if (useMongo) {
+    renderHistory(data.history);        // full transcript from MongoDB
+  } else {
+    addBubble("agent", data.opening_message);
+  }
 
   // Free-text conversation — show the input right away.
   inputArea.classList.add("visible");
@@ -816,15 +1003,21 @@ async function sendMessage() {
 async function callTurn(message) {
   const t = showTyping();
   try {
-    const res = await fetch(`/api/negotiate/turn/${sessionId}`, {
+    const endpoint = useMongo ? "/api/message/incoming" : `/api/negotiate/turn/${sessionId}`;
+    const body     = useMongo
+      ? { invoice_id: INVOICE_ID, user_text: message }
+      : { message };
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     removeTyping();
 
-    addBubble("agent", data.agent_reply);
+    const agentReply = useMongo ? data.message : data.agent_reply;
+    const status     = useMongo ? data.status : data.session_status;
+    addBubble("agent", agentReply);
 
     // Trust score card is static — trust_score in the turn response is ignored.
 
@@ -839,7 +1032,11 @@ async function callTurn(message) {
       showUploadCard();
     }
 
-    const status = data.session_status;
+    // Surface the reason MCQ when Python decides to ask why the debtor can't pay.
+    if (data.mcq_options && data.mcq_options.length) {
+      showReasonMcq(data.mcq_options);
+    }
+
     if (status === "settled") {
       inputArea.classList.remove("visible");
       setTimeout(() => showStatusScreen("settled", `✅ Payment arranged. Thank you, ${debtorName}.`), 1800);

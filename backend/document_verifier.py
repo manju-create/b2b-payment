@@ -265,8 +265,9 @@ def verify_document(
         content = extract_text_from_image(file_bytes)
         if not content:
             return _inconclusive(
-                "I had trouble reading that image — could you try uploading a "
-                "clearer version or a PDF?"
+                "I couldn't read the text in that image. A clear PDF, or a "
+                "straight-on photo of the document (bank statement, receipt, or "
+                "letter), works best."
             )
     else:
         raise ValueError(f"Unsupported file_type: {file_type!r}")
