@@ -1,0 +1,28 @@
+# RecoverFlow Backend Dependencies
+# Web Framework & ASGI/WSGI Server
+fastapi>=0.100.0
+uvicorn>=0.20.0
+gunicorn>=21.0.0
+python-multipart>=0.0.6
+
+# Database & Storage
+pymongo>=4.0.0
+
+# LLM & AI Services
+openai>=1.0.0
+python-dotenv>=1.0.0
+
+# Payment Gateway Integration
+razorpay>=1.4.0
+
+# OCR & Document Verification
+PyMuPDF>=1.20.0
+pillow>=10.0.0
+pytesseract>=0.3.0
+
+# Utilities & Data Generation
+faker>=20.0.0
+
+# Testing & Development
+pytest>=8.0.0
+httpx>=0.25.0

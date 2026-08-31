@@ -1,0 +1,2 @@
+# RecoverFlow Project Dependencies
+-r backend/requirements.txt
