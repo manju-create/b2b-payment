@@ -30,10 +30,13 @@ without a live database.
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
 from pymongo import MongoClient
+
+logger = logging.getLogger("recoverflow.mongo")
 
 from backend.agent import (
     create_session,
@@ -81,6 +84,7 @@ def _get_collection():
 
 # Result of the reachability probe (None = not probed yet).
 _MONGO_AVAILABLE: bool | None = None
+_MONGO_LAST_ERROR: str | None = None
 
 
 def mongo_available() -> bool:
@@ -89,14 +93,29 @@ def mongo_available() -> bool:
     When the DB is reachable (e.g. on Railway) this returns quickly; when it is
     unreachable it pays the ~3s fast-fail timeout once, then remembers.
     """
-    global _MONGO_AVAILABLE
+    global _MONGO_AVAILABLE, _MONGO_LAST_ERROR
     if _MONGO_AVAILABLE is None:
+        uri = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
         try:
             _get_collection().database.client.admin.command("ping")
             _MONGO_AVAILABLE = True
-        except Exception:
+            logger.info("MongoDB reachable (collection: recoverflow_db.sessions)")
+        except Exception as exc:  # noqa: BLE001 — log the real reason, keep serving
             _MONGO_AVAILABLE = False
+            _MONGO_LAST_ERROR = f"{type(exc).__name__}: {exc}"
+            logger.error("MongoDB unreachable at %s — %s", _redact_uri(uri), _MONGO_LAST_ERROR)
     return _MONGO_AVAILABLE
+
+
+def mongo_last_error() -> str | None:
+    """Return the last connection error (None if never probed or no failure)."""
+    return _MONGO_LAST_ERROR
+
+
+def _redact_uri(uri: str) -> str:
+    """Strip credentials from a Mongo URI so it is safe to log."""
+    import re
+    return re.sub(r"://([^/@:]+):([^/@]+)@", r"://\1:***@", uri)
 
 
 # ---------------------------------------------------------------------------

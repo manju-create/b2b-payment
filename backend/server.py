@@ -45,6 +45,7 @@ from backend.message_handler import (  # noqa: E402
     apply_payment,
     handle_document_upload,
     mongo_available,
+    mongo_last_error,
 )
 from backend.document_verifier import verify_document                # noqa: E402
 from backend.scoring import update_trust_score, get_score_status, get_score_breakdown  # noqa: E402
@@ -165,6 +166,25 @@ async def chat(invoice_id: str):
     html = html.replace("__INVOICE_ID__", invoice_id)
     html = html.replace("__MONGO_ENABLED__", "true" if _chat_uses_mongo() else "false")
     return HTMLResponse(html)
+
+
+@app.get("/api/health/mongo")
+async def mongo_health():
+    """Report whether chat persistence is actually live, and why if not.
+
+    The chat silently degrades to an in-memory demo flow when Mongo is
+    unreachable, which loses history on every reload. This endpoint surfaces the
+    exact connection error so that failure is no longer invisible.
+    """
+    from backend.message_handler import _redact_uri
+    ok = mongo_available()
+    return JSONResponse({
+        "mongo_enabled_forced": os.environ.get("MONGO_ENABLED", "").strip().lower() in ("1", "true", "yes", "on"),
+        "mongo_reachable": ok,
+        "chat_will_persist": ok,
+        "mongo_uri": _redact_uri(os.environ.get("MONGO_URI", "mongodb://localhost:27017")),
+        "error": mongo_last_error(),
+    })
 
 
 # ---------------------------------------------------------------------------
