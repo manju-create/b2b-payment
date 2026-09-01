@@ -270,3 +270,23 @@ def test_reason_mcq_endpoint_lowers_floor(monkeypatch):
     stored = server.batch_results["INV-0001"]
     assert stored["rejection_reason"] == "Cash flow issues"
     assert stored["hardship_verified"] is True
+
+
+def test_create_order_fallback_on_api_error(monkeypatch):
+    """When Razorpay API throws an error or keys are missing/invalid, create_order falls back to a mock order."""
+    monkeypatch.setenv("RAZORPAY_KEY_ID", "invalid_key")
+    monkeypatch.setenv("RAZORPAY_KEY_SECRET", "invalid_secret")
+
+    from backend import razorpay_client
+    order = razorpay_client.create_order(
+        amount_inr=500.0,
+        invoice_id="INV-FALLBACK",
+        session_id="sess-fallback",
+        debtor_name="Fallback Debtor",
+    )
+
+    assert order["id"].startswith("order_demo_")
+    assert order["amount"] == 50000
+    assert order["currency"] == "INR"
+    assert order["notes"]["invoice_id"] == "INV-FALLBACK"
+
