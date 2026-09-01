@@ -15,7 +15,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse
 from pydantic import BaseModel
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -108,6 +108,13 @@ def _rupees_fmt(paise: int) -> str:
     while len(s) > 2:
         result, s = s[-2:] + "," + result, s[:-2]
     return f"₹{s},{result}"
+
+
+# ROI metric assumptions (surface on the merchant dashboard).
+# A human collector spends ~2 hours per invoice on calls/emails/follow-ups; the
+# AI resolves one in ~11 minutes (see PRD.md §14).
+MANUAL_HOURS_PER_INVOICE = 2.0
+AI_HOURS_PER_INVOICE = 11.0 / 60.0   # ~0.183h
 
 
 def _should_show_upload_card(s: dict) -> bool:
@@ -216,15 +223,47 @@ async def batch_start():
 
 @app.get("/api/batch/status")
 async def batch_status():
+    # Merge durable Mongo state (authoritative under the Mongo chat flow) so the
+    # dashboard reflects the real negotiation status / recovery, not just the
+    # frozen in-memory sessions seeded by /api/batch/start.
+    mongo_docs: dict[str, dict] = {}
+    if mongo_available():
+        try:
+            from backend.message_handler import _get_collection
+            for doc in _get_collection().find({}):
+                mongo_docs[doc.get("invoice_id")] = doc
+        except Exception:
+            pass
+
     counts = {"settled": 0, "partially_settled": 0, "awaiting_payment": 0,
               "disputed": 0, "escalated": 0, "active": 0}
     total_recovered = 0
+    worked = 0          # invoices the AI actually engaged with (labor saved)
+    concessions: list[float] = []   # discount % per agreed invoice
     invoices_out = []
     for iid, s in batch_results.items():
-        status = s.get("status", "active")
+        md = mongo_docs.get(iid) or {}
+
+        status = md.get("status") or s.get("status", "active")
+        recovered = md.get("recovered_paise")
+        recovered = (recovered or 0) if recovered is not None else s.get("recovered_paise", 0)
+
+        turn_count = s.get("turn_count", 0)
+        if md.get("chat_history"):
+            turn_count = sum(1 for m in md["chat_history"]
+                             if isinstance(m, dict) and m.get("role") == "user")
+
         counts[status if status in counts else "active"] += 1
-        total_recovered += s.get("recovered_paise", 0)
+        total_recovered += recovered
+        if turn_count > 0 or status != "active":
+            worked += 1
+
         plan = s.get("agreed_terms")
+        inv_paise = s.get("invoice_amount_paise", 0)
+        if plan and inv_paise:
+            discount = plan.get("discount_amount", 0) or 0
+            concessions.append(discount / inv_paise * 100)
+
         plan_summary = None
         if plan and plan.get("deferred_amount", 0) > 0:
             plan_summary = f"{plan['upfront_display']} now + {plan['deferred_display']} by {plan['deferred_due_date']}"
@@ -240,14 +279,22 @@ async def batch_status():
             "company_name": s.get("company_name", ""), "tier": trust_tier,
             "score": trust_score, "invoice_amount_paise": s.get("invoice_amount_paise", 0),
             "dpd": s.get("dpd", 0), "status": status,
-            "recovered_paise": s.get("recovered_paise", 0),
+            "recovered_paise": recovered,
             "razorpay_order_id": s.get("razorpay_order_id"), "session_id": s.get("session_id"),
-            "turn_count": s.get("turn_count", 0), "plan_summary": plan_summary,
+            "turn_count": turn_count, "plan_summary": plan_summary,
             "identified_situation": s.get("identified_situation"),
             "document": s.get("document_verification"),
         })
+    avg_concession = round(sum(concessions) / len(concessions), 1) if concessions else 0.0
+    labor_hours_saved = round(worked * (MANUAL_HOURS_PER_INVOICE - AI_HOURS_PER_INVOICE), 1)
     return {**counts, "total_recovered_paise": total_recovered,
-            "total_invoices": len(batch_results), "invoices": invoices_out}
+            "total_invoices": len(batch_results), "invoices": invoices_out,
+            "roi": {
+                "total_capital_recovered_paise": total_recovered,
+                "average_concession_pct": avg_concession,
+                "labor_hours_saved": labor_hours_saved,
+                "invoices_worked": worked,
+            }}
 
 
 # ---------------------------------------------------------------------------
@@ -735,6 +782,201 @@ async def get_audit(invoice_id: str):
     if not s:
         raise HTTPException(404, f"Invoice {invoice_id!r} not in batch")
     return {"invoice_id": invoice_id, "audit_log": s.get("audit_log", [])}
+
+
+@app.get("/api/escalation-pdf/{session_id}")
+async def get_escalation_pdf(session_id: str):
+    """Serve the L3 escalation notice PDF for an escalated session.
+
+    The PDF is generated once at escalation time and cached on the session; this
+    endpoint only regenerates when the cached file is missing, so a download
+    request never re-runs the generator.
+
+    Under the Mongo chat flow the negotiation runs against message_handler's own
+    session cache, so this in-memory copy is stale. Rebuild the live session from
+    Mongo first so the notice reflects the real conversation (debtor's offer,
+    current floor) rather than an untouched batch-seeded session.
+    """
+    s = sessions.get(session_id)
+    if not s:
+        raise HTTPException(status_code=404, detail=f"Session {session_id!r} not found")
+
+    from backend.pdf_generator import generate_escalation_pdf
+
+    if mongo_available():
+        try:
+            from backend.message_handler import _get_collection, _build_agent_session
+            doc = _get_collection().find_one({"invoice_id": s.get("invoice_id")})
+            if doc and doc.get("chat_history"):
+                s = _build_agent_session(s["invoice_id"], doc)
+        except Exception:
+            pass
+
+    pdf_path = s.get("escalation_pdf_path")
+    if not pdf_path or not Path(pdf_path).exists():
+        invoice = s.get("current_invoice") or {}
+        pdf_path = generate_escalation_pdf(s, invoice)
+        s["escalation_pdf_path"] = pdf_path
+
+    return FileResponse(
+        pdf_path,
+        media_type="application/pdf",
+        filename=f"escalation_{s['invoice_id']}.pdf",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Invoice detail panel — negotiation summary for the expandable dashboard rows
+# ---------------------------------------------------------------------------
+
+# audit_log reason → human-readable escalation story
+_ESCALATION_REASONS = {
+    "final_ultimatum":      "Debtor kept offering below the minimum and the chat was closed",
+    "debtor_unresponsive":  "Debtor went silent during negotiation",
+    "debtor_requested_human": "Debtor asked to speak to a human",
+    "debtor_lowball":       "Debtor offered below the floor and the chat was closed",
+    "negotiation_exhausted": "Debtor rejected every offer and no agreement was reached",
+    "debtor_legal_threat":   "Debtor raised a legal threat — outreach paused",
+}
+
+
+def _rupees_to_paise(value: Any) -> int | None:
+    """Convert a rupees amount to paise (None-safe), matching the frontend formatter."""
+    if value is None:
+        return None
+    try:
+        return int(round(float(value) * 100))
+    except (TypeError, ValueError):
+        return None
+
+
+def _terminal_escalation_reason(s: dict, mongo_doc: dict | None) -> str | None:
+    """Derive the human-readable escalation story, merging Mongo + in-memory state.
+
+    The Mongo flow (MONGO_ENABLED) writes its terminal status to MongoDB, while the
+    in-memory flow records the reason in the session's audit_log. Prefer the audit
+    trail when present, then fall back to the Mongo status + chat signals.
+    """
+    status = (mongo_doc or {}).get("status") or s.get("status", "active")
+
+    if status == "escalated_to_human":
+        return "Document dispute flagged — awaiting merchant review"
+    if status == "legal_hold":
+        return "Debtor raised a legal threat — outreach paused"
+    if status != "escalated":
+        return None
+
+    for entry in reversed(s.get("audit_log", [])):
+        if entry.get("event") == "state_transition" and entry.get("to_state") == "escalated":
+            return _ESCALATION_REASONS.get(entry.get("reason"), "Escalated for manual follow-up")
+        if entry.get("event") == "stopping_rule" and entry.get("status") == "escalated":
+            return _ESCALATION_REASONS.get(entry.get("reason"), "Escalated for manual follow-up")
+        if entry.get("event") == "escalation_triggered":
+            return _ESCALATION_REASONS.get(entry.get("reason"), "Escalated for manual follow-up")
+
+    # TRAPDOOR-1 hard stop (Mongo flow) appends the deterministic closing message.
+    chat = " ".join(m.get("content") or "" for m in ((mongo_doc or {}).get("chat_history") or []))
+    if "Negotiation closed" in chat:
+        return _ESCALATION_REASONS["debtor_lowball"]
+
+    return "Escalated for manual follow-up"
+
+
+def _last_assistant_message(messages: list[dict]) -> str | None:
+    for m in reversed(messages):
+        if isinstance(m, dict) and m.get("role") == "assistant":
+            return m.get("content")
+    return None
+
+
+@app.get("/api/invoice/{invoice_id}/details")
+async def invoice_details(invoice_id: str):
+    """Negotiation summary for one invoice's expandable dashboard row.
+
+    Merges the durable Mongo state (authoritative ``status`` / ``chat_history`` /
+    ``current_floor`` under the Mongo chat flow) with the in-memory session so the
+    escalation story is correct regardless of which flow the debtor used.
+    """
+    s = batch_results.get(invoice_id)
+    if not s:
+        raise HTTPException(404, f"Invoice {invoice_id!r} not in batch")
+
+    mongo_doc = None
+    if mongo_available():
+        try:
+            from backend.message_handler import _get_collection
+            mongo_doc = _get_collection().find_one({"invoice_id": invoice_id})
+        except Exception:
+            mongo_doc = None
+
+    status = (mongo_doc or {}).get("status") or s.get("status", "active")
+    engine = s.get("negotiation_engine") or {}
+    messages = (mongo_doc or {}).get("chat_history") or s.get("messages") or []
+
+    turn_count = s.get("turn_count", 0)
+    if not turn_count and messages:
+        turn_count = sum(1 for m in messages if isinstance(m, dict) and m.get("role") == "user")
+
+    # Authoritative floor: Mongo's current_floor (the value the trapdoors actually
+    # enforce) wins when present; otherwise fall back to the in-memory engine.
+    floor = ((mongo_doc or {}).get("financial_bounds") or {}).get("current_floor")
+    if floor is None:
+        floor = engine.get("min_today")
+
+    last_offer = s.get("last_debtor_offer")
+    if last_offer is None:
+        # The Mongo flow does not persist last_debtor_offer as a field; recover it
+        # from the debtor's most recent message.
+        from backend.agent import _extract_amount_rupees as _extract_rupees
+        for m in reversed(messages):
+            if isinstance(m, dict) and m.get("role") == "user":
+                last_offer = _extract_rupees(m.get("content") or "")
+                if last_offer is not None:
+                    break
+
+    escalation_reason = _terminal_escalation_reason(s, mongo_doc)
+
+    recovered = (mongo_doc or {}).get("recovered_paise")
+    recovered = (recovered or 0) if recovered is not None else s.get("recovered_paise", 0) or 0
+
+    agreed = s.get("agreed_terms")
+    inv_paise = s.get("invoice_amount_paise", 0)
+    concession_pct = 0.0
+    if agreed and inv_paise:
+        discount = agreed.get("discount_amount", 0) or 0
+        concession_pct = round(discount / inv_paise * 100, 1)
+
+    worked = turn_count > 0 or status != "active"
+    labor_hours_saved = round(MANUAL_HOURS_PER_INVOICE - AI_HOURS_PER_INVOICE, 1) if worked else 0.0
+
+    return {
+        "invoice_id": invoice_id,
+        "session_id": s.get("session_id"),
+        "company_name": s.get("company_name", ""),
+        "debtor_name": s.get("debtor_name", ""),
+        "tier": s.get("tier", ""),
+        "dpd": s.get("dpd", 0),
+        "invoice_amount_paise": s.get("invoice_amount_paise", 0),
+        "status": status,
+        "turn_count": turn_count,
+        "identified_situation": s.get("identified_situation"),
+        "merchant_flag": s.get("merchant_flag"),
+        "floor_paise": _rupees_to_paise(floor),
+        "last_debtor_offer_paise": _rupees_to_paise(last_offer),
+        "agreed_amount_paise": _rupees_to_paise(s.get("debtor_agreed_amount")),
+        "escalation": {
+            "active": bool(escalation_reason),
+            "reason": escalation_reason,
+            "closing_message": _last_assistant_message(messages) if escalation_reason else None,
+        },
+        "recovered_paise": recovered,
+        "roi": {
+            "capital_recovered_paise": recovered,
+            "concession_pct": concession_pct,
+            "labor_hours_saved": labor_hours_saved,
+            "worked": worked,
+        },
+    }
 
 
 @app.get("/api/webhook-log")

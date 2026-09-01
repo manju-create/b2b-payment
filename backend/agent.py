@@ -269,6 +269,41 @@ def _audit(session: dict, event: str, **kwargs) -> None:
     })
 
 
+def _trigger_escalation(session: dict, reason: str, status: str = "escalated") -> str | None:
+    """Mark the session escalated, generate the L3 escalation PDF, and log it.
+
+    Called from every terminal escalation path (all negotiation steps exhausted,
+    a legal/RBI threat, no progress, a human-request, or the final ultimatum).
+    The PDF is generated exactly once and cached on the session so the download
+    endpoint never regenerates it.
+
+    Returns the PDF path, or None if generation failed (e.g. reportlab missing).
+    """
+    session["status"] = status
+    session["state"] = "escalated"
+    timestamp = _ts()
+    session["escalation_triggered_at"] = timestamp
+    session["escalation_reason"] = reason
+
+    pdf_path = session.get("escalation_pdf_path")
+    pdf_generated = False
+    if not pdf_path:
+        try:
+            from backend.pdf_generator import generate_escalation_pdf
+            invoice = session.get("current_invoice") or {}
+            pdf_path = generate_escalation_pdf(session, invoice)
+            session["escalation_pdf_path"] = pdf_path
+            pdf_generated = True
+        except Exception:
+            logger.exception("Failed to generate escalation PDF for %s",
+                             session.get("invoice_id"))
+            pdf_path = None
+
+    _audit(session, "escalation_triggered", reason=reason,
+           timestamp=timestamp, pdf_generated=pdf_generated, pdf_path=pdf_path)
+    return pdf_path
+
+
 # ---------------------------------------------------------------------------
 # Live trust score — recalculated at session start and after every debtor turn
 # ---------------------------------------------------------------------------
@@ -1663,9 +1698,9 @@ def _advance_negotiation(session: dict, engine: NegotiationEngine, msg: str,
             )
 
         # No amount and either no reason or proof already requested — stop pushing.
-        session["state"] = "escalated"
-        session["status"] = "escalated"
-        _audit(session, "state_transition", from_state="hardship", to_state="escalated")
+        _audit(session, "state_transition", from_state="hardship",
+               to_state="escalated", reason="negotiation_exhausted")
+        _trigger_escalation(session, "negotiation_exhausted")
         return (
             "No agreement could be reached. Close warmly, explain next steps, and do not "
             "ask for payment again."
@@ -1899,11 +1934,10 @@ def _trigger_final_ultimatum(session: dict, engine: NegotiationEngine,
     Sets the terminal state and a flag so process_turn emits the deterministic
     final-ultimatum message (no LLM text), rather than re-asking the MCQ.
     """
-    session["state"] = "escalated"
-    session["status"] = "escalated"
-    session["final_ultimatum_requested"] = True
     _audit(session, "state_transition", from_state="negotiating",
            to_state="escalated", reason="final_ultimatum", step=step)
+    _trigger_escalation(session, "final_ultimatum")
+    session["final_ultimatum_requested"] = True
     return "FINAL_ULTIMATUM"
 
 
@@ -2034,8 +2068,8 @@ def process_turn(session: dict, debtor_message: str) -> tuple[str, dict]:
     if not debtor_message.strip():
         _audit(session, "debtor_turn", turn=turn, speaker="debtor", message="[silent]")
         if turn >= session["max_turns"]:
-            session["status"] = "escalated"
             _audit(session, "stopping_rule", status="escalated", reason="debtor_unresponsive")
+            _trigger_escalation(session, "debtor_unresponsive")
             reply = "No rush — I'll leave this with our team and they'll follow up when you're ready."
         else:
             reply = "I'm still here when you're ready to talk this through."
@@ -2049,6 +2083,7 @@ def process_turn(session: dict, debtor_message: str) -> tuple[str, dict]:
         session["status"] = "legal_hold"
         reply = "Understood — I'll pass this to our team and we won't contact you further on this."
         _audit(session, "stopping_rule", status="legal_hold", reason="debtor_legal_threat")
+        _trigger_escalation(session, "debtor_legal_threat", status="legal_hold")
         session["messages"].append({"role": "user", "content": debtor_message})
         session["messages"].append({"role": "assistant", "content": reply})
         _record_agent_message(session, reply)
@@ -2057,9 +2092,9 @@ def process_turn(session: dict, debtor_message: str) -> tuple[str, dict]:
 
     # --- Stopping rule: debtor asks for a human ---
     if _requests_human(debtor_message):
-        session["status"] = "escalated"
         reply = "No problem — I'll connect you with a real person on our team who'll reach out shortly."
         _audit(session, "stopping_rule", status="escalated", reason="debtor_requested_human")
+        _trigger_escalation(session, "debtor_requested_human")
         session["messages"].append({"role": "user", "content": debtor_message})
         session["messages"].append({"role": "assistant", "content": reply})
         _record_agent_message(session, reply)

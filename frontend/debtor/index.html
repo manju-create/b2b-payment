@@ -950,6 +950,19 @@
       line-height: 1.5;
     }
 
+    /* Conversation-closed notice */
+    .closed-notice {
+      margin: 8px 0 4px;
+      padding: 14px 18px;
+      background: #F8FAFC;
+      border: 1px dashed #CBD5E1;
+      border-radius: 12px;
+      text-align: center;
+      color: #64748B;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
     /* Typing indicator */
     .typing {
       display: none;
@@ -1452,7 +1465,7 @@
         const status = useMongo ? data.status : data.session_status;
         addBubble("agent", agentReply);
         if (status && TERMINAL_STATUSES.includes(status)) {
-          inputArea.classList.remove("visible");
+          closeConversation();
         } else {
           inputArea.classList.add("visible");
           msgInput.focus();
@@ -1739,6 +1752,18 @@
       }
     }
 
+    function closeConversation() {
+      inputArea.classList.remove("visible");
+      sendBtn.disabled = true;
+      if (document.getElementById("closed-notice")) return;
+      const notice = document.createElement("div");
+      notice.className = "closed-notice";
+      notice.id = "closed-notice";
+      notice.textContent = "This conversation has been closed.";
+      chatArea.appendChild(notice);
+      scrollDown();
+    }
+
     function openUploadPicker() {
       document.getElementById("global-upload-input").click();
     }
@@ -1831,7 +1856,7 @@
           setInputEnabled(true);
           showUploadCard();
         } else if (TERMINAL_STATUSES.includes(data.session_status)) {
-          inputArea.classList.remove("visible");
+          closeConversation();
         } else {
           setInputEnabled(true);
         }
@@ -1924,9 +1949,14 @@
         addBubble("agent", data.opening_message);
       }
 
-      // Free-text conversation — show the input right away.
-      inputArea.classList.add("visible");
-      msgInput.focus();
+      // Free-text conversation — show the input right away, unless the session
+      // is already closed (e.g. a reload of an escalated chat).
+      if (data.status && TERMINAL_STATUSES.includes(data.status)) {
+        closeConversation();
+      } else {
+        inputArea.classList.add("visible");
+        msgInput.focus();
+      }
     }
 
     async function clearChat() {
@@ -2022,7 +2052,7 @@
           inputArea.classList.remove("visible");
           setTimeout(() => showStatusScreen("settled", `✅ Payment arranged. Thank you, ${debtorName}.`), 1800);
         } else if (TERMINAL_STATUSES.includes(status)) {
-          inputArea.classList.remove("visible");
+          closeConversation();
         } else {
           inputArea.classList.add("visible");
           msgInput.focus();

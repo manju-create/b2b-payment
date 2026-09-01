@@ -17,6 +17,9 @@ python-dotenv>=1.0.0
 # Payment Gateway Integration
 razorpay>=1.4.0
 
+# PDF Generation (L3 escalation notices)
+reportlab>=4.0.0
+
 # OCR & Document Verification
 PyMuPDF>=1.20.0
 pillow>=10.0.0

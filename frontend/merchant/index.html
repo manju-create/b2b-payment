@@ -124,9 +124,39 @@ tr:hover td { background: #F8FAFC; }
 .toast { background: #1E293B; color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: slideIn 0.3s ease; max-width: 360px; }
 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+/* ROI metrics */
+.roi-card { background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.roi-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+.roi-title { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.2px; }
+.roi-sub { font-size: 12px; color: #94A3B8; }
+.roi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.roi-stat { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px 16px; }
+.roi-value { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; margin-bottom: 6px; }
+.roi-value.green  { color: #4ADE80; }
+.roi-value.blue   { color: #60A5FA; }
+.roi-value.yellow { color: #FBBF24; }
+.roi-label { font-size: 12px; color: #94A3B8; font-weight: 500; }
+
+/* Expandable detail rows */
+.expand-btn { background: #F1F5F9; border: none; border-radius: 6px; width: 24px; height: 24px; font-size: 12px; font-weight: 700; color: #64748B; cursor: pointer; line-height: 1; transition: background 0.12s, color 0.12s; }
+.expand-btn:hover { background: #E2E8F0; color: #1E293B; }
+.detail-row td { background: #F8FAFC; border-top: none; padding: 0 !important; }
+.detail-cell { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; }
+.escalation-banner { background: #FEE2E2; border: 1px solid #FECACA; border-left: 4px solid #DC2626; border-radius: 10px; padding: 12px 16px; }
+.escalation-title { font-size: 13px; font-weight: 800; color: #991B1B; margin-bottom: 4px; }
+.escalation-reason { font-size: 13px; color: #7F1D1D; font-weight: 600; }
+.escalation-msg { font-size: 12px; color: #991B1B; margin-top: 8px; font-style: italic; line-height: 1.5; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.detail-item { background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px; }
+.detail-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #94A3B8; margin-bottom: 4px; }
+.detail-value { font-size: 14px; font-weight: 600; color: #1E293B; }
+.detail-roi { border-top: 1px solid #E2E8F0; padding-top: 12px; }
+.detail-roi-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #94A3B8; margin-bottom: 8px; }
+
 @media (max-width: 900px) {
   .main { grid-template-columns: 1fr; }
   .metric-bar { grid-template-columns: repeat(2, 1fr); }
+  .roi-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -153,6 +183,28 @@ tr:hover td { background: #F8FAFC; }
       <div class="metric"><div class="metric-value yellow" id="m-disputed">—</div><div class="metric-label">Disputed</div></div>
     </div>
 
+    <!-- ROI metrics -->
+    <div class="roi-card">
+      <div class="roi-head">
+        <span class="roi-title">📈 ROI Metrics</span>
+        <span class="roi-sub">AI recovery impact</span>
+      </div>
+      <div class="roi-grid">
+        <div class="roi-stat">
+          <div class="roi-value green" id="roi-recovered">—</div>
+          <div class="roi-label">Total Capital Recovered</div>
+        </div>
+        <div class="roi-stat">
+          <div class="roi-value blue" id="roi-concession">—</div>
+          <div class="roi-label">Average Concession %</div>
+        </div>
+        <div class="roi-stat">
+          <div class="roi-value yellow" id="roi-labor">—</div>
+          <div class="roi-label">Hours of Human Labor Saved</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Progress bar -->
     <div class="progress-section">
       <div class="progress-header">
@@ -167,6 +219,7 @@ tr:hover td { background: #F8FAFC; }
       <table id="inv-table">
         <thead>
           <tr>
+            <th style="width:36px;"></th>
             <th onclick="sortTable('invoice_id')">Invoice ⇅</th>
             <th onclick="sortTable('company_name')">Debtor ⇅</th>
             <th onclick="sortTable('invoice_amount_paise')">Amount ⇅</th>
@@ -248,6 +301,8 @@ let sortKey = "invoice_id";
 let sortAsc = true;
 let simInvoiceId = null;
 let totalOutstandingPaise = 0;
+let expanded = new Set();          // invoice_ids whose detail row is open
+let detailsCache = {};             // invoice_id -> detail payload from /api/invoice/{id}/details
 
 function fmtRupees(paise) {
   if (!paise) return "₹0";
@@ -262,7 +317,7 @@ function fmtRupees(paise) {
 function statusBadge(st) {
   const labels = { settled: "✅ Settled", partially_settled: "🔄 Part. Settled",
     awaiting_payment: "⏳ Awaiting Payment",
-    disputed: "⚠️ Disputed", active: "🔵 Active", pending: "⏳ Pending", escalated: "⬆️ Escalated",
+    disputed: "⚠️ Disputed", active: "🔵 Active", pending: "⏳ Pending", escalated: "🔴 Escalated",
     payment_claimed_verified: "✅ Payment Verified", disputed_verified: "✅ Dispute Verified",
     promise_to_pay: "🤝 Promise to Pay" };
   return `<span class="badge ${st}">${labels[st] || st}</span>`;
@@ -362,6 +417,7 @@ async function refreshStatus() {
     const events   = await eventsRes.json();
 
     updateMetrics(status);
+    updateRoi(status.roi);
     updateTable(status.invoices || []);
     updateDeferred(deferred.deferred_payments || []);
     updateTierBars(status);
@@ -379,6 +435,13 @@ function updateMetrics(d) {
   document.getElementById("m-disputed").textContent = d.disputed || 0;
   document.getElementById("prog-pct").textContent   = pct + "%";
   document.getElementById("prog-fill").style.width  = Math.min(pct, 100) + "%";
+}
+
+function updateRoi(roi) {
+  if (!roi) return;
+  document.getElementById("roi-recovered").textContent  = fmtRupees(roi.total_capital_recovered_paise);
+  document.getElementById("roi-concession").textContent = (roi.average_concession_pct ?? 0).toFixed(1) + "%";
+  document.getElementById("roi-labor").textContent      = (roi.labor_hours_saved ?? 0).toFixed(1) + "h";
 }
 
 function updateTable(invoices) {
@@ -419,8 +482,13 @@ function renderTable() {
     return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
   });
   const tbody = document.getElementById("inv-tbody");
-  tbody.innerHTML = sorted.map(r => `
+  tbody.innerHTML = sorted.map(r => {
+    const isOpen = expanded.has(r.invoice_id);
+    const row = `
     <tr>
+      <td style="padding:0;text-align:center;width:36px;">
+        <button class="expand-btn" onclick="toggleDetails('${r.invoice_id}')" title="Toggle details">${isOpen ? "▾" : "▸"}</button>
+      </td>
       <td><code style="font-size:12px;">${r.invoice_id}</code></td>
       <td>
         <div style="font-weight:600; font-size:13px;">${r.company_name}</div>
@@ -438,8 +506,77 @@ function renderTable() {
       <td>
         <a class="action-link" href="/chat/${r.invoice_id}" target="_blank">View Chat</a>
         <a class="action-link" href="#" onclick="showAudit('${r.invoice_id}'); return false;">Audit</a>
+        ${r.status === "escalated" && r.session_id ? `<a class="action-link" href="/api/escalation-pdf/${r.session_id}" target="_blank">📄 Escalation Notice</a>` : ""}
       </td>
-    </tr>`).join("");
+    </tr>`;
+    const detail = isOpen ? renderDetails(r.invoice_id) : "";
+    return row + detail;
+  }).join("");
+}
+
+function detailBody(d) {
+  const escalationHtml = d.escalation && d.escalation.active
+    ? `<div class="escalation-banner">
+         <div class="escalation-title">🔴 Escalated</div>
+         <div class="escalation-reason">${escapeHtml(d.escalation.reason || "")}</div>
+         ${d.escalation.closing_message ? `<div class="escalation-msg">“${escapeHtml(d.escalation.closing_message)}”</div>` : ""}
+         ${d.session_id ? `<div style="margin-top:10px;"><a class="action-link" href="/api/escalation-pdf/${d.session_id}" target="_blank">📄 Download Escalation Notice</a></div>` : ""}
+       </div>`
+    : "";
+
+  const rows = [
+    ["Invoice amount", fmtRupees(d.invoice_amount_paise)],
+    ["Floor (minimum)", d.floor_paise != null ? fmtRupees(d.floor_paise) : "—"],
+    ["Debtor's last offer", d.last_debtor_offer_paise != null ? fmtRupees(d.last_debtor_offer_paise) : "—"],
+    ["Agreed amount", d.agreed_amount_paise != null ? fmtRupees(d.agreed_amount_paise) : "—"],
+    ["Turns", d.turn_count != null ? d.turn_count : "—"],
+    ["Situation", d.identified_situation ? situationBadge(d.identified_situation) : "—"],
+    ["Merchant flag", d.merchant_flag ? escapeHtml(d.merchant_flag) : "—"],
+  ];
+  const grid = `<div class="detail-grid">${rows.map(([label, value]) =>
+    `<div class="detail-item"><div class="detail-label">${label}</div><div class="detail-value">${value}</div></div>`
+  ).join("")}</div>`;
+
+  const roi = d.roi || {};
+  const roiHtml = `
+    <div class="detail-roi">
+      <div class="detail-roi-title">📈 ROI</div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="detail-label">Capital Recovered</div><div class="detail-value">${fmtRupees(roi.capital_recovered_paise)}</div></div>
+        <div class="detail-item"><div class="detail-label">Concession %</div><div class="detail-value">${(roi.concession_pct ?? 0).toFixed(1)}%</div></div>
+        <div class="detail-item"><div class="detail-label">Labor Hours Saved</div><div class="detail-value">${(roi.labor_hours_saved ?? 0).toFixed(1)}h</div></div>
+      </div>
+    </div>`;
+
+  return `<div class="detail-cell">${escalationHtml}${grid}${roiHtml}</div>`;
+}
+
+function renderDetails(id) {
+  const d = detailsCache[id];
+  if (!d) return "";
+  if (d.error) {
+    return `<tr class="detail-row"><td colspan="13"><div class="detail-cell">Failed to load details.</div></td></tr>`;
+  }
+  return `<tr class="detail-row"><td colspan="13">${detailBody(d)}</td></tr>`;
+}
+
+async function toggleDetails(id) {
+  if (expanded.has(id)) {
+    expanded.delete(id);
+    renderTable();
+    return;
+  }
+  if (!detailsCache[id]) {
+    try {
+      const res = await fetch(`/api/invoice/${id}/details`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      detailsCache[id] = await res.json();
+    } catch (e) {
+      detailsCache[id] = { error: true, invoice_id: id };
+    }
+  }
+  expanded.add(id);
+  renderTable();
 }
 
 function updateDeferred(payments) {
