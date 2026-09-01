@@ -40,6 +40,7 @@ from backend.message_handler import (  # noqa: E402
     handle_reason_mcq_answer,
     start_session,
     get_chat_history,
+    clear_chat_history,
     pay_full as mongo_pay_full,
     apply_payment,
     handle_document_upload,
@@ -297,6 +298,15 @@ async def negotiate_turn(session_id: str, body: TurnRequest):
                 "status":          "pending",
                 "scheduled_at":    datetime.now(timezone.utc).isoformat(),
             }
+        # Sync messages to MongoDB if available
+        if mongo_available():
+            try:
+                from backend.message_handler import _get_collection, _sync_to_mongo
+                col = _get_collection()
+                _sync_to_mongo(col, iid, s, col.find_one({"invoice_id": iid}))
+            except Exception:
+                pass
+
         import json as _json
         safe = {
             "agent_reply":     agent_reply,
@@ -408,6 +418,29 @@ async def message_history(invoice_id: str):
         return get_chat_history(invoice_id)
     except EnvironmentError as exc:
         raise HTTPException(503, str(exc))
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+
+@app.post("/api/message/clear/{invoice_id}")
+async def message_clear(invoice_id: str):
+    """Clear chat history and reset negotiation state in MongoDB."""
+    try:
+        return clear_chat_history(invoice_id)
+    except EnvironmentError as exc:
+        raise HTTPException(503, str(exc))
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+
+@app.post("/api/negotiate/clear/{invoice_id}")
+async def negotiate_clear(invoice_id: str):
+    """Clear chat history in-memory and in MongoDB if available."""
+    try:
+        res = clear_chat_history(invoice_id)
+        if invoice_id in sessions:
+            sessions.pop(invoice_id, None)
+        return res
     except Exception as exc:
         raise HTTPException(500, str(exc))
 

@@ -230,3 +230,23 @@ def test_document_upload_dispute_freezes_agent(monkeypatch):
     assert col.doc["status"] == "escalated_to_human"
     assert col.doc["documents"][0]["file_name"] == "proof.pdf"
     assert col.doc["documents"][0]["url"] == "/uploads/x.pdf"
+
+
+def test_clear_chat_history_removes_messages_and_resets_doc():
+    doc = _doc()
+    doc["chat_history"] = [
+        {"role": "assistant", "content": "Hello!"},
+        {"role": "user", "content": "I offer 1000"},
+        {"role": "assistant", "content": "That is too low."}
+    ]
+    col = FakeCollection(doc)
+
+    res = mh.clear_chat_history("INV-0016", collection=col)
+
+    assert res["status"] == "cleared"
+    assert len(res["history"]) == 1
+    assert res["history"][0]["role"] == "assistant"
+    assert col.doc["status"] == "negotiating"
+    assert len(col.doc["chat_history"]) == 1
+    assert col.doc["chat_history"][0]["role"] == "assistant"
+

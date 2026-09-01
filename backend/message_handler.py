@@ -73,11 +73,7 @@ def _get_collection():
     global _client, _collection
     if _collection is not None:
         return _collection
-    uri = os.environ.get("MONGO_URI")
-    if not uri:
-        raise EnvironmentError("MONGO_URI environment variable is not set.")
-    # Fail fast (~3s) instead of hanging for the default 30s when the DB is
-    # unreachable (e.g. the Railway-internal URI hit from a local machine).
+    uri = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
     _client = MongoClient(uri, serverSelectionTimeoutMS=3000)
     _collection = _client["recoverflow_db"]["sessions"]
     return _collection
@@ -242,10 +238,8 @@ def start_session(invoice_id: str, collection: Any = None) -> dict:
     col = collection or _get_collection()
     doc = col.find_one({"invoice_id": invoice_id})
 
-    if doc is not None:
-        # Already started — reconstruct the session so the response always
-        # carries the invoice/debtor context the frontend needs (a reload would
-        # otherwise get NaN/undefined in the invoice card).
+    if doc is not None and doc.get("chat_history"):
+        # Already started with history — reconstruct the session
         session = _build_agent_session(invoice_id, doc)
         return {
             "invoice_id": invoice_id,
@@ -261,33 +255,45 @@ def start_session(invoice_id: str, collection: Any = None) -> dict:
             "trust_score": session.get("display_trust_score", session.get("trust_score")),
         }
 
-    # First contact — build the full session, seed Mongo, and open the chat.
-    session = _build_agent_session(invoice_id, None)
+    # First contact or empty chat_history (e.g. freshly seeded doc) — generate opening message
+    session = _build_agent_session(invoice_id, doc if doc is not None else None)
     opening, session = open_turn(session)
     engine = _get_engine(session)
 
-    doc = {
-        "invoice_id": invoice_id,
-        "status": session["status"],
-        "trust_score": session.get("trust_score", 0),
-        "financial_bounds": {
-            "principal": session["invoice_amount"],
-            "current_floor": engine.min_today,
-            "max_allowed_date": str(engine.deadline),
-        },
-        "state_locks": {
-            "first_counter_issued": False,
-            "reason_collected": False,
-        },
-        "chat_history": session.get("messages", []),
-    }
-    col.insert_one(doc)
+    if doc is not None:
+        col.update_one(
+            {"invoice_id": invoice_id},
+            {"$set": {"chat_history": session.get("messages", [])}}
+        )
+        history = session.get("messages", [])
+        status = doc.get("status", session["status"])
+        floor = (doc.get("financial_bounds") or {}).get("current_floor", engine.min_today)
+    else:
+        doc = {
+            "invoice_id": invoice_id,
+            "status": session["status"],
+            "trust_score": session.get("trust_score", 0),
+            "financial_bounds": {
+                "principal": session["invoice_amount"],
+                "current_floor": engine.min_today,
+                "max_allowed_date": str(engine.deadline),
+            },
+            "state_locks": {
+                "first_counter_issued": False,
+                "reason_collected": False,
+            },
+            "chat_history": session.get("messages", []),
+        }
+        col.insert_one(doc)
+        history = doc["chat_history"]
+        status = doc["status"]
+        floor = engine.min_today
 
     return {
         "invoice_id": invoice_id,
-        "status": doc["status"],
-        "current_floor": engine.min_today,
-        "history": doc["chat_history"],
+        "status": status,
+        "current_floor": floor,
+        "history": history,
         "invoice_amount": session.get("invoice_amount"),
         "invoice_amount_paise": session.get("invoice_amount_paise"),
         "debtor_name": session.get("debtor_name"),
@@ -527,3 +533,38 @@ def handle_document_upload(
         "show_upload_again": final_action == "REQUEST_BETTER_PROOF",
         "situation": situation,
     }
+
+
+def clear_chat_history(invoice_id: str, collection: Any = None) -> dict:
+    """Clear chat history and reset session state in MongoDB and in-memory cache."""
+    col = collection or _get_collection()
+    _AGENT_SESSIONS.pop(invoice_id, None)
+
+    session = create_session(invoice_id)
+    _AGENT_SESSIONS[invoice_id] = session
+    opening, session = open_turn(session)
+    engine = _get_engine(session)
+
+    update_data = {
+        "status": "negotiating",
+        "chat_history": session.get("messages", []),
+        "state_locks": {
+            "first_counter_issued": False,
+            "reason_collected": False,
+        },
+        "financial_bounds.current_floor": engine.min_today,
+    }
+    col.update_one({"invoice_id": invoice_id}, {"$set": update_data})
+
+    return {
+        "invoice_id": invoice_id,
+        "status": "cleared",
+        "history": session.get("messages", []),
+        "opening_message": opening,
+        "trust_score": session.get("display_trust_score", session.get("trust_score")),
+        "invoice_amount": session.get("invoice_amount"),
+        "invoice_amount_paise": session.get("invoice_amount_paise"),
+        "debtor_name": session.get("debtor_name"),
+        "dpd": session.get("dpd"),
+    }
+

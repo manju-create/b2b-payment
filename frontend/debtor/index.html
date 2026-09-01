@@ -34,6 +34,9 @@
   .btn-pay-full:hover { background: #15803D; transform: translateY(-1px); }
   .btn-pay-full:disabled { background: #A7F3D0; color: #065F46; cursor: wait; transform: none; }
 
+  .btn-clear-chat { background: #374151; color: #E5E7EB; border: 1px solid #4B5563; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; font-family: 'Inter', sans-serif; transition: background 0.15s, transform 0.15s; margin-left: auto; }
+  .btn-clear-chat:hover { background: #DC2626; border-color: #B91C1C; color: #FFF; transform: translateY(-1px); }
+
   /* Chat area */
   .chat-area { display: flex; flex-direction: column; gap: 20px; padding-bottom: 24px; }
 
@@ -230,6 +233,7 @@
           <div class="inv-debtor-row">
             <span class="inv-value" id="inv-debtor">—</span>
             <button class="btn-pay-full" id="pay-full-btn" onclick="payFull()" title="Pay the full invoice amount">Pay <span id="pay-full-amt">—</span> in full</button>
+            <button class="btn-clear-chat" id="clear-chat-btn" onclick="clearChat()" title="Clear chat history">🗑️ Clear Chat</button>
           </div>
         </div>
       </div>
@@ -931,6 +935,8 @@ const TERMINAL_STATUSES = [
 ];
 
 function renderHistory(history) {
+  chatArea.innerHTML = "";
+  showPartialPayHint();
   (history || []).forEach(m => {
     if (!m || typeof m.content !== "string") return;
     if (m.role === "user") {
@@ -980,18 +986,35 @@ async function initChat() {
 
   renderTrustCard(data.trust_score ?? data.score);
 
-  // Highlight the partial-pay option before the conversation.
-  showPartialPayHint();
-
   if (useMongo) {
-    renderHistory(data.history);        // full transcript from MongoDB
+    renderHistory(data.history);        // full transcript fetched from MongoDB
   } else {
+    chatArea.innerHTML = "";
+    showPartialPayHint();
     addBubble("agent", data.opening_message);
   }
 
   // Free-text conversation — show the input right away.
   inputArea.classList.add("visible");
   msgInput.focus();
+}
+
+async function clearChat() {
+  if (!confirm("Are you sure you want to clear the chat history? This will remove all messages from the database.")) return;
+  try {
+    const url = useMongo
+      ? `/api/message/clear/${INVOICE_ID}`
+      : `/api/negotiate/clear/${INVOICE_ID}`;
+    const res = await fetch(url, { method: "POST" });
+    if (!res.ok) throw new Error("Failed to clear chat");
+    const data = await res.json();
+    renderHistory(data.history);
+    inputArea.classList.add("visible");
+    document.querySelectorAll(".status-screen").forEach(s => s.style.display = "none");
+  } catch (err) {
+    console.error("clearChat error:", err);
+    alert("Failed to clear chat. Please try again.");
+  }
 }
 
 async function selectIntent(choice) {
