@@ -32,7 +32,9 @@ from __future__ import annotations
 
 import logging
 import os
+import socket
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 from pymongo import MongoClient
 
@@ -77,7 +79,15 @@ def _get_collection():
     if _collection is not None:
         return _collection
     uri = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
-    _client = MongoClient(uri, serverSelectionTimeoutMS=3000)
+    try:
+        client = MongoClient(uri, serverSelectionTimeoutMS=2000)
+        client.admin.command("ping")
+        _client = client
+    except Exception as exc:
+        logger.warning(f"Primary MongoDB unreachable, falling back to localhost: {exc}")
+        local_uri = "mongodb://localhost:27017"
+        _client = MongoClient(local_uri, serverSelectionTimeoutMS=2000)
+        _client.admin.command("ping")
     _collection = _client["recoverflow_db"]["sessions"]
     return _collection
 
