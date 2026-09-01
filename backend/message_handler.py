@@ -78,14 +78,14 @@ def _get_collection():
     global _client, _collection
     if _collection is not None:
         return _collection
-    uri = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+    uri = os.environ.get("MONGO_URI", "mongodb://127.0.0.1:27017")
     try:
         client = MongoClient(uri, serverSelectionTimeoutMS=2000)
         client.admin.command("ping")
         _client = client
     except Exception as exc:
-        logger.warning(f"Primary MongoDB unreachable, falling back to localhost: {exc}")
-        local_uri = "mongodb://localhost:27017"
+        logger.warning(f"Primary MongoDB unreachable, falling back to 127.0.0.1: {exc}")
+        local_uri = "mongodb://127.0.0.1:27017"
         _client = MongoClient(local_uri, serverSelectionTimeoutMS=2000)
         _client.admin.command("ping")
     _collection = _client["recoverflow_db"]["sessions"]
@@ -105,7 +105,7 @@ def mongo_available() -> bool:
     """
     global _MONGO_AVAILABLE, _MONGO_LAST_ERROR
     if _MONGO_AVAILABLE is None:
-        uri = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+        uri = os.environ.get("MONGO_URI", "mongodb://127.0.0.1:27017")
         try:
             _get_collection().database.client.admin.command("ping")
             _MONGO_AVAILABLE = True
