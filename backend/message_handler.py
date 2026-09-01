@@ -71,11 +71,12 @@ _AGENT_SESSIONS: dict[str, dict] = {}
 
 _client = None
 _collection = None
+_LAST_PRIMARY_ERROR: str | None = None
 
 
 def _get_collection():
     """Return the ``sessions`` collection, connecting lazily on first use."""
-    global _client, _collection
+    global _client, _collection, _LAST_PRIMARY_ERROR
     if _collection is not None:
         return _collection
     uri = os.environ.get("MONGO_URI", "mongodb://127.0.0.1:27017")
@@ -83,7 +84,9 @@ def _get_collection():
         client = MongoClient(uri, serverSelectionTimeoutMS=2000)
         client.admin.command("ping")
         _client = client
+        _LAST_PRIMARY_ERROR = None
     except Exception as exc:
+        _LAST_PRIMARY_ERROR = f"{type(exc).__name__}: {exc}"
         logger.warning(f"Primary MongoDB unreachable, falling back to 127.0.0.1: {exc}")
         local_uri = "mongodb://127.0.0.1:27017"
         _client = MongoClient(local_uri, serverSelectionTimeoutMS=2000)
@@ -112,7 +115,13 @@ def mongo_available() -> bool:
             logger.info("MongoDB reachable (collection: recoverflow_db.sessions)")
         except Exception as exc:  # noqa: BLE001 — log the real reason, keep serving
             _MONGO_AVAILABLE = False
-            _MONGO_LAST_ERROR = f"{type(exc).__name__}: {exc}"
+            if _LAST_PRIMARY_ERROR:
+                _MONGO_LAST_ERROR = (
+                    f"{_LAST_PRIMARY_ERROR} (then fallback to 127.0.0.1:27017 also failed: "
+                    f"{type(exc).__name__}: {exc})"
+                )
+            else:
+                _MONGO_LAST_ERROR = f"{type(exc).__name__}: {exc}"
             logger.error("MongoDB unreachable at %s — %s", _redact_uri(uri), _MONGO_LAST_ERROR)
     return _MONGO_AVAILABLE
 
