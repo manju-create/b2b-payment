@@ -1,587 +1,1517 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RecoverFlow — Payment Recovery</title>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; background: #fff; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RecoverFlow — Payment Recovery</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  /* Top bar */
-  .topbar { background: #1E293B; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .topbar-logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
-  .topbar-sub  { font-size: 13px; color: #94A3B8; margin-left: auto; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #fff;
+      color: #1E293B;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-  .main-layout { display: flex; flex: 1; overflow: hidden; background: #fff; }
+    /* Top bar */
+    .topbar {
+      background: #1E293B;
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
 
-  /* Chat Container (Center) */
-  .chat-container { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
-  
-  .chat-content { width: 100%; max-width: 800px; flex: 1; overflow-y: auto; padding: 24px 20px 0 20px; display: flex; flex-direction: column; }
-  
-  /* Invoice summary card */
-  .invoice-card { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px 20px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin-bottom: 32px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-  .inv-field { display: flex; flex-direction: column; gap: 4px; }
-  .inv-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; }
-  .inv-value { font-size: 15px; font-weight: 600; color: #1E293B; }
-  .inv-value.overdue { color: #DC2626; }
-  .inv-debtor-row { display: flex; align-items: center; gap: 10px; }
-  .btn-pay-full { background: #16A34A; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: 'Inter', sans-serif; transition: background 0.15s, transform 0.15s; }
-  .btn-pay-full:hover { background: #15803D; transform: translateY(-1px); }
-  .btn-pay-full:disabled { background: #A7F3D0; color: #065F46; cursor: wait; transform: none; }
+    .topbar-logo {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
 
-  .btn-clear-chat { background: #374151; color: #E5E7EB; border: 1px solid #4B5563; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; font-family: 'Inter', sans-serif; transition: background 0.15s, transform 0.15s; margin-left: auto; }
-  .btn-clear-chat:hover { background: #DC2626; border-color: #B91C1C; color: #FFF; transform: translateY(-1px); }
+    .topbar-sub {
+      font-size: 13px;
+      color: #94A3B8;
+      margin-left: auto;
+    }
 
-  /* Chat area */
-  .chat-area { display: flex; flex-direction: column; gap: 20px; padding-bottom: 24px; }
+    .main-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      background: #fff;
+    }
 
-  /* Highlighted partial-pay intro shown at chat load */
-  .partial-intro { background: linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 100%); border: 1px solid #BFDBFE; border-left: 5px solid #2563EB; border-radius: 14px; padding: 16px 18px; margin-bottom: 4px; box-shadow: 0 2px 10px rgba(37,99,235,0.10); }
-  .partial-intro-headline { font-size: 19px; font-weight: 800; letter-spacing: -0.3px; color: #1E3A8A; margin-bottom: 6px; line-height: 1.2; }
-  .partial-intro-body { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1E40AF; }
-  .partial-intro-body + .partial-intro-body { margin-top: 6px; }
-  .partial-intro-icon { font-size: 18px; flex-shrink: 0; }
+    /* Chat Container (Center) */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
 
-  /* Bubbles */
-  .bubble-wrap { display: flex; align-items: flex-end; gap: 12px; max-width: 85%; }
-  .bubble-wrap.agent  { align-self: flex-start; }
-  .bubble-wrap.debtor { align-self: flex-end; flex-direction: row-reverse; }
-  .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-  .avatar.agent  { background: #E0E7FF; }
-  .avatar.debtor { background: #DCFCE7; }
-  .bubble { padding: 12px 16px; border-radius: 16px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
-  .bubble.agent  { background: #F8FAFC; color: #1E293B; border: 1px solid #E2E8F0; border-bottom-left-radius: 4px; }
-  .bubble.debtor { background: #2563EB; color: #fff; border-bottom-right-radius: 4px; }
-  .bubble.rich { white-space: normal; }
-  .bubble.rich p { margin-bottom: 10px; }
-  .bubble.rich p:last-child { margin-bottom: 0; }
-  .bubble.rich ul { list-style: none; display: grid; gap: 6px; margin: 4px 0 12px; }
-  .bubble.rich li { position: relative; padding-left: 18px; }
-  .bubble.rich li::before { content: ""; position: absolute; left: 2px; top: 0.7em; width: 5px; height: 5px; border-radius: 50%; background: #2563EB; }
-  .bubble.rich strong { font-weight: 700; color: #0F172A; }
-  /* Uploaded document bubble (debtor / right side) */
-  .bubble.debtor.doc-bubble { display: flex; align-items: center; gap: 9px; text-align: left; }
-  .doc-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
-  .doc-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .doc-name { font-weight: 600; font-size: 14px; word-break: break-word; }
-  .doc-size { font-size: 12px; opacity: 0.8; }
+    .chat-content {
+      width: 100%;
+      max-width: 800px;
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 20px 0 20px;
+      display: flex;
+      flex-direction: column;
+    }
 
-  /* Intent buttons */
-  .intent-buttons { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 8px 44px; }
-  .btn-intent { padding: 13px 20px; border-radius: 12px; border: none; cursor: pointer; font-size: 15px; font-weight: 600; font-family: 'Inter', sans-serif; transition: all 0.15s; display: flex; align-items: center; gap: 8px; }
-  .btn-full    { background: #16A34A; color: #fff; }
-  .btn-full:hover    { background: #15803D; transform: translateY(-1px); }
-  .btn-partial { background: #fff; color: #2563EB; border: 2px solid #2563EB; }
-  .btn-partial:hover { background: #EFF6FF; transform: translateY(-1px); }
-  /* Reason MCQ */
-  .reason-mcq { display: flex; flex-direction: column; gap: 8px; padding: 4px 0 8px 44px; max-width: 420px; }
-  .mcq-title { font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 2px; }
-  .reason-mcq button:disabled { opacity: 0.55; cursor: default; }
-  .reason-mcq button.mcq-selected { opacity: 1; border-color: #16A34A; color: #16A34A; background: #ECFDF5; }
+    /* Invoice summary card */
+    .invoice-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
 
-  /* Plan confirmation card */
-  .plan-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px; margin: 4px 0 8px 44px; max-width: 420px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-  .plan-title { font-size: 15px; font-weight: 700; color: #1E293B; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
-  .plan-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F1F5F9; font-size: 14px; }
-  .plan-row:last-of-type { border-bottom: none; }
-  .plan-label { color: #64748B; }
-  .plan-val   { font-weight: 600; color: #1E293B; }
-  .plan-val.green { color: #16A34A; }
-  .plan-note  { font-size: 13px; color: #64748B; margin: 12px 0 16px; line-height: 1.4; }
-  .plan-actions { display: flex; gap: 10px; }
-  .btn-confirm    { flex: 1; padding: 11px; background: #16A34A; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
-  .btn-confirm:hover    { background: #15803D; }
-  .btn-renegotiate { flex: 1; padding: 11px; background: #fff; color: #64748B; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-  .btn-renegotiate:hover { background: #F8FAFC; }
+    .inv-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
-  /* Payment details finalized card */
-  .finalize-card { background: #fff; border: 1px solid #D9E2EF; border-radius: 12px; padding: 20px; margin: 4px 0 8px 44px; width: 100%; max-width: 440px; box-shadow: 0 12px 28px rgba(15,23,42,0.09); }
-  .finalize-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-  .finalize-check { width: 40px; height: 40px; border-radius: 50%; background: #DCFCE7; color: #059669; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; flex-shrink: 0; box-shadow: inset 0 0 0 1px #BBF7D0; }
-  .finalize-title { font-size: 16px; font-weight: 750; color: #0F172A; }
-  .finalize-subtitle { font-size: 13px; color: #64748B; margin-top: 2px; }
-  .finalize-rows { border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden; }
-  .fin-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px; padding: 12px 14px; font-size: 14px; color: #475569; background: #fff; }
-  .fin-row + .fin-row { border-top: 1px solid #E2E8F0; }
-  .fin-label { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-  .fin-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #94A3B8; }
-  .fin-main { color: #334155; font-weight: 600; }
-  .fin-row strong { font-size: 15px; font-weight: 750; color: #0F172A; white-space: nowrap; }
-  .fin-row strong.green { color: #059669; }
-  .fin-total { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 15px; margin: 16px 0; }
-  .fin-total span   { color: #475569; font-weight: 600; }
-  .fin-total strong { font-weight: 800; color: #0F172A; white-space: nowrap; }
-  .btn-pay { display: block; width: 100%; border: none; cursor: pointer; font-family: inherit; background: #059669; color: #fff; padding: 14px 20px; border-radius: 8px; text-decoration: none; font-weight: 750; font-size: 15px; text-align: center; transition: background 0.15s, transform 0.15s; }
-  .btn-pay:hover { background: #047857; transform: translateY(-1px); }
-  .fin-note { font-size: 13px; color: #64748B; margin-top: 12px; text-align: center; line-height: 1.45; }
-  .fin-note.deferred { color: #065F46; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 12px 14px; text-align: left; }
-  .fin-note-title { display: block; font-weight: 750; color: #064E3B; margin-bottom: 4px; }
+    .inv-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748B;
+    }
 
-  /* Input area */
-  .input-container { width: 100%; max-width: 800px; padding: 10px 20px 24px; background: #fff; flex-shrink: 0; }
-  .input-area { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; padding: 10px 14px; display: none; gap: 12px; align-items: flex-end; box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: border-color 0.2s, box-shadow 0.2s; }
-  .input-area:focus-within { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); background: #fff; }
-  .input-area.visible { display: flex; }
-  #msg-input { flex: 1; border: none; background: transparent; padding: 8px 4px; font-size: 15px; font-family: 'Inter', sans-serif; outline: none; resize: none; line-height: 1.5; max-height: 150px; color: #1E293B; }
-  #send-btn { background: #2563EB; color: #fff; border: none; border-radius: 12px; padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; height: 40px; margin-bottom: 2px; }
-  #send-btn:hover { background: #1D4ED8; }
-  #send-btn:disabled { background: #93C5FD; cursor: not-allowed; }
-  #upload-btn { background: #F8FAFC; color: #64748B; border: 1px solid #E2E8F0; border-radius: 12px; width: 40px; height: 40px; font-size: 18px; cursor: pointer; transition: all 0.15s; margin-bottom: 2px; flex-shrink: 0; }
-  #upload-btn:hover { background: #EFF6FF; color: #2563EB; border-color: #2563EB; }
-  #upload-btn:disabled { background: #F1F5F9; color: #CBD5E1; cursor: not-allowed; border-color: #E2E8F0; }
+    .inv-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1E293B;
+    }
 
-  /* Right Sidebar (Trust Score) */
-  .sidebar-right { width: 340px; background: #F8FAFC; border-left: 1px solid #E2E8F0; padding: 24px; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
-  
-  .trust-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 12px; }
-  .trust-header { display: flex; flex-direction: column; gap: 2px; }
-  .trust-title  { font-size: 15px; font-weight: 700; color: #1E293B; }
-  .trust-subtitle { font-size: 12px; color: #94A3B8; }
+    .inv-value.overdue {
+      color: #DC2626;
+    }
 
-  .trust-score-row  { display: flex; align-items: baseline; gap: 6px; }
-  .trust-score-val  { font-size: 42px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
-  .trust-score-max  { font-size: 16px; color: #94A3B8; font-weight: 500; }
+    .inv-debtor-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-  .trust-bar-wrap   { height: 10px; background: #F1F5F9; border-radius: 999px; overflow: hidden; }
-  .trust-bar-fill   { height: 100%; border-radius: 999px; }
+    .btn-pay-full {
+      background: #16A34A;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: 'Inter', sans-serif;
+      transition: background 0.15s, transform 0.15s;
+    }
 
-  .trust-status { font-size: 13px; font-weight: 600; color: #475569; }
+    .btn-pay-full:hover {
+      background: #15803D;
+      transform: translateY(-1px);
+    }
 
-  .trust-divider { height: 1px; background: #E2E8F0; }
+    .btn-pay-full:disabled {
+      background: #A7F3D0;
+      color: #065F46;
+      cursor: wait;
+      transform: none;
+    }
 
-  .trust-section { display: flex; flex-direction: column; gap: 10px; }
-  .trust-section-title { font-size: 13px; font-weight: 700; color: #1E293B; }
-  .trust-list { list-style: none; display: grid; gap: 8px; }
-  .trust-list li { position: relative; padding-left: 16px; font-size: 13px; line-height: 1.45; color: #475569; }
-  .trust-list li::before { content: "•"; position: absolute; left: 2px; top: 0; color: #2563EB; font-weight: 700; }
-  .trust-benefit { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; }
-  .trust-benefit-icon { font-size: 18px; line-height: 1.2; flex-shrink: 0; }
-  .trust-benefit strong { display: block; font-size: 13px; font-weight: 700; color: #1E293B; margin-bottom: 2px; }
-  .trust-benefit span { font-size: 12px; color: #64748B; line-height: 1.45; }
+    .btn-clear-chat {
+      background: #374151;
+      color: #E5E7EB;
+      border: 1px solid #4B5563;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: 'Inter', sans-serif;
+      transition: background 0.15s, transform 0.15s;
+      margin-left: auto;
+    }
 
-  /* Status screens */
-  .status-screen { display: none; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 16px; padding: 40px 20px; text-align: center; width: 100%; }
-  .status-icon   { font-size: 64px; }
-  .status-title  { font-size: 24px; font-weight: 700; color: #1E293B; }
-  .status-sub    { font-size: 16px; color: #64748B; max-width: 360px; line-height: 1.5; }
+    .btn-clear-chat:hover {
+      background: #DC2626;
+      border-color: #B91C1C;
+      color: #FFF;
+      transform: translateY(-1px);
+    }
 
-  /* Typing indicator */
-  .typing { display: none; align-items: center; gap: 4px; padding: 12px 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; width: fit-content; border-bottom-left-radius: 4px; }
-  .typing span { width: 6px; height: 6px; background: #94A3B8; border-radius: 50%; animation: bounce 1.2s infinite; }
-  .typing span:nth-child(2) { animation-delay: 0.2s; }
-  .typing span:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+    /* Chat area */
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding-bottom: 24px;
+    }
 
-  /* Document upload card */
-  .upload-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 16px 18px; margin: 4px 0 8px 44px; max-width: 420px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-  .upload-title { font-size: 15px; font-weight: 700; color: #1E293B; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
-  .upload-sub { font-size: 12px; color: #64748B; margin-bottom: 12px; }
-  .upload-drop { border: 2px dashed #CBD5E1; border-radius: 10px; padding: 22px 16px; text-align: center; color: #64748B; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.15s; }
-  .upload-drop:hover, .upload-drop.dragover { border-color: #2563EB; background: #EFF6FF; color: #2563EB; }
-  .upload-confidential { font-size: 11px; color: #94A3B8; margin-top: 10px; text-align: center; line-height: 1.4; }
-  .upload-file-confirm { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; margin-top: 10px; }
-  .upload-file-confirm .file-icon { font-size: 18px; }
-  .upload-reviewing { display: none; align-items: center; gap: 8px; font-size: 13px; color: #64748B; margin-top: 10px; }
-  .spinner { width: 15px; height: 15px; border: 2px solid #E2E8F0; border-top-color: #2563EB; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .verdict-line { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-top: 12px; padding-top: 12px; border-top: 1px solid #F1F5F9; }
-  .verdict-line.valid { color: #16A34A; }
-  .verdict-line.invalid { color: #DC2626; }
-  .verdict-line.inconclusive { color: #D97706; }
+    /* Highlighted partial-pay intro shown at chat load */
+    .partial-intro {
+      background: linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 100%);
+      border: 1px solid #BFDBFE;
+      border-left: 5px solid #2563EB;
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 4px;
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.10);
+    }
 
-  @media (max-width: 900px) {
-    .main-layout { flex-direction: column; }
-    .sidebar-right { width: 100%; border-left: none; border-top: 1px solid #E2E8F0; padding: 16px; max-height: 30vh; }
-  }
-</style>
+    .partial-intro-headline {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: #1E3A8A;
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    .partial-intro-body {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1E40AF;
+    }
+
+    .partial-intro-body+.partial-intro-body {
+      margin-top: 6px;
+    }
+
+    .partial-intro-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    /* Bubbles */
+    .bubble-wrap {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      max-width: 85%;
+    }
+
+    .bubble-wrap.agent {
+      align-self: flex-start;
+    }
+
+    .bubble-wrap.debtor {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .avatar.agent {
+      background: #E0E7FF;
+    }
+
+    .avatar.debtor {
+      background: #DCFCE7;
+    }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 15px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .bubble.agent {
+      background: #F8FAFC;
+      color: #1E293B;
+      border: 1px solid #E2E8F0;
+      border-bottom-left-radius: 4px;
+    }
+
+    .bubble.debtor {
+      background: #2563EB;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bubble.rich {
+      white-space: normal;
+    }
+
+    .bubble.rich p {
+      margin-bottom: 10px;
+    }
+
+    .bubble.rich p:last-child {
+      margin-bottom: 0;
+    }
+
+    .bubble.rich ul {
+      list-style: none;
+      display: grid;
+      gap: 6px;
+      margin: 4px 0 12px;
+    }
+
+    .bubble.rich li {
+      position: relative;
+      padding-left: 18px;
+    }
+
+    .bubble.rich li::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 0.7em;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #2563EB;
+    }
+
+    .bubble.rich strong {
+      font-weight: 700;
+      color: #0F172A;
+    }
+
+    /* Uploaded document bubble (debtor / right side) */
+    .bubble.debtor.doc-bubble {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      text-align: left;
+    }
+
+    .doc-icon {
+      font-size: 20px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .doc-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .doc-name {
+      font-weight: 600;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .doc-size {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    /* Intent buttons */
+    .intent-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 4px 0 8px 44px;
+    }
+
+    .btn-intent {
+      padding: 13px 20px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-full {
+      background: #16A34A;
+      color: #fff;
+    }
+
+    .btn-full:hover {
+      background: #15803D;
+      transform: translateY(-1px);
+    }
+
+    .btn-partial {
+      background: #fff;
+      color: #2563EB;
+      border: 2px solid #2563EB;
+    }
+
+    .btn-partial:hover {
+      background: #EFF6FF;
+      transform: translateY(-1px);
+    }
+
+    /* Reason MCQ */
+    .reason-mcq {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 4px 0 8px 44px;
+      max-width: 420px;
+    }
+
+    .mcq-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 2px;
+    }
+
+    .reason-mcq button:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .reason-mcq button.mcq-selected {
+      opacity: 1;
+      border-color: #16A34A;
+      color: #16A34A;
+      background: #ECFDF5;
+    }
+
+    /* Plan confirmation card */
+    .plan-card {
+      background: #fff;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 18px;
+      margin: 4px 0 8px 44px;
+      max-width: 420px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .plan-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1E293B;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .plan-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #F1F5F9;
+      font-size: 14px;
+    }
+
+    .plan-row:last-of-type {
+      border-bottom: none;
+    }
+
+    .plan-label {
+      color: #64748B;
+    }
+
+    .plan-val {
+      font-weight: 600;
+      color: #1E293B;
+    }
+
+    .plan-val.green {
+      color: #16A34A;
+    }
+
+    .plan-note {
+      font-size: 13px;
+      color: #64748B;
+      margin: 12px 0 16px;
+      line-height: 1.4;
+    }
+
+    .plan-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-confirm {
+      flex: 1;
+      padding: 11px;
+      background: #16A34A;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-confirm:hover {
+      background: #15803D;
+    }
+
+    .btn-renegotiate {
+      flex: 1;
+      padding: 11px;
+      background: #fff;
+      color: #64748B;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-renegotiate:hover {
+      background: #F8FAFC;
+    }
+
+    /* Payment details finalized card */
+    .finalize-card {
+      background: #fff;
+      border: 1px solid #D9E2EF;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 4px 0 8px 44px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
+    }
+
+    .finalize-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .finalize-check {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #DCFCE7;
+      color: #059669;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px #BBF7D0;
+    }
+
+    .finalize-title {
+      font-size: 16px;
+      font-weight: 750;
+      color: #0F172A;
+    }
+
+    .finalize-subtitle {
+      font-size: 13px;
+      color: #64748B;
+      margin-top: 2px;
+    }
+
+    .finalize-rows {
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .fin-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: #475569;
+      background: #fff;
+    }
+
+    .fin-row+.fin-row {
+      border-top: 1px solid #E2E8F0;
+    }
+
+    .fin-label {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .fin-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #94A3B8;
+    }
+
+    .fin-main {
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .fin-row strong {
+      font-size: 15px;
+      font-weight: 750;
+      color: #0F172A;
+      white-space: nowrap;
+    }
+
+    .fin-row strong.green {
+      color: #059669;
+    }
+
+    .fin-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      font-size: 15px;
+      margin: 16px 0;
+    }
+
+    .fin-total span {
+      color: #475569;
+      font-weight: 600;
+    }
+
+    .fin-total strong {
+      font-weight: 800;
+      color: #0F172A;
+      white-space: nowrap;
+    }
+
+    .btn-pay {
+      display: block;
+      width: 100%;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: #059669;
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 750;
+      font-size: 15px;
+      text-align: center;
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    .btn-pay:hover {
+      background: #047857;
+      transform: translateY(-1px);
+    }
+
+    .fin-note {
+      font-size: 13px;
+      color: #64748B;
+      margin-top: 12px;
+      text-align: center;
+      line-height: 1.45;
+    }
+
+    .fin-note.deferred {
+      color: #065F46;
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: left;
+    }
+
+    .fin-note-title {
+      display: block;
+      font-weight: 750;
+      color: #064E3B;
+      margin-bottom: 4px;
+    }
+
+    /* Input area */
+    .input-container {
+      width: 100%;
+      max-width: 800px;
+      padding: 10px 20px 24px;
+      background: #fff;
+      flex-shrink: 0;
+    }
+
+    .input-area {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 10px 14px;
+      display: none;
+      gap: 12px;
+      align-items: flex-end;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-area:focus-within {
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      background: #fff;
+    }
+
+    .input-area.visible {
+      display: flex;
+    }
+
+    #msg-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 8px 4px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      resize: none;
+      line-height: 1.5;
+      max-height: 150px;
+      color: #1E293B;
+    }
+
+    #send-btn {
+      background: #2563EB;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+      height: 40px;
+      margin-bottom: 2px;
+    }
+
+    #send-btn:hover {
+      background: #1D4ED8;
+    }
+
+    #send-btn:disabled {
+      background: #93C5FD;
+      cursor: not-allowed;
+    }
+
+    #upload-btn {
+      background: #F8FAFC;
+      color: #64748B;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 2px;
+      flex-shrink: 0;
+    }
+
+    #upload-btn:hover {
+      background: #EFF6FF;
+      color: #2563EB;
+      border-color: #2563EB;
+    }
+
+    #upload-btn:disabled {
+      background: #F1F5F9;
+      color: #CBD5E1;
+      cursor: not-allowed;
+      border-color: #E2E8F0;
+    }
+
+    /* Right Sidebar (Trust Score) */
+    .sidebar-right {
+      width: 340px;
+      background: #F8FAFC;
+      border-left: 1px solid #E2E8F0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .trust-card {
+      background: #fff;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .trust-header {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .trust-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1E293B;
+    }
+
+    .trust-subtitle {
+      font-size: 12px;
+      color: #94A3B8;
+    }
+
+    .trust-score-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .trust-score-val {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .trust-score-max {
+      font-size: 16px;
+      color: #94A3B8;
+      font-weight: 500;
+    }
+
+    .trust-bar-wrap {
+      height: 10px;
+      background: #F1F5F9;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .trust-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+    }
+
+    .trust-status {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .trust-divider {
+      height: 1px;
+      background: #E2E8F0;
+    }
+
+    .trust-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .trust-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1E293B;
+    }
+
+    .trust-list {
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .trust-list li {
+      position: relative;
+      padding-left: 16px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #475569;
+    }
+
+    .trust-list li::before {
+      content: "•";
+      position: absolute;
+      left: 2px;
+      top: 0;
+      color: #2563EB;
+      font-weight: 700;
+    }
+
+    .trust-benefit {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px 12px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+    }
+
+    .trust-benefit-icon {
+      font-size: 18px;
+      line-height: 1.2;
+      flex-shrink: 0;
+    }
+
+    .trust-benefit strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1E293B;
+      margin-bottom: 2px;
+    }
+
+    .trust-benefit span {
+      font-size: 12px;
+      color: #64748B;
+      line-height: 1.45;
+    }
+
+    /* Status screens */
+    .status-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 16px;
+      padding: 40px 20px;
+      text-align: center;
+      width: 100%;
+    }
+
+    .status-icon {
+      font-size: 64px;
+    }
+
+    .status-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1E293B;
+    }
+
+    .status-sub {
+      font-size: 16px;
+      color: #64748B;
+      max-width: 360px;
+      line-height: 1.5;
+    }
+
+    /* Typing indicator */
+    .typing {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 16px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      width: fit-content;
+      border-bottom-left-radius: 4px;
+    }
+
+    .typing span {
+      width: 6px;
+      height: 6px;
+      background: #94A3B8;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+
+    .typing span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      60%,
+      100% {
+        transform: translateY(0);
+      }
+
+      30% {
+        transform: translateY(-5px);
+      }
+    }
+
+    /* Document upload card */
+    .upload-card {
+      background: #fff;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin: 4px 0 8px 44px;
+      max-width: 420px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .upload-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1E293B;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .upload-sub {
+      font-size: 12px;
+      color: #64748B;
+      margin-bottom: 12px;
+    }
+
+    .upload-drop {
+      border: 2px dashed #CBD5E1;
+      border-radius: 10px;
+      padding: 22px 16px;
+      text-align: center;
+      color: #64748B;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    .upload-drop:hover,
+    .upload-drop.dragover {
+      border-color: #2563EB;
+      background: #EFF6FF;
+      color: #2563EB;
+    }
+
+    .upload-confidential {
+      font-size: 11px;
+      color: #94A3B8;
+      margin-top: 10px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .upload-file-confirm {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #334155;
+      margin-top: 10px;
+    }
+
+    .upload-file-confirm .file-icon {
+      font-size: 18px;
+    }
+
+    .upload-reviewing {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748B;
+      margin-top: 10px;
+    }
+
+    .spinner {
+      width: 15px;
+      height: 15px;
+      border: 2px solid #E2E8F0;
+      border-top-color: #2563EB;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .verdict-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #F1F5F9;
+    }
+
+    .verdict-line.valid {
+      color: #16A34A;
+    }
+
+    .verdict-line.invalid {
+      color: #DC2626;
+    }
+
+    .verdict-line.inconclusive {
+      color: #D97706;
+    }
+
+    @media (max-width: 900px) {
+      .main-layout {
+        flex-direction: column;
+      }
+
+      .sidebar-right {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #E2E8F0;
+        padding: 16px;
+        max-height: 30vh;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- Top bar -->
-<div class="topbar">
-  <div class="topbar-logo">🔄 RecoverFlow</div>
-  <div class="topbar-sub">Secure Payment Recovery</div>
-</div>
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-logo">🔄 RecoverFlow</div>
+    <div class="topbar-sub">Secure Payment Recovery</div>
+  </div>
 
-<div class="main-layout">
-  
-  <!-- Chat Container -->
-  <div class="chat-container">
-    
-    <div class="chat-content">
-      <!-- Invoice summary -->
-      <div class="invoice-card" id="invoice-card" style="display:none">
-        <div class="inv-field">
-          <span class="inv-label">Invoice</span>
-          <span class="inv-value" id="inv-id">—</span>
+  <div class="main-layout">
+
+    <!-- Chat Container -->
+    <div class="chat-container">
+
+      <div class="chat-content">
+        <!-- Invoice summary -->
+        <div class="invoice-card" id="invoice-card" style="display:none">
+          <div class="inv-field">
+            <span class="inv-label">Invoice</span>
+            <span class="inv-value" id="inv-id">—</span>
+          </div>
+          <div class="inv-field">
+            <span class="inv-label">Amount</span>
+            <span class="inv-value" id="inv-amount">—</span>
+          </div>
+          <div class="inv-field">
+            <span class="inv-label">Overdue</span>
+            <span class="inv-value overdue" id="inv-dpd">—</span>
+          </div>
+          <div class="inv-field">
+            <span class="inv-label">Debtor</span>
+            <div class="inv-debtor-row">
+              <span class="inv-value" id="inv-debtor">—</span>
+              <button class="btn-pay-full" id="pay-full-btn" onclick="payFull()" title="Pay the full invoice amount">Pay
+                <span id="pay-full-amt">—</span> in full</button>
+              <button class="btn-clear-chat" id="clear-chat-btn" onclick="clearChat()" title="Clear chat history">🗑️
+                Clear Chat</button>
+            </div>
+          </div>
         </div>
-        <div class="inv-field">
-          <span class="inv-label">Amount</span>
-          <span class="inv-value" id="inv-amount">—</span>
+
+        <!-- Chat window -->
+        <div class="chat-area" id="chat-area"></div>
+
+        <!-- Status screens (hidden until needed) -->
+        <div class="status-screen" id="screen-settled">
+          <div class="status-icon">✅</div>
+          <div class="status-title">Payment Arranged</div>
+          <div class="status-sub" id="settled-msg">Thank you for settling this.</div>
         </div>
-        <div class="inv-field">
-          <span class="inv-label">Overdue</span>
-          <span class="inv-value overdue" id="inv-dpd">—</span>
+        <div class="status-screen" id="screen-disputed">
+          <div class="status-icon">📋</div>
+          <div class="status-title">Query Raised</div>
+          <div class="status-sub">Your query has been raised. Our team will contact you within 24 hours.</div>
         </div>
-        <div class="inv-field">
-          <span class="inv-label">Debtor</span>
-          <div class="inv-debtor-row">
-            <span class="inv-value" id="inv-debtor">—</span>
-            <button class="btn-pay-full" id="pay-full-btn" onclick="payFull()" title="Pay the full invoice amount">Pay <span id="pay-full-amt">—</span> in full</button>
-            <button class="btn-clear-chat" id="clear-chat-btn" onclick="clearChat()" title="Clear chat history">🗑️ Clear Chat</button>
+        <div class="status-screen" id="screen-escalated">
+          <div class="status-icon">📞</div>
+          <div class="status-title">Escalated</div>
+          <div class="status-sub">Our team will reach out to you shortly to resolve this.</div>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="input-container" id="input-container">
+        <input type="file" id="global-upload-input" accept=".pdf,.jpg,.jpeg,.png" style="display:none" />
+        <div class="input-area" id="input-area">
+          <textarea id="msg-input" rows="1" placeholder="Type your message…"></textarea>
+          <button id="upload-btn" title="Upload a document" onclick="openUploadPicker()">📎</button>
+          <button id="send-btn" onclick="sendMessage()">Send ↑</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="sidebar-right">
+      <!-- Trust score card (static — populated once on page load, never updates) -->
+      <div id="trust-card" class="trust-card">
+        <div class="trust-header">
+          <div class="trust-title">Your Trust Score</div>
+          <div class="trust-subtitle">Based on your payment history</div>
+        </div>
+
+        <div class="trust-score-row">
+          <span class="trust-score-val" id="trust-score-val">—</span>
+          <span class="trust-score-max">/ 100</span>
+        </div>
+        <div class="trust-bar-wrap">
+          <div class="trust-bar-fill" id="trust-bar-fill"></div>
+        </div>
+        <div class="trust-status" id="trust-status">—</div>
+
+        <div class="trust-divider"></div>
+
+        <div class="trust-section">
+          <div class="trust-section-title">💡 How to increase your Trust Score</div>
+          <ul class="trust-list">
+            <li>Pay invoices on time — every on-time payment raises your score</li>
+            <li>Avoid disputes — disputed invoices lower your score significantly</li>
+            <li>Settle outstanding dues — clearing this invoice will positively impact your score</li>
+          </ul>
+        </div>
+
+        <div class="trust-divider"></div>
+
+        <div class="trust-section">
+          <div class="trust-section-title">🎯 What a higher score unlocks</div>
+          <div class="trust-benefit">
+            <span class="trust-benefit-icon">📅</span>
+            <div><strong>Flexible Installments</strong><span>Score above 75 — get flexible payment plans on future
+                invoices</span></div>
+          </div>
+          <div class="trust-benefit">
+            <span class="trust-benefit-icon">⚡</span>
+            <div><strong>Faster Approvals</strong><span>High-trust debtors get instant payment plan approvals without
+                manual review</span></div>
+          </div>
+          <div class="trust-benefit">
+            <span class="trust-benefit-icon">🤝</span>
+            <div><strong>Priority Support</strong><span>Top-tier accounts get dedicated support and early access to
+                settlement options</span></div>
           </div>
         </div>
       </div>
-
-      <!-- Chat window -->
-      <div class="chat-area" id="chat-area"></div>
-      
-      <!-- Status screens (hidden until needed) -->
-      <div class="status-screen" id="screen-settled">
-        <div class="status-icon">✅</div>
-        <div class="status-title">Payment Arranged</div>
-        <div class="status-sub" id="settled-msg">Thank you for settling this.</div>
-      </div>
-      <div class="status-screen" id="screen-disputed">
-        <div class="status-icon">📋</div>
-        <div class="status-title">Query Raised</div>
-        <div class="status-sub">Your query has been raised. Our team will contact you within 24 hours.</div>
-      </div>
-      <div class="status-screen" id="screen-escalated">
-        <div class="status-icon">📞</div>
-        <div class="status-title">Escalated</div>
-        <div class="status-sub">Our team will reach out to you shortly to resolve this.</div>
-      </div>
-    </div>
-    
-    <!-- Input area -->
-    <div class="input-container" id="input-container">
-      <input type="file" id="global-upload-input" accept=".pdf,.jpg,.jpeg,.png" style="display:none" />
-      <div class="input-area" id="input-area">
-        <textarea id="msg-input" rows="1" placeholder="Type your message…"></textarea>
-        <button id="upload-btn" title="Upload a document" onclick="openUploadPicker()">📎</button>
-        <button id="send-btn" onclick="sendMessage()">Send ↑</button>
-      </div>
     </div>
 
   </div>
 
-  <!-- Right Sidebar -->
-  <div class="sidebar-right">
-    <!-- Trust score card (static — populated once on page load, never updates) -->
-    <div id="trust-card" class="trust-card">
-      <div class="trust-header">
-        <div class="trust-title">Your Trust Score</div>
-        <div class="trust-subtitle">Based on your payment history</div>
-      </div>
+  <script>
+    const INVOICE_ID = "__INVOICE_ID__";
+    // Server-injected: "true" only when MONGO_ENABLED is set. When false, the chat
+    // uses the in-memory demo flow directly (no MongoDB round-trip / no 3s timeout).
+    const MONGO_ENABLED = "__MONGO_ENABLED__" === "true";
 
-      <div class="trust-score-row">
-        <span class="trust-score-val" id="trust-score-val">—</span>
-        <span class="trust-score-max">/ 100</span>
-      </div>
-      <div class="trust-bar-wrap"><div class="trust-bar-fill" id="trust-bar-fill"></div></div>
-      <div class="trust-status" id="trust-status">—</div>
+    let sessionId = null;
+    let useMongo = false;   // true when the MongoDB-backed flow is reachable
+    let debtorName = "";
+    let amountPaise = 0;
+    let currentOrder = null;
+    let currentSituation = null;   // DISPUTE | ALREADY_PAID | CASHFLOW (drives upload)
 
-      <div class="trust-divider"></div>
+    function fmtRupees(paise) {
+      const rupees = Math.floor(paise / 100);
+      let s = String(rupees);
+      if (s.length <= 3) return "₹" + s;
+      let result = s.slice(-3);
+      s = s.slice(0, -3);
+      while (s.length > 2) { result = s.slice(-2) + "," + result; s = s.slice(0, -2); }
+      return "₹" + s + "," + result;
+    }
 
-      <div class="trust-section">
-        <div class="trust-section-title">💡 How to increase your Trust Score</div>
-        <ul class="trust-list">
-          <li>Pay invoices on time — every on-time payment raises your score</li>
-          <li>Avoid disputes — disputed invoices lower your score significantly</li>
-          <li>Settle outstanding dues — clearing this invoice will positively impact your score</li>
-        </ul>
-      </div>
+    function fmtDate(iso) {
+      const d = new Date(iso);
+      return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    }
 
-      <div class="trust-divider"></div>
+    const chatArea = document.getElementById("chat-area");
+    const inputArea = document.getElementById("input-area");
+    const msgInput = document.getElementById("msg-input");
+    const sendBtn = document.getElementById("send-btn");
+    const chatContent = document.querySelector(".chat-content");
 
-      <div class="trust-section">
-        <div class="trust-section-title">🎯 What a higher score unlocks</div>
-        <div class="trust-benefit">
-          <span class="trust-benefit-icon">📅</span>
-          <div><strong>Flexible Installments</strong><span>Score above 75 — get flexible payment plans on future invoices</span></div>
-        </div>
-        <div class="trust-benefit">
-          <span class="trust-benefit-icon">⚡</span>
-          <div><strong>Faster Approvals</strong><span>High-trust debtors get instant payment plan approvals without manual review</span></div>
-        </div>
-        <div class="trust-benefit">
-          <span class="trust-benefit-icon">🤝</span>
-          <div><strong>Priority Support</strong><span>Top-tier accounts get dedicated support and early access to settlement options</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
+    function addBubble(role, text, extra) {
+      const wrap = document.createElement("div");
+      wrap.className = `bubble-wrap ${role}`;
+      const avatar = document.createElement("div");
+      avatar.className = `avatar ${role}`;
+      avatar.textContent = role === "agent" ? "🤖" : "👤";
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${role}`;
+      if (role === "agent") {
+        bubble.classList.add("rich");
+        bubble.innerHTML = formatAgentMessage(text);
+      } else {
+        bubble.textContent = text;
+      }
+      wrap.appendChild(avatar);
+      wrap.appendChild(bubble);
+      chatArea.appendChild(wrap);
+      if (extra) { chatArea.appendChild(extra); }
+      scrollDown();
+      return wrap;
+    }
 
-</div>
-
-<script>
-const INVOICE_ID = "__INVOICE_ID__";
-// Server-injected: "true" only when MONGO_ENABLED is set. When false, the chat
-// uses the in-memory demo flow directly (no MongoDB round-trip / no 3s timeout).
-const MONGO_ENABLED = "__MONGO_ENABLED__" === "true";
-
-let sessionId   = null;
-let useMongo    = false;   // true when the MongoDB-backed flow is reachable
-let debtorName  = "";
-let amountPaise = 0;
-let currentOrder = null;
-let currentSituation = null;   // DISPUTE | ALREADY_PAID | CASHFLOW (drives upload)
-
-function fmtRupees(paise) {
-  const rupees = Math.floor(paise / 100);
-  let s = String(rupees);
-  if (s.length <= 3) return "₹" + s;
-  let result = s.slice(-3);
-  s = s.slice(0, -3);
-  while (s.length > 2) { result = s.slice(-2) + "," + result; s = s.slice(0, -2); }
-  return "₹" + s + "," + result;
-}
-
-function fmtDate(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-}
-
-const chatArea  = document.getElementById("chat-area");
-const inputArea = document.getElementById("input-area");
-const msgInput  = document.getElementById("msg-input");
-const sendBtn   = document.getElementById("send-btn");
-const chatContent = document.querySelector(".chat-content");
-
-function addBubble(role, text, extra) {
-  const wrap = document.createElement("div");
-  wrap.className = `bubble-wrap ${role}`;
-  const avatar = document.createElement("div");
-  avatar.className = `avatar ${role}`;
-  avatar.textContent = role === "agent" ? "🤖" : "👤";
-  const bubble = document.createElement("div");
-  bubble.className = `bubble ${role}`;
-  if (role === "agent") {
-    bubble.classList.add("rich");
-    bubble.innerHTML = formatAgentMessage(text);
-  } else {
-    bubble.textContent = text;
-  }
-  wrap.appendChild(avatar);
-  wrap.appendChild(bubble);
-  chatArea.appendChild(wrap);
-  if (extra) { chatArea.appendChild(extra); }
-  scrollDown();
-  return wrap;
-}
-
-function addDocumentBubble(file) {
-  // Show the uploaded document on the debtor's (right) side like a sent message.
-  const sizeLabel = file.size > 1024 * 1024
-    ? (file.size / (1024 * 1024)).toFixed(1) + " MB"
-    : Math.round(file.size / 1024) + " KB";
-  const wrap = document.createElement("div");
-  wrap.className = "bubble-wrap debtor";
-  const avatar = document.createElement("div");
-  avatar.className = "avatar debtor";
-  avatar.textContent = "👤";
-  const bubble = document.createElement("div");
-  bubble.className = "bubble debtor doc-bubble";
-  bubble.innerHTML = `
+    function addDocumentBubble(file) {
+      // Show the uploaded document on the debtor's (right) side like a sent message.
+      const sizeLabel = file.size > 1024 * 1024
+        ? (file.size / (1024 * 1024)).toFixed(1) + " MB"
+        : Math.round(file.size / 1024) + " KB";
+      const wrap = document.createElement("div");
+      wrap.className = "bubble-wrap debtor";
+      const avatar = document.createElement("div");
+      avatar.className = "avatar debtor";
+      avatar.textContent = "👤";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble debtor doc-bubble";
+      bubble.innerHTML = `
     <span class="doc-icon">📄</span>
     <span class="doc-meta">
       <span class="doc-name">${escapeHtml(file.name)}</span>
       <span class="doc-size">${sizeLabel}</span>
     </span>`;
-  wrap.appendChild(avatar);
-  wrap.appendChild(bubble);
-  chatArea.appendChild(wrap);
-  scrollDown();
-  return wrap;
-}
+      wrap.appendChild(avatar);
+      wrap.appendChild(bubble);
+      chatArea.appendChild(wrap);
+      scrollDown();
+      return wrap;
+    }
 
-function scrollDown() { chatContent.scrollTop = chatContent.scrollHeight; }
+    function scrollDown() { chatContent.scrollTop = chatContent.scrollHeight; }
 
-function showPartialPayHint() {
-  const intro = document.createElement("div");
-  intro.className = "partial-intro";
-  intro.innerHTML = `
+    function showPartialPayHint() {
+      const intro = document.createElement("div");
+      intro.className = "partial-intro";
+      intro.innerHTML = `
     <div class="partial-intro-headline">Introducing Partial Pay</div>
     <div class="partial-intro-body"><span class="partial-intro-icon">💰</span><span>Pay a little now, rest later — we'll find the best plan for you.</span></div>
     <div class="partial-intro-body"><span class="partial-intro-icon">🤖</span><span>Negotiate with our AI to find the best payment plan that works for you.</span></div>
   `;
-  chatArea.appendChild(intro);
-  scrollDown();
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function formatInlineMarkdown(value) {
-  return value.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-}
-
-function formatAgentMessage(text) {
-  const safe = escapeHtml(text || "").trim();
-  if (!safe) return "";
-  return safe.split(/\n{2,}/).map(block => {
-    const lines = block.split(/\n/).map(line => line.trim()).filter(Boolean);
-    if (!lines.length) return "";
-    const bulletLines = lines.filter(line => /^[-*]\s+/.test(line));
-    if (bulletLines.length === lines.length) {
-      const items = lines.map(line => {
-        const item = line.replace(/^[-*]\s+/, "");
-        return `<li>${formatInlineMarkdown(item)}</li>`;
-      }).join("");
-      return `<ul>${items}</ul>`;
+      chatArea.appendChild(intro);
+      scrollDown();
     }
-    return `<p>${formatInlineMarkdown(lines.join("<br>"))}</p>`;
-  }).join("");
-}
 
-function showIntentButtons() {
-  const div = document.createElement("div");
-  div.className = "intent-buttons";
-  div.id = "intent-btns";
-  div.innerHTML = `
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function formatInlineMarkdown(value) {
+      return value.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    }
+
+    function formatAgentMessage(text) {
+      const safe = escapeHtml(text || "").trim();
+      if (!safe) return "";
+      return safe.split(/\n{2,}/).map(block => {
+        const lines = block.split(/\n/).map(line => line.trim()).filter(Boolean);
+        if (!lines.length) return "";
+        const bulletLines = lines.filter(line => /^[-*]\s+/.test(line));
+        if (bulletLines.length === lines.length) {
+          const items = lines.map(line => {
+            const item = line.replace(/^[-*]\s+/, "");
+            return `<li>${formatInlineMarkdown(item)}</li>`;
+          }).join("");
+          return `<ul>${items}</ul>`;
+        }
+        return `<p>${formatInlineMarkdown(lines.join("<br>"))}</p>`;
+      }).join("");
+    }
+
+    function showIntentButtons() {
+      const div = document.createElement("div");
+      div.className = "intent-buttons";
+      div.id = "intent-btns";
+      div.innerHTML = `
     <button class="btn-intent btn-full"    onclick="selectIntent('A')">✅ Pay ${fmtRupees(amountPaise)} in Full</button>
     <button class="btn-intent btn-partial" onclick="selectIntent('B')">🔄 Pay Partially</button>
   `;
-  chatArea.appendChild(div);
-  scrollDown();
-}
-
-function removeIntentButtons() {
-  const el = document.getElementById("intent-btns");
-  if (el) el.remove();
-}
-
-function showReasonMcq(options, answered, selectedLabel) {
-  if (document.getElementById("reason-mcq")) return;   // avoid duplicates
-  const card = document.createElement("div");
-  card.className = "reason-mcq";
-  card.id = "reason-mcq";
-
-  const title = document.createElement("div");
-  title.className = "mcq-title";
-  title.textContent = "Which best describes your situation?";
-  card.appendChild(title);
-
-  // Build buttons via the DOM (textContent + addEventListener) so labels with
-  // apostrophes / quotes can't break an inline onclick handler.
-  (options || []).forEach(o => {
-    const btn = document.createElement("button");
-    btn.className = "btn-intent btn-partial";
-    btn.textContent = o.label;
-    if (answered) {
-      // Replay / preview: keep the question + options visible, non-clickable.
-      btn.disabled = true;
-      if (o.label === selectedLabel) btn.classList.add("mcq-selected");
-    } else {
-      btn.addEventListener("click", () => reasonMcq(o.button_id, o.label));
+      chatArea.appendChild(div);
+      scrollDown();
     }
-    card.appendChild(btn);
-  });
 
-  chatArea.appendChild(card);
-  scrollDown();
-}
-
-async function reasonMcq(buttonId, label) {
-  // Keep the question + options visible but non-clickable, and highlight the
-  // selection so the transcript still reads as a Q&A after the click.
-  const card = document.getElementById("reason-mcq");
-  if (card) {
-    card.querySelectorAll("button").forEach(b => {
-      b.disabled = true;
-      if (b.textContent === label) b.classList.add("mcq-selected");
-    });
-  }
-  addBubble("debtor", "Debtor selected reason: " + label);
-  const t = showTyping();
-  try {
-    const endpoint = useMongo ? "/api/message/reason-mcq" : `/api/reason-mcq/${sessionId}`;
-    const body     = useMongo
-      ? { invoice_id: INVOICE_ID, button_id: buttonId }
-      : { button_id: buttonId };
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    removeTyping();
-    const agentReply = useMongo ? data.message : data.agent_reply;
-    const status     = useMongo ? data.status : data.session_status;
-    addBubble("agent", agentReply);
-    if (status && TERMINAL_STATUSES.includes(status)) {
-      inputArea.classList.remove("visible");
-    } else {
-      inputArea.classList.add("visible");
-      msgInput.focus();
+    function removeIntentButtons() {
+      const el = document.getElementById("intent-btns");
+      if (el) el.remove();
     }
-  } catch (err) {
-    removeTyping();
-    addBubble("agent", "⚠️ Connection error. Please try again.");
-  }
-}
 
-function showTyping() {
-  const t = document.createElement("div");
-  t.className = "bubble-wrap agent"; t.id = "typing-ind";
-  t.innerHTML = `<div class="avatar agent">🤖</div>
+    function showReasonMcq(options, answered, selectedLabel) {
+      if (document.getElementById("reason-mcq")) return;   // avoid duplicates
+      const card = document.createElement("div");
+      card.className = "reason-mcq";
+      card.id = "reason-mcq";
+
+      const title = document.createElement("div");
+      title.className = "mcq-title";
+      title.textContent = "Which best describes your situation?";
+      card.appendChild(title);
+
+      // Build buttons via the DOM (textContent + addEventListener) so labels with
+      // apostrophes / quotes can't break an inline onclick handler.
+      (options || []).forEach(o => {
+        const btn = document.createElement("button");
+        btn.className = "btn-intent btn-partial";
+        btn.textContent = o.label;
+        if (answered) {
+          // Replay / preview: keep the question + options visible, non-clickable.
+          btn.disabled = true;
+          if (o.label === selectedLabel) btn.classList.add("mcq-selected");
+        } else {
+          btn.addEventListener("click", () => reasonMcq(o.button_id, o.label));
+        }
+        card.appendChild(btn);
+      });
+
+      chatArea.appendChild(card);
+      scrollDown();
+    }
+
+    async function reasonMcq(buttonId, label) {
+      // Keep the question + options visible but non-clickable, and highlight the
+      // selection so the transcript still reads as a Q&A after the click.
+      const card = document.getElementById("reason-mcq");
+      if (card) {
+        card.querySelectorAll("button").forEach(b => {
+          b.disabled = true;
+          if (b.textContent === label) b.classList.add("mcq-selected");
+        });
+      }
+      addBubble("debtor", "Debtor selected reason: " + label);
+      const t = showTyping();
+      try {
+        const endpoint = useMongo ? "/api/message/reason-mcq" : `/api/reason-mcq/${sessionId}`;
+        const body = useMongo
+          ? { invoice_id: INVOICE_ID, button_id: buttonId }
+          : { button_id: buttonId };
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        removeTyping();
+        const agentReply = useMongo ? data.message : data.agent_reply;
+        const status = useMongo ? data.status : data.session_status;
+        addBubble("agent", agentReply);
+        if (status && TERMINAL_STATUSES.includes(status)) {
+          inputArea.classList.remove("visible");
+        } else {
+          inputArea.classList.add("visible");
+          msgInput.focus();
+        }
+      } catch (err) {
+        removeTyping();
+        addBubble("agent", "⚠️ Connection error. Please try again.");
+      }
+    }
+
+    function showTyping() {
+      const t = document.createElement("div");
+      t.className = "bubble-wrap agent"; t.id = "typing-ind";
+      t.innerHTML = `<div class="avatar agent">🤖</div>
     <div class="typing" style="display:flex"><span></span><span></span><span></span></div>`;
-  chatArea.appendChild(t);
-  scrollDown();
-  return t;
-}
+      chatArea.appendChild(t);
+      scrollDown();
+      return t;
+    }
 
-function removeTyping() {
-  const el = document.getElementById("typing-ind");
-  if (el) el.remove();
-}
+    function removeTyping() {
+      const el = document.getElementById("typing-ind");
+      if (el) el.remove();
+    }
 
-function showPlanCard(plan) {
-  const card = document.createElement("div");
-  card.className = "plan-card";
-  card.id = "plan-card";
+    function showPlanCard(plan) {
+      const card = document.createElement("div");
+      card.className = "plan-card";
+      card.id = "plan-card";
 
-  const upfrontAmount = plan.upfront_amount || 0;
-  const deferredAmount = Math.max(0, amountPaise - upfrontAmount);
-  const deferredDisplay = fmtRupees(deferredAmount);
-  const totalDisplay = fmtRupees(amountPaise);
-  const deferredZero = deferredAmount === 0;
+      const upfrontAmount = plan.upfront_amount || 0;
+      const deferredAmount = Math.max(0, amountPaise - upfrontAmount);
+      const deferredDisplay = fmtRupees(deferredAmount);
+      const totalDisplay = fmtRupees(amountPaise);
+      const deferredZero = deferredAmount === 0;
 
-  let rows = `
+      let rows = `
     <div class="plan-title">📋 Your Payment Arrangement</div>
     <div class="plan-row"><span class="plan-label">💰 Pay now (today)</span><span class="plan-val green">${plan.upfront_display}</span></div>`;
 
-  if (deferredZero) {
-    rows += `
+      if (deferredZero) {
+        rows += `
     <div class="plan-row"><span class="plan-label">✅ Full invoice settled</span><span class="plan-val green">No deferred payment</span></div>`;
-  } else {
-    rows += `
+      } else {
+        rows += `
     <div class="plan-row"><span class="plan-label">📅 Pay later (${fmtDate(plan.deferred_due_date)})</span><span class="plan-val">${deferredDisplay}</span></div>`;
-    rows += `
+        rows += `
     <div class="plan-row"><span class="plan-label">📊 Total payable</span><span class="plan-val">${totalDisplay}</span></div>`;
-  }
+      }
 
-  const note = deferredZero
-    ? `By confirming, you agree to pay the full invoice amount now.`
-    : `By confirming, you agree to pay ${deferredDisplay} by ${fmtDate(plan.deferred_due_date)}. Paying on time improves your account standing.`;
+      const note = deferredZero
+        ? `By confirming, you agree to pay the full invoice amount now.`
+        : `By confirming, you agree to pay ${deferredDisplay} by ${fmtDate(plan.deferred_due_date)}. Paying on time improves your account standing.`;
 
-  const confirmLabel = deferredZero
-    ? `✅ Agree &amp; Pay ${plan.upfront_display} in Full`
-    : `✅ Agree &amp; Pay ${plan.upfront_display} Now`;
+      const confirmLabel = deferredZero
+        ? `✅ Agree &amp; Pay ${plan.upfront_display} in Full`
+        : `✅ Agree &amp; Pay ${plan.upfront_display} Now`;
 
-  card.innerHTML = `
+      card.innerHTML = `
     ${rows}
     <div class="plan-note">${note}</div>
     <div class="plan-actions">
@@ -589,26 +1519,26 @@ function showPlanCard(plan) {
       <button class="btn-renegotiate" onclick="rejectPlan()">✏️ Renegotiate</button>
     </div>
   `;
-  chatArea.appendChild(card);
-  scrollDown();
-}
+      chatArea.appendChild(card);
+      scrollDown();
+    }
 
-function removePlanCard() {
-  const el = document.getElementById("plan-card");
-  if (el) el.remove();
-}
+    function removePlanCard() {
+      const el = document.getElementById("plan-card");
+      if (el) el.remove();
+    }
 
-function showPaymentButton(order, plan) {
-  currentOrder = order;
-  const p = plan || {};
-  const upfrontAmount = p.upfront_amount || Math.round((order.amount || 0) * 100);
-  const deferredAmount = Math.max(0, amountPaise - upfrontAmount);
-  const deferredDisplay = fmtRupees(deferredAmount);
-  const totalDisplay = fmtRupees(amountPaise);
-  const deferredZero  = deferredAmount === 0;
-  const dueDisplay     = p.due_date_display || (p.deferred_due_date ? fmtDate(p.deferred_due_date) : "");
+    function showPaymentButton(order, plan) {
+      currentOrder = order;
+      const p = plan || {};
+      const upfrontAmount = p.upfront_amount || Math.round((order.amount || 0) * 100);
+      const deferredAmount = Math.max(0, amountPaise - upfrontAmount);
+      const deferredDisplay = fmtRupees(deferredAmount);
+      const totalDisplay = fmtRupees(amountPaise);
+      const deferredZero = deferredAmount === 0;
+      const dueDisplay = p.due_date_display || (p.deferred_due_date ? fmtDate(p.deferred_due_date) : "");
 
-  let rows = `
+      let rows = `
     <div class="fin-row">
       <span class="fin-label">
         <span class="fin-kicker">Due today</span>
@@ -616,8 +1546,8 @@ function showPaymentButton(order, plan) {
       </span>
       <strong class="green">${order.amount_display}</strong>
     </div>`;
-  if (!deferredZero) {
-    rows += `
+      if (!deferredZero) {
+        rows += `
     <div class="fin-row">
       <span class="fin-label">
         <span class="fin-kicker">Deferred balance</span>
@@ -625,24 +1555,24 @@ function showPaymentButton(order, plan) {
       </span>
       <strong>${deferredDisplay}</strong>
     </div>`;
-  }
+      }
 
-  const totalRow = deferredZero
-    ? ""
-    : `<div class="fin-total"><span>Total payable</span><strong>${totalDisplay}</strong></div>`;
+      const totalRow = deferredZero
+        ? ""
+        : `<div class="fin-total"><span>Total payable</span><strong>${totalDisplay}</strong></div>`;
 
-  const note = deferredZero
-    ? `<div class="fin-note">Secure payment powered by Razorpay.</div>`
-    : `<div class="fin-note deferred"><span class="fin-note-title">Next payment reminder</span>${deferredDisplay} is due by ${dueDisplay}. Paying on time improves your account standing.</div>`;
-  const title = deferredZero ? "Payment Ready" : "Payment Plan Ready";
-  const subtitle = deferredZero
-    ? "Complete the invoice payment securely."
-    : "Review the schedule, then complete today's payment.";
+      const note = deferredZero
+        ? `<div class="fin-note">Secure payment powered by Razorpay.</div>`
+        : `<div class="fin-note deferred"><span class="fin-note-title">Next payment reminder</span>${deferredDisplay} is due by ${dueDisplay}. Paying on time improves your account standing.</div>`;
+      const title = deferredZero ? "Payment Ready" : "Payment Plan Ready";
+      const subtitle = deferredZero
+        ? "Complete the invoice payment securely."
+        : "Review the schedule, then complete today's payment.";
 
-  const card = document.createElement("div");
-  card.className = "finalize-card";
-  card.id = "payment-card";
-  card.innerHTML = `
+      const card = document.createElement("div");
+      card.className = "finalize-card";
+      card.id = "payment-card";
+      card.innerHTML = `
     <div class="finalize-header">
       <div class="finalize-check">✓</div>
       <div>
@@ -655,95 +1585,95 @@ function showPaymentButton(order, plan) {
     <button class="btn-pay" onclick="openRazorpayCheckout()">Pay ${order.amount_display} now</button>
     ${note}
   `;
-  chatArea.appendChild(card);
-  scrollDown();
-}
+      chatArea.appendChild(card);
+      scrollDown();
+    }
 
-function openRazorpayCheckout() {
-  const orderData = currentOrder;
-  if (!orderData) return;
-  if (typeof Razorpay === "undefined" || !orderData.key_id || (orderData.order_id && orderData.order_id.startsWith("order_demo_"))) {
-    const simPaymentId = "pay_demo_" + Math.random().toString(36).substring(2, 10);
-    showPaymentSuccess(simPaymentId);
-    fetch(`/api/simulate-webhook/${INVOICE_ID}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: Math.round((orderData.amount || 0) * 100), payment_id: simPaymentId })
-    }).catch(err => console.error("simulate-webhook failed", err));
-    return;
-  }
-  try {
-    const options = {
-      key: orderData.key_id,
-      amount: Math.round(orderData.amount * 100),
-      currency: "INR",
-      order_id: orderData.order_id,
-      name: "RecoverFlow",
-      description: "Invoice Settlement: " + orderData.invoice_id,
-      prefill: { name: orderData.debtor_name },
-      theme: { color: "#2563eb" },
-      handler: function(response) {
-        showPaymentSuccess(response.razorpay_payment_id);
-        fetch("/api/payment-confirmed", {
+    function openRazorpayCheckout() {
+      const orderData = currentOrder;
+      if (!orderData) return;
+      if (typeof Razorpay === "undefined" || !orderData.key_id || (orderData.order_id && orderData.order_id.startsWith("order_demo_"))) {
+        const simPaymentId = "pay_demo_" + Math.random().toString(36).substring(2, 10);
+        showPaymentSuccess(simPaymentId);
+        fetch(`/api/simulate-webhook/${INVOICE_ID}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            payment_id: response.razorpay_payment_id,
-            order_id: orderData.order_id,
-            session_id: sessionId
-          })
-        }).catch(err => console.error("payment-confirmed failed", err));
+          body: JSON.stringify({ amount: Math.round((orderData.amount || 0) * 100), payment_id: simPaymentId })
+        }).catch(err => console.error("simulate-webhook failed", err));
+        return;
       }
-    };
-    const rzp = new Razorpay(options);
-    rzp.on("payment.failed", function(resp) {
-      console.warn("Razorpay payment failed:", resp);
-    });
-    rzp.open();
-  } catch (err) {
-    console.error("Razorpay Checkout JS error:", err);
-    const simPaymentId = "pay_demo_" + Math.random().toString(36).substring(2, 10);
-    showPaymentSuccess(simPaymentId);
-    fetch(`/api/simulate-webhook/${INVOICE_ID}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: Math.round((orderData.amount || 0) * 100), payment_id: simPaymentId })
-    }).catch(e => console.error("simulate-webhook failed", e));
-  }
-}
-
-async function payFull() {
-  const btn = document.getElementById("pay-full-btn");
-  if (!btn || btn.disabled) return;
-  const orig = btn.innerHTML;
-  btn.disabled = true;
-  btn.textContent = "Preparing…";
-  try {
-    const url = useMongo ? `/api/message/pay-full/${INVOICE_ID}` : `/api/negotiate/pay-full/${sessionId}`;
-    const res = await fetch(url, { method: "POST" });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Couldn't prepare payment");
+      try {
+        const options = {
+          key: orderData.key_id,
+          amount: Math.round(orderData.amount * 100),
+          currency: "INR",
+          order_id: orderData.order_id,
+          name: "RecoverFlow",
+          description: "Invoice Settlement: " + orderData.invoice_id,
+          prefill: { name: orderData.debtor_name },
+          theme: { color: "#2563eb" },
+          handler: function (response) {
+            showPaymentSuccess(response.razorpay_payment_id);
+            fetch("/api/payment-confirmed", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                payment_id: response.razorpay_payment_id,
+                order_id: orderData.order_id,
+                session_id: sessionId
+              })
+            }).catch(err => console.error("payment-confirmed failed", err));
+          }
+        };
+        const rzp = new Razorpay(options);
+        rzp.on("payment.failed", function (resp) {
+          console.warn("Razorpay payment failed:", resp);
+        });
+        rzp.open();
+      } catch (err) {
+        console.error("Razorpay Checkout JS error:", err);
+        const simPaymentId = "pay_demo_" + Math.random().toString(36).substring(2, 10);
+        showPaymentSuccess(simPaymentId);
+        fetch(`/api/simulate-webhook/${INVOICE_ID}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: Math.round((orderData.amount || 0) * 100), payment_id: simPaymentId })
+        }).catch(e => console.error("simulate-webhook failed", e));
+      }
     }
-    const order = await res.json();
-    if (order.error) throw new Error(order.error);
-    currentOrder = order;
-    openRazorpayCheckout();
-  } catch (err) {
-    addBubble("agent", "⚠️ Couldn't prepare the payment link. Please try again.");
-    console.error(err);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = orig;
-  }
-}
 
-function showPaymentSuccess(paymentId) {
-  const card = document.getElementById("payment-card");
-  if (card) card.remove();
-  const el = document.createElement("div");
-  el.className = "finalize-card";
-  el.innerHTML = `
+    async function payFull() {
+      const btn = document.getElementById("pay-full-btn");
+      if (!btn || btn.disabled) return;
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.textContent = "Preparing…";
+      try {
+        const url = useMongo ? `/api/message/pay-full/${INVOICE_ID}` : `/api/negotiate/pay-full/${sessionId}`;
+        const res = await fetch(url, { method: "POST" });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || "Couldn't prepare payment");
+        }
+        const order = await res.json();
+        if (order.error) throw new Error(order.error);
+        currentOrder = order;
+        openRazorpayCheckout();
+      } catch (err) {
+        addBubble("agent", "⚠️ Couldn't prepare the payment link. Please try again.");
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    }
+
+    function showPaymentSuccess(paymentId) {
+      const card = document.getElementById("payment-card");
+      if (card) card.remove();
+      const el = document.createElement("div");
+      el.className = "finalize-card";
+      el.innerHTML = `
     <div class="finalize-header">
       <div class="finalize-check">✓</div>
       <div>
@@ -754,71 +1684,71 @@ function showPaymentSuccess(paymentId) {
     <div class="fin-total"><span>Payment ID</span><strong>${paymentId}</strong></div>
     <div class="fin-note">Thank you for your payment!</div>
   `;
-  chatArea.appendChild(el);
-  scrollDown();
-}
+      chatArea.appendChild(el);
+      scrollDown();
+    }
 
-function showStatusScreen(type, extra) {
-  document.getElementById("invoice-card").style.display = "none";
-  document.getElementById("chat-area").style.display   = "none";
-  document.getElementById("input-container").style.display  = "none";
-  document.getElementById(`screen-${type}`).style.display = "flex";
-  if (type === "settled" && extra) {
-    document.getElementById("settled-msg").textContent = extra;
-  }
-}
+    function showStatusScreen(type, extra) {
+      document.getElementById("invoice-card").style.display = "none";
+      document.getElementById("chat-area").style.display = "none";
+      document.getElementById("input-container").style.display = "none";
+      document.getElementById(`screen-${type}`).style.display = "flex";
+      if (type === "settled" && extra) {
+        document.getElementById("settled-msg").textContent = extra;
+      }
+    }
 
-function trustColor(score) {
-  if (score >= 75) return "#16A34A"; // green
-  if (score >= 50) return "#2563EB"; // blue
-  if (score >= 25) return "#D97706"; // amber
-  return "#DC2626";                  // red
-}
+    function trustColor(score) {
+      if (score >= 75) return "#16A34A"; // green
+      if (score >= 50) return "#2563EB"; // blue
+      if (score >= 25) return "#D97706"; // amber
+      return "#DC2626";                  // red
+    }
 
-function trustStatusText(score) {
-  if (score >= 75) return "Excellent payment history";
-  if (score >= 50) return "Good payment history";
-  if (score >= 25) return "Some late payments on record";
-  return "Poor payment history";
-}
+    function trustStatusText(score) {
+      if (score >= 75) return "Excellent payment history";
+      if (score >= 50) return "Good payment history";
+      if (score >= 25) return "Some late payments on record";
+      return "Poor payment history";
+    }
 
-// Static card — renders once on page load. The score number and bar are the
-// only dynamic elements; nothing here updates or animates during the chat.
-function renderTrustCard(score) {
-  const val    = document.getElementById("trust-score-val");
-  const fill   = document.getElementById("trust-bar-fill");
-  const status = document.getElementById("trust-status");
-  if (!val || !fill || !status) return;
+    // Static card — renders once on page load. The score number and bar are the
+    // only dynamic elements; nothing here updates or animates during the chat.
+    function renderTrustCard(score) {
+      const val = document.getElementById("trust-score-val");
+      const fill = document.getElementById("trust-bar-fill");
+      const status = document.getElementById("trust-status");
+      if (!val || !fill || !status) return;
 
-  const hex = trustColor(score);
-  val.textContent = score;
-  val.style.color = hex;
-  fill.style.width = score + "%";
-  fill.style.background = hex;
-  status.textContent = trustStatusText(score);
-}
+      const hex = trustColor(score);
+      val.textContent = score;
+      val.style.color = hex;
+      fill.style.width = score + "%";
+      fill.style.background = hex;
+      status.textContent = trustStatusText(score);
+    }
 
-function setInputEnabled(enabled) {
-  if (enabled) {
-    inputArea.classList.add("visible");
-    sendBtn.disabled = false;
-    msgInput.focus();
-  } else {
-    inputArea.classList.remove("visible");
-    sendBtn.disabled = true;
-  }
-}
+    function setInputEnabled(enabled) {
+      if (enabled) {
+        inputArea.classList.add("visible");
+        sendBtn.disabled = false;
+        msgInput.focus();
+      } else {
+        inputArea.classList.remove("visible");
+        sendBtn.disabled = true;
+      }
+    }
 
-function openUploadPicker() {
-  document.getElementById("global-upload-input").click();
-}
+    function openUploadPicker() {
+      document.getElementById("global-upload-input").click();
+    }
 
-function showUploadCard() {
-  if (document.getElementById("upload-card")) return;   // avoid duplicates
-  const card = document.createElement("div");
-  card.className = "upload-card";
-  card.id = "upload-card";
-  card.innerHTML = `
+    function showUploadCard() {
+      if (document.getElementById("upload-card")) return;   // avoid duplicates
+      const card = document.createElement("div");
+      card.className = "upload-card";
+      card.id = "upload-card";
+      card.innerHTML = `
     <div class="upload-title">📎 Upload your document</div>
     <div class="upload-sub">Accepted: PDF, JPG, PNG (max 10MB)</div>
     <div class="upload-drop" id="upload-drop">
@@ -828,296 +1758,297 @@ function showUploadCard() {
     <div class="upload-confidential">Your document is only used to verify your claim and is kept confidential.</div>
     <div class="upload-reviewing" id="upload-reviewing"><span class="spinner"></span> Reviewing your document…</div>
   `;
-  chatArea.appendChild(card);
-  scrollDown();
+      chatArea.appendChild(card);
+      scrollDown();
 
-  const drop  = card.querySelector("#upload-drop");
-  const input = card.querySelector("#upload-file-input");
-  drop.addEventListener("click", () => input.click());
-  input.addEventListener("change", () => { if (input.files && input.files[0]) handleFile(input.files[0]); });
-  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("dragover"); });
-  drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
-  drop.addEventListener("drop", (e) => {
-    e.preventDefault();
-    drop.classList.remove("dragover");
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-  });
-}
-
-function handleFile(file) {
-  const allowed = ["application/pdf", "image/jpeg", "image/png"];
-  if (!allowed.includes(file.type)) {
-    addBubble("agent", "⚠️ That file type isn't supported — please upload a PDF, JPG or PNG.");
-    return;
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    addBubble("agent", "⚠️ That file is over 10MB — please upload a smaller version.");
-    return;
-  }
-  uploadDocument(file);
-}
-
-async function uploadDocument(file) {
-  addDocumentBubble(file);   // show the document on the debtor (right) side
-  if (!document.getElementById("upload-card")) showUploadCard();   // give the feedback a home
-  const drop      = document.getElementById("upload-drop");
-  const reviewing = document.getElementById("upload-reviewing");
-  const sizeLabel = file.size > 1024 * 1024
-    ? (file.size / (1024 * 1024)).toFixed(1) + " MB"
-    : Math.round(file.size / 1024) + " KB";
-
-  if (drop) {
-    const confirm = document.createElement("div");
-    confirm.className = "upload-file-confirm";
-    confirm.innerHTML = `<span class="file-icon">📄</span><span><strong>${escapeHtml(file.name)}</strong> · ${sizeLabel}</span>`;
-    drop.replaceWith(confirm);
-  }
-  if (reviewing) reviewing.style.display = "flex";
-
-  setInputEnabled(false);   // disable chat input while verification runs
-
-  const fd = new FormData();
-  fd.append("file", file);
-  if (useMongo) {
-    fd.append("invoice_id", INVOICE_ID);
-  } else {
-    fd.append("session_id", sessionId);
-  }
-  fd.append("situation", currentSituation || "");
-
-  try {
-    const res = await fetch("/api/upload-document", { method: "POST", body: fd });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Upload failed");
+      const drop = card.querySelector("#upload-drop");
+      const input = card.querySelector("#upload-file-input");
+      drop.addEventListener("click", () => input.click());
+      input.addEventListener("change", () => { if (input.files && input.files[0]) handleFile(input.files[0]); });
+      drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("dragover"); });
+      drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
+      drop.addEventListener("drop", (e) => {
+        e.preventDefault();
+        drop.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+      });
     }
-    const data = await res.json();
-    if (reviewing) reviewing.style.display = "none";
 
-    renderVerdictLine(data.verdict);
-    if (data.agent_reply) addBubble("agent", data.agent_reply);
-
-    if (data.show_upload_again) {
-      setInputEnabled(true);
-      showUploadCard();
-    } else if (TERMINAL_STATUSES.includes(data.session_status)) {
-      inputArea.classList.remove("visible");
-    } else {
-      setInputEnabled(true);
+    function handleFile(file) {
+      const allowed = ["application/pdf", "image/jpeg", "image/png"];
+      if (!allowed.includes(file.type)) {
+        addBubble("agent", "⚠️ That file type isn't supported — please upload a PDF, JPG or PNG.");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        addBubble("agent", "⚠️ That file is over 10MB — please upload a smaller version.");
+        return;
+      }
+      uploadDocument(file);
     }
-  } catch (err) {
-    if (reviewing) reviewing.style.display = "none";
-    addBubble("agent", "⚠️ Couldn't upload that document. Please try again.");
-    setInputEnabled(true);
-    console.error(err);
-  }
-}
 
-function renderVerdictLine(verdict) {
-  const card = document.getElementById("upload-card");
-  if (!card || !verdict) return;
-  const map = {
-    VALID:         ["valid",        "✅ Verified"],
-    INVALID:       ["invalid",      "❌ Not verified"],
-    INCONCLUSIVE:  ["inconclusive", "⚠️ Needs review"],
-  };
-  const [cls, label] = map[verdict.verdict] || ["inconclusive", "⚠️ Needs review"];
-  const line = document.createElement("div");
-  line.className = `verdict-line ${cls}`;
-  line.textContent = label;
-  card.appendChild(line);
-}
+    async function uploadDocument(file) {
+      addDocumentBubble(file);   // show the document on the debtor (right) side
+      if (!document.getElementById("upload-card")) showUploadCard();   // give the feedback a home
+      const drop = document.getElementById("upload-drop");
+      const reviewing = document.getElementById("upload-reviewing");
+      const sizeLabel = file.size > 1024 * 1024
+        ? (file.size / (1024 * 1024)).toFixed(1) + " MB"
+        : Math.round(file.size / 1024) + " KB";
 
-const TERMINAL_STATUSES = [
-  "settled", "awaiting_payment", "partially_settled", "disputed",
-  "payment_claimed_under_review", "payment_claimed_verified",
-  "disputed_verified", "legal_hold", "escalated", "escalated_to_human",
-];
+      if (drop) {
+        const confirm = document.createElement("div");
+        confirm.className = "upload-file-confirm";
+        confirm.innerHTML = `<span class="file-icon">📄</span><span><strong>${escapeHtml(file.name)}</strong> · ${sizeLabel}</span>`;
+        drop.replaceWith(confirm);
+      }
+      if (reviewing) reviewing.style.display = "flex";
 
-function renderHistory(history) {
-  chatArea.innerHTML = "";
-  showPartialPayHint();
-  (history || []).forEach(m => {
-    if (!m || typeof m.content !== "string") return;
-    if (m.role === "user") {
-      addBubble("debtor", m.content);
-    } else if (m.role === "assistant") {
-      addBubble("agent", m.content);
-      // Re-render a persisted reason-MCQ as non-clickable once answered.
-      if (m.mcq_options && m.mcq_options.length) {
-        showReasonMcq(m.mcq_options, !!m.mcq_answered, m.mcq_selected);
+      setInputEnabled(false);   // disable chat input while verification runs
+
+      const fd = new FormData();
+      fd.append("file", file);
+      if (useMongo) {
+        fd.append("invoice_id", INVOICE_ID);
+      } else {
+        fd.append("session_id", sessionId);
+      }
+      fd.append("situation", currentSituation || "");
+
+      try {
+        const res = await fetch("/api/upload-document", { method: "POST", body: fd });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || "Upload failed");
+        }
+        const data = await res.json();
+        if (reviewing) reviewing.style.display = "none";
+
+        renderVerdictLine(data.verdict);
+        if (data.agent_reply) addBubble("agent", data.agent_reply);
+
+        if (data.show_upload_again) {
+          setInputEnabled(true);
+          showUploadCard();
+        } else if (TERMINAL_STATUSES.includes(data.session_status)) {
+          inputArea.classList.remove("visible");
+        } else {
+          setInputEnabled(true);
+        }
+      } catch (err) {
+        if (reviewing) reviewing.style.display = "none";
+        addBubble("agent", "⚠️ Couldn't upload that document. Please try again.");
+        setInputEnabled(true);
+        console.error(err);
       }
     }
-  });
-}
 
-async function initChat() {
-  // MongoDB-backed flow is opt-in (MONGO_ENABLED). When disabled, go straight
-  // to the in-memory demo flow — no MongoDB round-trip, no 3s DNS timeout.
-  let data;
-  if (MONGO_ENABLED) {
-    try {
-      const res = await fetch(`/api/message/start/${INVOICE_ID}`, { method: "POST" });
-      if (!res.ok) throw new Error(`mongo start failed: ${res.status}`);
-      data = await res.json();
-      useMongo = true;
-    } catch (err) {
-      const res = await fetch(`/api/negotiate/start/${INVOICE_ID}`, { method: "POST" });
-      data = await res.json();
-      useMongo = false;
-      sessionId = data.session_id;
-    }
-  } else {
-    const res = await fetch(`/api/negotiate/start/${INVOICE_ID}`, { method: "POST" });
-    data = await res.json();
-    useMongo = false;
-    sessionId = data.session_id;
-  }
-
-  amountPaise = data.invoice_amount_paise ?? (data.invoice_amount * 100);
-  debtorName  = data.debtor_name;
-
-  document.getElementById("inv-id").textContent     = INVOICE_ID;
-  document.getElementById("inv-amount").textContent = fmtRupees(amountPaise);
-  document.getElementById("inv-dpd").textContent    = data.dpd + " days overdue";
-  document.getElementById("inv-debtor").textContent = debtorName;
-  document.getElementById("pay-full-amt").textContent = fmtRupees(amountPaise);
-  document.getElementById("invoice-card").style.display = "flex";
-
-  renderTrustCard(data.trust_score ?? data.score);
-
-  if (useMongo) {
-    renderHistory(data.history);        // full transcript fetched from MongoDB
-  } else {
-    chatArea.innerHTML = "";
-    showPartialPayHint();
-    addBubble("agent", data.opening_message);
-  }
-
-  // Free-text conversation — show the input right away.
-  inputArea.classList.add("visible");
-  msgInput.focus();
-}
-
-async function clearChat() {
-  if (!confirm("Are you sure you want to clear the chat history? This will remove all messages from the database.")) return;
-  try {
-    const url = useMongo
-      ? `/api/message/clear/${INVOICE_ID}`
-      : `/api/negotiate/clear/${INVOICE_ID}`;
-    const res = await fetch(url, { method: "POST" });
-    if (!res.ok) throw new Error("Failed to clear chat");
-    const data = await res.json();
-    renderHistory(data.history);
-    inputArea.classList.add("visible");
-    document.querySelectorAll(".status-screen").forEach(s => s.style.display = "none");
-  } catch (err) {
-    console.error("clearChat error:", err);
-    alert("Failed to clear chat. Please try again.");
-  }
-}
-
-async function selectIntent(choice) {
-  removeIntentButtons();
-  addBubble("debtor", choice === "A" ? "Pay in Full" : "Discuss a partial arrangement");
-  await callTurn(choice);
-}
-
-async function confirmPlan() {
-  removePlanCard();
-  addBubble("debtor", "CONFIRM — I agree to this arrangement.");
-  await callTurn("CONFIRM");
-}
-
-async function rejectPlan() {
-  removePlanCard();
-  addBubble("debtor", "I'd like to renegotiate.");
-  await callTurn("renegotiate");
-}
-
-async function sendMessage() {
-  const text = msgInput.value.trim();
-  if (!text) return;
-  msgInput.value = "";
-  msgInput.style.height = "auto";
-  addBubble("debtor", text);
-  sendBtn.disabled = true;
-  await callTurn(text);
-  sendBtn.disabled = false;
-  msgInput.focus();
-}
-
-async function callTurn(message) {
-  const t = showTyping();
-  try {
-    const endpoint = useMongo ? "/api/message/incoming" : `/api/negotiate/turn/${sessionId}`;
-    const body     = useMongo
-      ? { invoice_id: INVOICE_ID, user_text: message }
-      : { message };
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.detail || `Server error ${res.status}`);
-    }
-    const data = await res.json();
-    removeTyping();
-
-    const agentReply = useMongo ? data.message : data.agent_reply;
-    const status     = useMongo ? data.status : data.session_status;
-    addBubble("agent", agentReply);
-
-    // Trust score card is static — trust_score in the turn response is ignored.
-
-    if (data.payment_order) {
-      showPaymentButton(data.payment_order, data.agreed_terms);
+    function renderVerdictLine(verdict) {
+      const card = document.getElementById("upload-card");
+      if (!card || !verdict) return;
+      const map = {
+        VALID: ["valid", "✅ Verified"],
+        INVALID: ["invalid", "❌ Not verified"],
+        INCONCLUSIVE: ["inconclusive", "⚠️ Needs review"],
+      };
+      const [cls, label] = map[verdict.verdict] || ["inconclusive", "⚠️ Needs review"];
+      const line = document.createElement("div");
+      line.className = `verdict-line ${cls}`;
+      line.textContent = label;
+      card.appendChild(line);
     }
 
-    // Surface the document-upload card once a dispute / already-paid / cashflow
-    // situation has been identified (and no verdict has landed yet).
-    if (data.show_upload_card) {
-      currentSituation = data.identified_situation;
-      showUploadCard();
+    const TERMINAL_STATUSES = [
+      "settled", "awaiting_payment", "partially_settled", "disputed",
+      "payment_claimed_under_review", "payment_claimed_verified",
+      "disputed_verified", "legal_hold", "escalated", "escalated_to_human",
+    ];
+
+    function renderHistory(history) {
+      chatArea.innerHTML = "";
+      showPartialPayHint();
+      (history || []).forEach(m => {
+        if (!m || typeof m.content !== "string") return;
+        if (m.role === "user") {
+          addBubble("debtor", m.content);
+        } else if (m.role === "assistant") {
+          addBubble("agent", m.content);
+          // Re-render a persisted reason-MCQ as non-clickable once answered.
+          if (m.mcq_options && m.mcq_options.length) {
+            showReasonMcq(m.mcq_options, !!m.mcq_answered, m.mcq_selected);
+          }
+        }
+      });
     }
 
-    // Surface the reason MCQ when Python decides to ask why the debtor can't pay.
-    if (data.mcq_options && data.mcq_options.length) {
-      showReasonMcq(data.mcq_options);
-    }
+    async function initChat() {
+      // MongoDB-backed flow is opt-in (MONGO_ENABLED). When disabled, go straight
+      // to the in-memory demo flow — no MongoDB round-trip, no 3s DNS timeout.
+      let data;
+      if (MONGO_ENABLED) {
+        try {
+          const res = await fetch(`/api/message/start/${INVOICE_ID}`, { method: "POST" });
+          if (!res.ok) throw new Error(`mongo start failed: ${res.status}`);
+          data = await res.json();
+          useMongo = true;
+        } catch (err) {
+          const res = await fetch(`/api/negotiate/start/${INVOICE_ID}`, { method: "POST" });
+          data = await res.json();
+          useMongo = false;
+          sessionId = data.session_id;
+        }
+      } else {
+        const res = await fetch(`/api/negotiate/start/${INVOICE_ID}`, { method: "POST" });
+        data = await res.json();
+        useMongo = false;
+        sessionId = data.session_id;
+      }
 
-    if (status === "settled") {
-      inputArea.classList.remove("visible");
-      setTimeout(() => showStatusScreen("settled", `✅ Payment arranged. Thank you, ${debtorName}.`), 1800);
-    } else if (TERMINAL_STATUSES.includes(status)) {
-      inputArea.classList.remove("visible");
-    } else {
+      amountPaise = data.invoice_amount_paise ?? (data.invoice_amount * 100);
+      debtorName = data.debtor_name;
+
+      document.getElementById("inv-id").textContent = INVOICE_ID;
+      document.getElementById("inv-amount").textContent = fmtRupees(amountPaise);
+      document.getElementById("inv-dpd").textContent = data.dpd + " days overdue";
+      document.getElementById("inv-debtor").textContent = debtorName;
+      document.getElementById("pay-full-amt").textContent = fmtRupees(amountPaise);
+      document.getElementById("invoice-card").style.display = "flex";
+
+      renderTrustCard(data.trust_score ?? data.score);
+
+      if (useMongo) {
+        renderHistory(data.history);        // full transcript fetched from MongoDB
+      } else {
+        chatArea.innerHTML = "";
+        showPartialPayHint();
+        addBubble("agent", data.opening_message);
+      }
+
+      // Free-text conversation — show the input right away.
       inputArea.classList.add("visible");
       msgInput.focus();
     }
-  } catch (err) {
-    removeTyping();
-    addBubble("agent", "⚠️ Connection error. Please try again.");
-    console.error(err);
-  }
-}
 
-msgInput.addEventListener("input", () => {
-  msgInput.style.height = "auto";
-  msgInput.style.height = Math.min(msgInput.scrollHeight, 150) + "px";
-});
-msgInput.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-});
+    async function clearChat() {
+      if (!confirm("Are you sure you want to clear the chat history? This will remove all messages from the database.")) return;
+      try {
+        const url = useMongo
+          ? `/api/message/clear/${INVOICE_ID}`
+          : `/api/negotiate/clear/${INVOICE_ID}`;
+        const res = await fetch(url, { method: "POST" });
+        if (!res.ok) throw new Error("Failed to clear chat");
+        const data = await res.json();
+        renderHistory(data.history);
+        inputArea.classList.add("visible");
+        document.querySelectorAll(".status-screen").forEach(s => s.style.display = "none");
+      } catch (err) {
+        console.error("clearChat error:", err);
+        alert("Failed to clear chat. Please try again.");
+      }
+    }
 
-document.getElementById("global-upload-input").addEventListener("change", e => {
-  if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
-  e.target.value = "";   // allow re-selecting the same file
-});
+    async function selectIntent(choice) {
+      removeIntentButtons();
+      addBubble("debtor", choice === "A" ? "Pay in Full" : "Discuss a partial arrangement");
+      await callTurn(choice);
+    }
 
-initChat();
-</script>
+    async function confirmPlan() {
+      removePlanCard();
+      addBubble("debtor", "CONFIRM — I agree to this arrangement.");
+      await callTurn("CONFIRM");
+    }
+
+    async function rejectPlan() {
+      removePlanCard();
+      addBubble("debtor", "I'd like to renegotiate.");
+      await callTurn("renegotiate");
+    }
+
+    async function sendMessage() {
+      const text = msgInput.value.trim();
+      if (!text) return;
+      msgInput.value = "";
+      msgInput.style.height = "auto";
+      addBubble("debtor", text);
+      sendBtn.disabled = true;
+      await callTurn(text);
+      sendBtn.disabled = false;
+      msgInput.focus();
+    }
+
+    async function callTurn(message) {
+      const t = showTyping();
+      try {
+        const endpoint = useMongo ? "/api/message/incoming" : `/api/negotiate/turn/${sessionId}`;
+        const body = useMongo
+          ? { invoice_id: INVOICE_ID, user_text: message }
+          : { message };
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `Server error ${res.status}`);
+        }
+        const data = await res.json();
+        removeTyping();
+
+        const agentReply = useMongo ? data.message : data.agent_reply;
+        const status = useMongo ? data.status : data.session_status;
+        addBubble("agent", agentReply);
+
+        // Trust score card is static — trust_score in the turn response is ignored.
+
+        if (data.payment_order) {
+          showPaymentButton(data.payment_order, data.agreed_terms);
+        }
+
+        // Surface the document-upload card once a dispute / already-paid / cashflow
+        // situation has been identified (and no verdict has landed yet).
+        if (data.show_upload_card) {
+          currentSituation = data.identified_situation;
+          showUploadCard();
+        }
+
+        // Surface the reason MCQ when Python decides to ask why the debtor can't pay.
+        if (data.mcq_options && data.mcq_options.length) {
+          showReasonMcq(data.mcq_options);
+        }
+
+        if (status === "settled") {
+          inputArea.classList.remove("visible");
+          setTimeout(() => showStatusScreen("settled", `✅ Payment arranged. Thank you, ${debtorName}.`), 1800);
+        } else if (TERMINAL_STATUSES.includes(status)) {
+          inputArea.classList.remove("visible");
+        } else {
+          inputArea.classList.add("visible");
+          msgInput.focus();
+        }
+      } catch (err) {
+        removeTyping();
+        addBubble("agent", "⚠️ Connection error. Please try again.");
+        console.error(err);
+      }
+    }
+
+    msgInput.addEventListener("input", () => {
+      msgInput.style.height = "auto";
+      msgInput.style.height = Math.min(msgInput.scrollHeight, 150) + "px";
+    });
+    msgInput.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    document.getElementById("global-upload-input").addEventListener("change", e => {
+      if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+      e.target.value = "";   // allow re-selecting the same file
+    });
+
+    initChat();
+  </script>
 </body>
+
 </html>
