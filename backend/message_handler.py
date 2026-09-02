@@ -172,6 +172,7 @@ def _rehydrate(session: dict, doc: dict) -> None:
 
     bounds = doc.get("financial_bounds") or {}
     floor = bounds.get("current_floor")
+    session["highest_user_offer"] = bounds.get("highest_user_offer", 0)
     if isinstance(floor, (int, float)):
         engine = _get_engine(session)
         if int(floor) < engine.min_today:
@@ -314,6 +315,7 @@ def start_session(invoice_id: str, collection: Any = None) -> dict:
             "financial_bounds": {
                 "principal": session["invoice_amount"],
                 "current_floor": engine.min_today,
+                "highest_user_offer": 0,
                 "max_allowed_date": str(engine.deadline),
             },
             "state_locks": {
@@ -371,6 +373,17 @@ def handle_incoming_message(
     offer = _coerce_offer(user_offer_amount)
     if offer is None and user_text:
         offer = _extract_amount_rupees(user_text)
+
+    if offer is not None:
+        highest_user_offer = bounds.get("highest_user_offer", 0)
+        if offer > highest_user_offer:
+            bounds["highest_user_offer"] = offer
+            col.update_one(
+                {"invoice_id": invoice_id},
+                {"$set": {"financial_bounds.highest_user_offer": offer}}
+            )
+            if invoice_id in _AGENT_SESSIONS:
+                _AGENT_SESSIONS[invoice_id]["highest_user_offer"] = offer
 
     # 3. TRAPDOOR 1 — the hard stop. The reason was already collected and the
     #    debtor still offers below the floor → escalate.

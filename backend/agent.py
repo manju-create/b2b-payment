@@ -1979,6 +1979,13 @@ def _handle_reason_mcq_answer(
     session["reason_mcq_pending"] = False
 
     new_min = engine.apply_hardship()
+    
+    highest_offer = session.get("highest_user_offer", 0)
+    actual_floor = max(new_min, highest_offer)
+    new_min = actual_floor
+    engine.min_today = actual_floor
+    engine.step3_amount = actual_floor
+    
     session["hardship_verified"] = True
     session["negotiation_engine"] = engine.to_dict()
     session["state"] = "negotiating"
@@ -1989,7 +1996,10 @@ def _handle_reason_mcq_answer(
     instruction = (
         f"The debtor explained why they can't pay: {label}. Acknowledge their reason "
         f"warmly, then explain we can come down to {_inr(new_min)} today and ask if "
-        f"they can manage that."
+        f"they can manage that.\n\n"
+        f"The user's highest offer so far is {_inr(highest_offer)}.\n"
+        f"CRITICAL GUARDRAIL: Never suggest an upfront payment lower than the user's highest offer. "
+        f"If their offer meets or exceeds your hardship floor, accept their offer immediately."
     )
     context = _build_context(session, engine, instruction)
     session["system_prompt"] = build_system_prompt(session, context)

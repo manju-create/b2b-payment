@@ -31,23 +31,170 @@
     .topbar {
       background: #1E293B;
       color: #fff;
-      padding: 14px 20px;
+      padding: 12px 20px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: space-between;
       flex-shrink: 0;
+      position: relative;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .topbar-logo {
       font-size: 18px;
       font-weight: 700;
       letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topbar-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .view-dropdown-container {
+      position: relative;
+    }
+
+    .view-dropdown-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #F8FAFC;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .view-dropdown-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .view-dot {
+      width: 7px;
+      height: 7px;
+      background-color: #10B981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+    }
+
+    .view-chevron {
+      transition: transform 0.2s ease;
+    }
+
+    .view-dropdown-container.open .view-chevron {
+      transform: rotate(180deg);
+    }
+
+    .view-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+      min-width: 250px;
+      padding: 6px;
+      display: none;
+      z-index: 1000;
+    }
+
+    .view-dropdown-container.open .view-dropdown-menu {
+      display: block;
+      animation: fadeInDropdown 0.15s ease-out;
+    }
+
+    @keyframes fadeInDropdown {
+      from { opacity: 0; transform: translate(-50%, -6px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    .view-menu-header {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #94A3B8;
+      padding: 8px 10px 4px 10px;
+      text-transform: uppercase;
+    }
+
+    .view-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #F8FAFC;
+      transition: background 0.15s ease;
+      cursor: pointer;
+    }
+
+    .view-option:hover {
+      background: #334155;
+    }
+
+    .view-option.active {
+      background: rgba(37, 99, 235, 0.2);
+      border: 1px solid rgba(37, 99, 235, 0.4);
+    }
+
+    .view-option-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .view-option-info {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .view-option-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #F8FAFC;
+    }
+
+    .view-option-sub {
+      font-size: 11px;
+      color: #94A3B8;
+    }
+
+    .view-check {
+      color: #60A5FA;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .view-arrow {
+      color: #94A3B8;
+      font-weight: 700;
+      font-size: 14px;
+      transition: transform 0.15s;
+    }
+
+    .view-option:hover .view-arrow {
+      color: #F8FAFC;
+      transform: translateX(2px);
     }
 
     .topbar-sub {
       font-size: 13px;
       color: #94A3B8;
-      margin-left: auto;
     }
 
     .main-layout {
@@ -1141,6 +1288,36 @@
   <!-- Top bar -->
   <div class="topbar">
     <div class="topbar-logo">🔄 RecoverFlow</div>
+
+    <div class="topbar-center">
+      <div class="view-dropdown-container" id="view-dropdown-container">
+        <button class="view-dropdown-btn" id="view-dropdown-btn" onclick="toggleViewMenu(event)" type="button">
+          <span class="view-dot"></span>
+          <span>Customer View</span>
+          <svg class="view-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="view-dropdown-menu" id="view-dropdown-menu">
+          <div class="view-menu-header">SWITCH PORTAL VIEW</div>
+          <div class="view-option active">
+            <span class="view-option-icon">👤</span>
+            <div class="view-option-info">
+              <span class="view-option-title">Customer View</span>
+              <span class="view-option-sub">Debtor negotiation experience</span>
+            </div>
+            <span class="view-check">✓</span>
+          </div>
+          <a href="/dashboard" class="view-option">
+            <span class="view-option-icon">📊</span>
+            <div class="view-option-info">
+              <span class="view-option-title">Merchant View</span>
+              <span class="view-option-sub">Open Merchant Dashboard</span>
+            </div>
+            <span class="view-arrow">→</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
     <div class="topbar-sub">Secure Payment Recovery</div>
   </div>
 
@@ -2075,6 +2252,19 @@
     document.getElementById("global-upload-input").addEventListener("change", e => {
       if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
       e.target.value = "";   // allow re-selecting the same file
+    });
+
+    function toggleViewMenu(e) {
+      if (e) e.stopPropagation();
+      const container = document.getElementById('view-dropdown-container');
+      if (container) container.classList.toggle('open');
+    }
+
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('view-dropdown-container');
+      if (container && !container.contains(e.target)) {
+        container.classList.remove('open');
+      }
     });
 
     initChat();

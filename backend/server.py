@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -81,7 +82,15 @@ webhook_log:        list[dict]      = []       # every inbound event, for audit
 # App
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="RecoverFlow", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        await batch_start()
+    except Exception:
+        pass
+    yield
+
+app = FastAPI(title="RecoverFlow", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # Serve uploaded documents from the persistent volume — the `url` recorded in
@@ -139,6 +148,15 @@ def _last_debtor_message(s: dict) -> str:
 # ---------------------------------------------------------------------------
 # Page routes
 # ---------------------------------------------------------------------------
+
+@app.get("/", response_class=HTMLResponse)
+@app.get("/landing", response_class=HTMLResponse)
+async def landing():
+    p = FRONTEND_DIR / "landing" / "index.html"
+    if not p.exists():
+        raise HTTPException(404, "Landing page not found")
+    return HTMLResponse(p.read_text())
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard():
@@ -198,6 +216,7 @@ async def mongo_health():
 # Batch
 # ---------------------------------------------------------------------------
 
+
 @app.post("/api/batch/start")
 async def batch_start():
     invoices_list = _load_json("invoices.json")
@@ -209,16 +228,20 @@ async def batch_start():
     for inv in invoices_list:
         iid = inv["invoice_id"]
         try:
-            s = create_session(iid)
-            sessions[s["session_id"]] = s
-            batch_results[iid] = s
-            tier_breakdown[s["tier"]] = tier_breakdown.get(s["tier"], 0) + 1
-            total += s["invoice_amount_paise"]
+            if iid not in batch_results:
+                s = create_session(iid)
+                sessions[s["session_id"]] = s
+                batch_results[iid] = s
+            else:
+                s = batch_results[iid]
+            tier_breakdown[s.get("tier", "A")] = tier_breakdown.get(s.get("tier", "A"), 0) + 1
+            total += s.get("invoice_amount_paise", 0)
         except Exception as exc:
             errors.append({"invoice_id": iid, "error": str(exc)})
     return {"total": len(batch_results), "tier_breakdown": tier_breakdown,
             "total_outstanding_paise": total, "total_outstanding_display": _rupees_fmt(total),
             "errors": errors}
+
 
 
 @app.get("/api/batch/status")

@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecoverFlow — Find revenue that's slipping away. Win it back.</title>
+  <meta name="description" content="RecoverFlow detects unpaid B2B invoices, negotiates payment with debtors, and closes the transaction — end to end, fully automated." />
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* CSS Reset & Variables */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-glow: rgba(37, 99, 235, 0.35);
+      --success: #16a34a;
+      --success-glow: rgba(22, 163, 74, 0.3);
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    html, body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient Background FX */
+    .glow-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      background: 
+        radial-gradient(circle at 15% 20%, rgba(37, 99, 235, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 85% 60%, rgba(22, 163, 74, 0.08) 0%, transparent 45%);
+    }
+
+    /* Typography Utilities */
+    .text-gradient {
+      background: linear-gradient(135deg, #60a5fa 0%, #ffffff 50%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .text-gradient-green {
+      background: linear-gradient(135deg, #4ade80 0%, #ffffff 60%, #16a34a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Layout Containers */
+    .container {
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    section {
+      padding: 6rem 0;
+      position: relative;
+    }
+
+    /* Navbar */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 1rem 0;
+    }
+
+    .nav-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 800;
+      font-size: 1.35rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--primary), #1d4ed8);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.925rem;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .btn-nav {
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 0.55rem 1.35rem;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .btn-nav:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 0 25px var(--primary-glow);
+      transform: translateY(-1px);
+    }
+
+    /* SECTION 1 — HERO */
+    .hero-section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding-top: 7rem;
+      padding-bottom: 4rem;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .eyebrow-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(37, 99, 235, 0.12);
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      padding: 0.4rem 1rem;
+      border-radius: 9999px;
+      color: #60a5fa;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+    }
+
+    .eyebrow-dot {
+      width: 6px;
+      height: 6px;
+      background-color: #60a5fa;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #60a5fa;
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .hero-headline {
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+      color: var(--text-main);
+    }
+
+    .hero-subtext {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 540px;
+      margin-bottom: 2.5rem;
+      line-height: 1.6;
+    }
+
+    .hero-buttons {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      padding: 0.9rem 1.75rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.25 ease;
+      box-shadow: 0 4px 20px var(--primary-glow);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px var(--primary-glow);
+    }
+
+    .btn-secondary {
+      background: rgba(30, 41, 59, 0.8);
+      color: var(--text-main);
+      padding: 0.9rem 1.75rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1px solid var(--card-border);
+      transition: all 0.25s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-secondary:hover {
+      background: #334155;
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* Hero Right Stats Card */
+    .hero-stats-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-stats-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+    }
+
+    .card-header-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--success);
+      background: rgba(22, 163, 74, 0.12);
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(22, 163, 74, 0.3);
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--success);
+      border-radius: 50%;
+      animation: pulse-green 1.5s infinite;
+    }
+
+    @keyframes pulse-green {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(1.4); }
+    }
+
+    .stats-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      background: rgba(15, 23, 42, 0.5);
+      padding: 0.85rem 1.15rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .stat-val {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-val.highlight {
+      color: #4ade80;
+    }
+
+    .stat-lbl {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .trust-line {
+      font-size: 0.8rem;
+      color: var(--text-subtle);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    /* SECTION HEADINGS */
+    .section-header {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 3.5rem auto;
+    }
+
+    .section-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+      color: var(--text-main);
+    }
+
+    .section-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+    }
+
+    /* SECTION 2 — THE PROBLEM */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.75rem;
+    }
+
+    .problem-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .problem-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-icon-head {
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .problem-body {
+      font-size: 0.975rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .source-tag {
+      font-size: 0.75rem;
+      color: var(--text-subtle);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 0.75rem;
+    }
+
+    /* SECTION 3 — HOW IT WORKS */
+    .steps-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      position: relative;
+      margin-bottom: 3rem;
+    }
+
+    .step-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 2.25rem 1.75rem;
+      position: relative;
+      z-index: 2;
+      transition: all 0.3s ease;
+    }
+
+    .step-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(37, 99, 235, 0.4);
+      box-shadow: 0 12px 35px rgba(37, 99, 235, 0.15);
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #60a5fa;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+      background: rgba(37, 99, 235, 0.12);
+      padding: 0.3rem 0.8rem;
+      border-radius: 6px;
+    }
+
+    .step-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .step-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: var(--text-main);
+    }
+
+    .step-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Connecting arrow for steps */
+    .step-card:not(:last-child)::after {
+      content: '→';
+      position: absolute;
+      top: 50%;
+      right: -1.35rem;
+      transform: translateY(-50%);
+      font-size: 1.5rem;
+      color: #3b82f6;
+      z-index: 3;
+      font-weight: 700;
+      animation: pulse-arrow 1.8s infinite;
+    }
+
+    @keyframes pulse-arrow {
+      0%, 100% { transform: translateY(-50%) translateX(0); opacity: 0.6; }
+      50% { transform: translateY(-50%) translateX(4px); opacity: 1; }
+    }
+
+    .steps-subline {
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(30, 41, 59, 0.4);
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    /* SECTION 4 — FEATURES GRID */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.75rem;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(37, 99, 235, 0.35);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .feature-icon-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.85rem;
+      color: var(--text-main);
+    }
+
+    .feature-desc {
+      font-size: 0.935rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* SECTION 5 — REAL DATA CALLOUT */
+    .data-callout-box {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(37, 99, 235, 0.08);
+      border-radius: 24px;
+      padding: 4rem 2.5rem;
+      text-align: center;
+      max-width: 960px;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .data-badge {
+      display: inline-block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #60a5fa;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 2.5rem;
+      background: rgba(37, 99, 235, 0.15);
+      padding: 0.4rem 1.2rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(37, 99, 235, 0.4);
+    }
+
+    .data-stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      margin-bottom: 2.5rem;
+      padding-bottom: 2.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .data-stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .data-big-num {
+      font-size: 4rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.03em;
+    }
+
+    .data-stat-label {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    .data-stat-subtext {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .data-footer-text {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 620px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* SECTION 6 — TWO PORTALS */
+    .portals-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+    }
+
+    .portal-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 3rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.35s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .portal-card.merchant-card {
+      border: 2px solid rgba(37, 99, 235, 0.5);
+      box-shadow: 0 10px 40px rgba(37, 99, 235, 0.1);
+    }
+
+    .portal-card.merchant-card:hover {
+      border-color: #2563eb;
+      box-shadow: 0 15px 50px rgba(37, 99, 235, 0.25);
+      transform: translateY(-5px);
+    }
+
+    .portal-card.debtor-card {
+      border: 2px solid rgba(22, 163, 74, 0.5);
+      box-shadow: 0 10px 40px rgba(22, 163, 74, 0.1);
+    }
+
+    .portal-card.debtor-card:hover {
+      border-color: #16a34a;
+      box-shadow: 0 15px 50px rgba(22, 163, 74, 0.25);
+      transform: translateY(-5px);
+    }
+
+    .portal-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .portal-icon-wrapper {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .merchant-icon {
+      background: rgba(37, 99, 235, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(37, 99, 235, 0.4);
+    }
+
+    .debtor-icon {
+      background: rgba(22, 163, 74, 0.2);
+      color: #4ade80;
+      border: 1px solid rgba(22, 163, 74, 0.4);
+    }
+
+    .portal-badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+    }
+
+    .portal-badge.merchant-badge {
+      background: rgba(37, 99, 235, 0.2);
+      color: #60a5fa;
+    }
+
+    .portal-badge.debtor-badge {
+      background: rgba(22, 163, 74, 0.2);
+      color: #4ade80;
+    }
+
+    .portal-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      color: var(--text-main);
+    }
+
+    .portal-desc {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 2.5rem;
+    }
+
+    .btn-portal-merchant {
+      background: var(--primary);
+      color: #ffffff;
+      padding: 1rem 1.75rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 20px var(--primary-glow);
+    }
+
+    .btn-portal-merchant:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 6px 25px var(--primary-glow);
+    }
+
+    .btn-portal-debtor {
+      background: var(--success);
+      color: #ffffff;
+      padding: 1rem 1.75rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 20px var(--success-glow);
+    }
+
+    .btn-portal-debtor:hover {
+      background: #15803d;
+      box-shadow: 0 6px 25px var(--success-glow);
+    }
+
+    /* SECTION 7 — FOOTER */
+    footer {
+      background: #090d16;
+      border-top: 1px solid var(--card-border);
+      padding: 4rem 0 2.5rem 0;
+      color: var(--text-muted);
+    }
+
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr 1fr;
+      gap: 2rem;
+      align-items: center;
+      padding-bottom: 2.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 2rem;
+    }
+
+    .footer-brand {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .footer-center {
+      text-align: center;
+      font-size: 0.925rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .footer-right {
+      text-align: right;
+      font-size: 0.925rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .razorpay-text {
+      color: #3b82f6;
+      font-weight: 800;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-subtle);
+    }
+
+    /* Scroll animations */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .fade-up.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+      }
+      .hero-headline {
+        font-size: 2.75rem;
+      }
+      .problem-grid, .features-grid, .steps-container {
+        grid-template-columns: 1fr;
+      }
+      .step-card:not(:last-child)::after {
+        display: none;
+      }
+      .portals-grid {
+        grid-template-columns: 1fr;
+      }
+      .footer-top {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 1.5rem;
+      }
+      .footer-right {
+        justify-content: center;
+      }
+      .data-stats-row {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero-headline {
+        font-size: 2.25rem;
+      }
+      .nav-links {
+        display: none;
+      }
+      .section-title {
+        font-size: 1.75rem;
+      }
+      .data-big-num {
+        font-size: 3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Glow Background -->
+  <div class="glow-bg"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="#" class="brand-logo">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
+          </svg>
+        </div>
+        <span>RecoverFlow</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#problem">The Problem</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#data">Real Data</a></li>
+        <li><a href="#demo">Portals</a></li>
+      </ul>
+
+      <a href="/dashboard" class="btn-nav">Merchant Dashboard ↗</a>
+    </div>
+  </nav>
+
+  <!-- SECTION 1 — HERO -->
+  <section class="hero-section" id="hero">
+    <div class="container">
+      <div class="hero-grid">
+        
+        <!-- Left Side -->
+        <div class="hero-left fade-up">
+          <div class="eyebrow-badge">
+            <span class="eyebrow-dot"></span>
+            TRACK 03 — AI REVENUE RECOVERY
+          </div>
+          
+          <h1 class="hero-headline">
+            Your invoices are overdue.<br />
+            <span class="text-gradient">Your AI agent is ready.</span>
+          </h1>
+          
+          <p class="hero-subtext">
+            RecoverFlow detects unpaid B2B invoices, negotiates payment with debtors, and closes the transaction — end to end, fully automated.
+          </p>
+          
+          <div class="hero-buttons">
+            <a href="#demo" class="btn-secondary">
+              See it in action ↓
+            </a>
+            <a href="/dashboard" class="btn-primary">
+              Merchant Dashboard
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Right Side Stats Card -->
+        <div class="hero-right fade-up" style="transition-delay: 0.15s;">
+          <div class="hero-stats-card">
+            <div class="card-header-line">
+              <div class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                </svg>
+                Live Recovery Stats
+              </div>
+              <div class="live-indicator">
+                <span class="live-dot"></span>
+                LIVE
+              </div>
+            </div>
+
+            <div class="stats-list">
+              <div class="stat-row">
+                <span class="stat-lbl">Recovered</span>
+                <span class="stat-val highlight" id="stat-recovered">₹0</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-lbl">Recovery Rate</span>
+                <span class="stat-val" id="stat-rate">0%</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-lbl">Avg Resolution</span>
+                <span class="stat-val" id="stat-time">0 min</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-lbl">Audit Compliant</span>
+                <span class="stat-val" id="stat-compliance">0%</span>
+              </div>
+            </div>
+
+            <div class="trust-line">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              Powered by Razorpay • Built on real IBM AR data
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2 — THE PROBLEM -->
+  <section id="problem">
+    <div class="container">
+      <div class="section-header fade-up">
+        <h2 class="section-title">Revenue loss rarely happens in one clean step</h2>
+        <p class="section-subtitle">B2B receivables degrade slowly across three predictable breakdown stages.</p>
+      </div>
+
+      <div class="problem-grid">
+        <!-- Card 1 -->
+        <div class="problem-card fade-up">
+          <div>
+            <div class="card-icon-head">
+              <span>🔴</span> Invoice Overdue
+            </div>
+            <p class="problem-body">
+              An invoice goes unpaid past due date. Manual follow-up takes days. The debtor stops responding.
+            </p>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="problem-card fade-up" style="transition-delay: 0.1s;">
+          <div>
+            <div class="card-icon-head">
+              <span>📉</span> Cash Flow Hit
+            </div>
+            <p class="problem-body">
+              Over 50% of B2B invoices in India are overdue at due date. Average wait: 34 days beyond due.
+            </p>
+          </div>
+          <div class="source-tag">Source: Atradius 2024</div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="problem-card fade-up" style="transition-delay: 0.2s;">
+          <div>
+            <div class="card-icon-head">
+              <span>❌</span> Written Off
+            </div>
+            <p class="problem-body">
+              5% of all B2B invoices become bad debt. No recovery. No audit trail. Just lost revenue.
+            </p>
+          </div>
+          <div class="source-tag">Source: Atradius 2024</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3 — HOW IT WORKS -->
+  <section id="how-it-works">
+    <div class="container">
+      <div class="section-header fade-up">
+        <h2 class="section-title">Detect. Diagnose. Recover.</h2>
+        <p class="section-subtitle">An end-to-end automated workflow powered by intelligent negotiation stance physics.</p>
+      </div>
+
+      <div class="steps-container">
+        <!-- Step 1 -->
+        <div class="step-card fade-up">
+          <div class="step-badge">STEP 01</div>
+          <span class="step-icon">🔍</span>
+          <h3 class="step-title">DETECT</h3>
+          <p class="step-desc">
+            AI scans overdue invoices and scores each debtor by payment risk using real accounts receivable data.
+          </p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card fade-up" style="transition-delay: 0.15s;">
+          <div class="step-badge">STEP 02</div>
+          <span class="step-icon">🧠</span>
+          <h3 class="step-title">DIAGNOSE</h3>
+          <p class="step-desc">
+            Root cause analysis identifies WHY the invoice is unpaid — cashflow, dispute, oversight, or avoidance.
+          </p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card fade-up" style="transition-delay: 0.3s;">
+          <div class="step-badge">STEP 03</div>
+          <span class="step-icon">💰</span>
+          <h3 class="step-title">RECOVER</h3>
+          <p class="step-desc">
+            AI agent negotiates directly with debtor, collects proof if needed, builds a payment plan, and closes the transaction via Razorpay.
+          </p>
+        </div>
+      </div>
+
+      <div class="steps-subline fade-up">
+        🛡️ Every action logged. Compliant escalation if needed. Full audit trail always.
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4 — FEATURES -->
+  <section id="features">
+    <div class="container">
+      <div class="section-header fade-up">
+        <h2 class="section-title">Everything a recovery agent needs</h2>
+        <p class="section-subtitle">Enterprise-grade automation built specifically for high-velocity B2B collections.</p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card fade-up">
+          <div class="feature-icon-title">
+            <span>🎯</span> Trust Score Engine
+          </div>
+          <p class="feature-desc">
+            Every debtor scored 0-100 based on payment history. Agent negotiates harder or softer based on score.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card fade-up" style="transition-delay: 0.08s;">
+          <div class="feature-icon-title">
+            <span>📄</span> Document Verification
+          </div>
+          <p class="feature-desc">
+            Debtor claims they already paid? They upload proof. AI reads it, verifies UTR, gives verdict in seconds.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card fade-up" style="transition-delay: 0.16s;">
+          <div class="feature-icon-title">
+            <span>💬</span> Human-like Negotiation
+          </div>
+          <p class="feature-desc">
+            Aria identifies why payment is delayed, builds a plan around debtor's reality, and closes without damaging relationships.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card fade-up" style="transition-delay: 0.24s;">
+          <div class="feature-icon-title">
+            <span>🔒</span> Compliant Escalation
+          </div>
+          <p class="feature-desc">
+            Stopping rules prevent harassment. L3 escalation PDF generated automatically. Full RBI Fair Practices compliance.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card fade-up" style="transition-delay: 0.32s;">
+          <div class="feature-icon-title">
+            <span>📊</span> Live Recovery Dashboard
+          </div>
+          <p class="feature-desc">
+            Merchant sees every negotiation in real time. Batch recovery stats. Audit trail per invoice.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card fade-up" style="transition-delay: 0.4s;">
+          <div class="feature-icon-title">
+            <span>⚡</span> Razorpay Native
+          </div>
+          <p class="feature-desc">
+            Payment links, webhook confirmation, real transaction IDs. Not a simulation — actual money recovered.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5 — REAL DATA CALLOUT -->
+  <section id="data">
+    <div class="container">
+      <div class="data-callout-box fade-up">
+        <div class="data-badge">Validated on real data</div>
+        
+        <div class="data-stats-row">
+          <div class="data-stat-item">
+            <div class="data-big-num text-gradient">2,466</div>
+            <div class="data-stat-label">Real B2B payment records</div>
+            <div class="data-stat-subtext">IBM Finance Factoring Dataset</div>
+          </div>
+
+          <div class="data-stat-item">
+            <div class="data-big-num text-gradient-green">64%</div>
+            <div class="data-stat-label">of invoices paid late or overdue</div>
+            <div class="data-stat-subtext">Our tier thresholds reflect this reality</div>
+          </div>
+        </div>
+
+        <p class="data-footer-text">
+          RecoverFlow's trust score tiers are calibrated against real accounts receivable data — not assumptions.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6 — TWO PORTALS -->
+  <section id="demo">
+    <div class="container">
+      <div class="section-header fade-up">
+        <h2 class="section-title">One platform. Two experiences.</h2>
+        <p class="section-subtitle">Experience both perspectives of AI-driven B2B debt recovery.</p>
+      </div>
+
+      <div class="portals-grid">
+        <!-- Merchant Card -->
+        <div class="portal-card merchant-card fade-up">
+          <div>
+            <div class="portal-header">
+              <div class="portal-icon-wrapper merchant-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="3" y1="9" x2="21" y2="9"></line>
+                  <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+              </div>
+              <span class="portal-badge merchant-badge">MERCHANT SIDE</span>
+            </div>
+
+            <h3 class="portal-title">Merchant Dashboard</h3>
+            <p class="portal-desc">
+              Upload invoices, trigger AI recovery, watch money come in. Real-time updates, full audit trail, escalation reports.
+            </p>
+          </div>
+
+          <a href="/dashboard" class="btn-portal-merchant">
+            Open Merchant Dashboard
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
+        </div>
+
+        <!-- Debtor Card -->
+        <div class="portal-card debtor-card fade-up" style="transition-delay: 0.15s;">
+          <div>
+            <div class="portal-header">
+              <div class="portal-icon-wrapper debtor-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <span class="portal-badge debtor-badge">DEBTOR EXPERIENCE</span>
+            </div>
+
+            <h3 class="portal-title">Debtor Chat</h3>
+            <p class="portal-desc">
+              Debtors get a private, secure link. No app download. No login. Just a conversation that leads to resolution.
+            </p>
+          </div>
+
+          <a href="/chat/INV-0016" class="btn-portal-debtor">
+            See Debtor Experience
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 7 — FOOTER -->
+  <footer>
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          RecoverFlow
+        </div>
+
+        <div class="footer-center">
+          Built for Razorpay AI Buildathon 2025<br />
+          <strong>Track 03: AI Revenue Recovery</strong>
+        </div>
+
+        <div class="footer-right">
+          <span>Powered by</span>
+          <span class="razorpay-text">Razorpay</span>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        Data: IBM Finance Factoring Dataset • AI: DeepSeek • Payments: Razorpay
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript Animations & Counter Scripts -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Counter Animation Function
+      function animateCounter(id, targetVal, duration, prefix = '', suffix = '') {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        let startTimestamp = null;
+        const startValue = 0;
+
+        function step(timestamp) {
+          if (!startTimestamp) startTimestamp = timestamp;
+          const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+          // Ease-out cubic formula
+          const easeOut = 1 - Math.pow(1 - progress, 3);
+          const currentVal = Math.floor(easeOut * (targetVal - startValue) + startValue);
+          
+          if (id === 'stat-recovered') {
+            el.textContent = prefix + currentVal.toLocaleString('en-IN') + suffix;
+          } else {
+            el.textContent = prefix + currentVal + suffix;
+          }
+
+          if (progress < 1) {
+            window.requestAnimationFrame(step);
+          }
+        }
+        window.requestAnimationFrame(step);
+      }
+
+      // Trigger stats counter animation when hero stats card enters viewport
+      let hasAnimatedStats = false;
+      const statsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !hasAnimatedStats) {
+            hasAnimatedStats = true;
+            animateCounter('stat-recovered', 723000, 2200, '₹');
+            animateCounter('stat-rate', 58, 1800, '', '%');
+            animateCounter('stat-time', 4, 1500, '', ' min');
+            animateCounter('stat-compliance', 100, 2000, '', '%');
+          }
+        });
+      }, { threshold: 0.2 });
+
+      const heroCard = document.querySelector('.hero-stats-card');
+      if (heroCard) statsObserver.observe(heroCard);
+
+      // Scroll reveal fade-up observer
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.fade-up').forEach(el => revealObserver.observe(el));
+    });
+  </script>
+</body>
+</html>
