@@ -251,6 +251,8 @@ def _delegate_to_agent(invoice_id: str, user_text: str, doc: dict, col) -> dict:
         "message": agent_reply,
         "status": session.get("status"),
     }
+    if session.get("last_thought_process"):
+        result["thought_process"] = session["last_thought_process"]
     if session.get("mcq_options"):
         result["mcq_options"] = session["mcq_options"]
     if session.get("agreed_terms"):
@@ -394,8 +396,21 @@ def handle_incoming_message(
                 "Negotiation closed. Escalating to legal."
             )
             col.update_one({"invoice_id": invoice_id}, {"$set": {"status": "escalated"}})
-            _append_history(col, invoice_id, "assistant", message)
-            return {"action_type": "final_ultimatum", "message": message}
+            highest_offer = bounds.get("highest_user_offer", 0)
+            effective_floor = max(current_floor or 0, highest_offer)
+            is_locked = highest_offer > 0 and highest_offer >= (current_floor or 0)
+            floor_str = f"₹{effective_floor:,}" if effective_floor else "₹0"
+            badge_label = f"Floor Locked: {floor_str}" if is_locked else f"Floor Adjusted: {floor_str}"
+            tp = {
+                "tone": "EVASIVE",
+                "stance": "STRICT",
+                "floor_pct": f"Locked: {floor_str}" if is_locked else floor_str,
+                "floor_locked": is_locked,
+                "floor_display": floor_str,
+                "badge_text": f"[Tone Detected: EVASIVE] -> [Stance Shifted: STRICT] -> [{badge_label}]"
+            }
+            _append_history(col, invoice_id, "assistant", message, thought_process=tp)
+            return {"action_type": "final_ultimatum", "message": message, "thought_process": tp}
 
     # 4. TRAPDOOR 2 — the first rejection. A counter was issued, we haven't
     #    collected the reason yet, and the offer is below the floor → ask WHY
@@ -407,15 +422,29 @@ def handle_incoming_message(
                 {"$set": {"state_locks.reason_collected": True}},
             )
             message = "What is making it hard to meet this amount?"
+            highest_offer = bounds.get("highest_user_offer", 0)
+            effective_floor = max(current_floor or 0, highest_offer)
+            is_locked = highest_offer > 0 and highest_offer >= (current_floor or 0)
+            floor_str = f"₹{effective_floor:,}" if effective_floor else "₹0"
+            badge_label = f"Floor Locked: {floor_str}" if is_locked else f"Floor Adjusted: {floor_str}"
+            tp = {
+                "tone": "DISTRESSED",
+                "stance": "EMPATHETIC",
+                "floor_pct": f"Locked: {floor_str}" if is_locked else floor_str,
+                "floor_locked": is_locked,
+                "floor_display": floor_str,
+                "badge_text": f"[Tone Detected: DISTRESSED] -> [Stance Shifted: EMPATHETIC] -> [{badge_label}]"
+            }
             _append_history(
                 col, invoice_id, "assistant", message,
-                mcq_options=MCQ_REASONS, mcq_answered=False,
+                mcq_options=MCQ_REASONS, mcq_answered=False, thought_process=tp
             )
             return {
                 "action_type": "trigger_reason_mcq",
                 "message": message,
                 "options": list(REASON_OPTIONS),
                 "mcq_options": MCQ_REASONS,
+                "thought_process": tp,
             }
 
     # 5. No trapdoor triggered — proceed to DeepSeek.
@@ -448,11 +477,14 @@ def handle_reason_mcq_answer(
 
     _sync_to_mongo(col, invoice_id, session, doc)
 
+    tp = session.get("last_thought_process")
     result: dict[str, Any] = {
         "action_type": session.get("action_type", "negotiate"),
         "message": reply,
         "status": session.get("status"),
     }
+    if tp:
+        result["thought_process"] = tp
     if session.get("payment_order"):
         result["payment_order"] = session["payment_order"]
     return result

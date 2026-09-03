@@ -245,6 +245,7 @@ def _normalize_no_discount_plan(session: dict, plan: dict) -> dict:
     upfront = normalized.get("upfront_amount", 0)
     deferred = max(0, invoice_paise - upfront)
 
+    normalized["status"] = normalized.get("status", "locked")
     normalized["deferred_amount_raw"] = deferred
     normalized["deferred_amount"] = deferred
     normalized["discount_amount"] = 0
@@ -252,6 +253,16 @@ def _normalize_no_discount_plan(session: dict, plan: dict) -> dict:
     normalized["deferred_display"] = _rupees(deferred)
     normalized["discount_display"] = "₹0"
     normalized["total_display"] = _rupees(upfront + deferred)
+
+    # Standardize deferred date (ISO YYYY-MM-DD)
+    d_date = normalized.get("deferred_date") or normalized.get("deferred_due_date")
+    if not d_date and session.get("future_dates"):
+        d_date = session["future_dates"][-1]
+    if d_date:
+        normalized["deferred_date"] = d_date
+        normalized["deferred_due_date"] = d_date
+        normalized["due_date_display"] = format_date(d_date)
+
     return normalized
 
 
@@ -557,16 +568,83 @@ def _render_recent_agent_messages(session: dict) -> str:
     return "\n".join(f"- {m}" for m in recent) if recent else "(nothing yet)"
 
 
-def build_system_prompt(session: dict, context: dict) -> str:
+def classify_debtor_message(session: dict, debtor_message: str) -> dict:
+    """Step 1 (The Classifier): Send user's text and trust score to DeepSeek to classify tone and stance.
+
+    Prompt requirement:
+    "Analyze this debtor's message. Output a JSON object classifying their tone (Aggressive, Distressed, Evasive, Collaborative) and the recommended negotiation stance (Strict, Empathetic, Firm)."
+    """
+    trust_score = session.get("display_trust_score", session.get("trust_score", session.get("score", 50)))
+    prompt = (
+        f"Debtor Trust Score: {trust_score}\n"
+        f"Debtor Message: \"{debtor_message}\"\n\n"
+        "Analyze this debtor's message. Output a JSON object classifying their tone "
+        "(Aggressive, Distressed, Evasive, Collaborative) and the recommended negotiation stance "
+        "(Strict, Empathetic, Firm)."
+    )
+
+    tone = None
+    stance = None
+
+    try:
+        client = _get_client()
+        response = client.chat.completions.create(
+            model=FINALIZE_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a debtor message classifier. Return ONLY a valid JSON object with keys 'tone' and 'stance'.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.1,
+            max_tokens=100,
+        )
+        content = response.choices[0].message.content or ""
+        parsed = json.loads(content)
+        tone = parsed.get("tone")
+        stance = parsed.get("stance")
+    except Exception as exc:
+        logger.warning("Classifier DeepSeek call failed or unconfigured: %s", exc)
+
+    valid_tones = {"Aggressive", "Distressed", "Evasive", "Collaborative"}
+    valid_stances = {"Strict", "Empathetic", "Firm"}
+
+    if not tone or str(tone).capitalize() not in valid_tones:
+        msg_lower = (debtor_message or "").lower()
+        if any(w in msg_lower for w in ("loss", "job", "hospital", "medical", "hardship", "crisis", "cant pay", "can't pay", "no money", "broke", "difficult")):
+            tone = "Distressed"
+        elif any(w in msg_lower for w in ("lawyer", "court", "sue", "scam", "illegal", "threat", "police", "harass", "fraud")):
+            tone = "Aggressive"
+        elif any(w in msg_lower for w in ("later", "next week", "maybe", "not today", "delay", "busy", "think about it", "dont know", "don't know")):
+            tone = "Evasive"
+        else:
+            tone = "Collaborative"
+    else:
+        tone = str(tone).capitalize()
+
+    if not stance or str(stance).capitalize() not in valid_stances:
+        if tone == "Distressed":
+            stance = "Empathetic"
+        elif tone in ("Evasive", "Aggressive"):
+            stance = "Strict"
+        else:
+            stance = "Firm"
+    else:
+        stance = str(stance).capitalize()
+
+    return {"tone": tone, "stance": stance}
+
+
+def build_system_prompt(session: dict, context: dict, classifier: dict | None = None) -> str:
     """Build Aria's system prompt — conversational guidance plus the numbers.
 
-    Python owns every number (the ask, the hard floor, the dates); the model
-    never does money math. But the model's job is to actually READ what the
-    debtor said and respond to it — acknowledging their offer, their reason, or
-    their question — rather than sounding like a canned script.
-
-    The conversation history is NOT embedded here — it is sent to the model as
-    real user/assistant turns alongside this prompt (see `_call_llm`).
+    Step 2 (The Generator):
+    Reads tone & stance output from Step 1.
+    If tone is "Distressed", inject an Empathetic system prompt into DeepSeek call.
+    If tone is "Evasive", inject a Strict legal persona prompt.
+    If "Aggressive" / "Collaborative", inject appropriate persona prompt.
     """
     recent = _render_recent_agent_messages(session)
 
@@ -601,9 +679,38 @@ def build_system_prompt(session: dict, context: dict) -> str:
         if anchor_lines else "- Follow the instruction below."
     )
 
+    classifier = classifier or session.get("last_classifier_output") or {}
+    tone = classifier.get("tone", "Collaborative")
+    stance = classifier.get("stance", "Firm")
+
+    if tone == "Distressed" or stance == "Empathetic":
+        persona_prompt = (
+            "DYNAMIC PERSONA OVERRIDE (EMPATHETIC): The debtor is Distressed or experiencing hardship. "
+            "Adopt an Empathetic, warm, and supportive persona. Reassure them, listen with understanding, "
+            "and focus on finding a realistic, flexible solution together without applying undue pressure."
+        )
+    elif tone == "Evasive" or stance == "Strict":
+        persona_prompt = (
+            "DYNAMIC PERSONA OVERRIDE (STRICT LEGAL PERSONA): The debtor is Evasive or stalling. "
+            "Inject a Strict legal persona prompt. Be direct, formal, highlight payment deadlines and "
+            "contractual/legal obligations clearly, and do not tolerate stalling tactics."
+        )
+    elif tone == "Aggressive":
+        persona_prompt = (
+            "DYNAMIC PERSONA OVERRIDE (STRICT & FIRM): The debtor is Aggressive or hostile. "
+            "Inject a Strict legal persona prompt. Maintain absolute professionalism, remain calm yet "
+            "uncompromising on contractual payment terms, and state firm boundaries."
+        )
+    else:
+        persona_prompt = (
+            "DYNAMIC PERSONA OVERRIDE (FIRM & COLLABORATIVE): The debtor is open and Collaborative. "
+            "Use a Firm, professional stance focused on confirming an acceptable payment plan promptly."
+        )
+
     return f"""You are Aria, a warm and intelligent payment recovery specialist at {MERCHANT_NAME}. You are talking to {session['debtor_name']} about their overdue invoice of {invoice}.
 
-YOUR ROLE:
+YOUR ROLE & PERSONA:
+{persona_prompt}
 You are negotiating in real time with a real person. Python has worked out the numbers for you, but you must actually READ and RESPOND to what the debtor says — never sound like you are following a script or repeating a canned line.
 
 CURRENT STATE: {state}
@@ -700,13 +807,20 @@ def _handle_generate_payment_link(inputs: dict, session: dict) -> dict:
         invoice_paise = session["invoice_amount_paise"]
         upfront_paise = amount_paise
         deferred_paise = max(0, invoice_paise - upfront_paise)
-        due_date_str = (date.today() + timedelta(days=MAX_PLAN_DAYS)).isoformat()
+        due_date_str = (
+            session["future_dates"][-1]
+            if session.get("future_dates")
+            else (date.today() + timedelta(days=MAX_PLAN_DAYS)).isoformat()
+        )
         session["agreed_terms"] = _normalize_no_discount_plan(session, {
+            "status":              "locked",
             "upfront_amount":      upfront_paise,
             "upfront_pct":         round(upfront_paise / invoice_paise * 100, 1),
             "deferred_amount_raw": deferred_paise,
+            "deferred_amount":     deferred_paise,
             "deferred_pct":        round(deferred_paise / invoice_paise * 100, 1),
             "deferred_days":       MAX_PLAN_DAYS,
+            "deferred_date":       due_date_str,
             "deferred_due_date":   due_date_str,
             "upfront_display":     _rupees(upfront_paise),
             "due_date_display":    format_date(due_date_str),
@@ -718,8 +832,15 @@ def _handle_generate_payment_link(inputs: dict, session: dict) -> dict:
     else:
         session["agreed_terms"] = _normalize_no_discount_plan(session, session["agreed_terms"])
 
+    agreed = session.get("agreed_terms") or {}
+    d_date = agreed.get("deferred_date") or agreed.get("deferred_due_date")
+    upfront_val = int(amount_inr)
+    total_val = int(session.get("invoice_amount") or round(session.get("invoice_amount_paise", 0) / 100))
+    p_link = order.get("short_url") or order.get("payment_link") or f"https://checkout.razorpay.com/v1/checkout.js?order_id={order['id']}"
+
     # RAZORPAY_KEY_ID is public — the frontend uses it to open Checkout JS.
     order_info = {
+        "event":          "PAYMENT_LINK_READY",
         "order_id":       order["id"],
         "amount":         amount_inr,
         "amount_display": _rupees(round(amount_inr * 100)),
@@ -727,8 +848,34 @@ def _handle_generate_payment_link(inputs: dict, session: dict) -> dict:
         "debtor_name":    session["debtor_name"],
         "invoice_id":     invoice_id,
         "session_id":     session["session_id"],
+        "deferred_date":  d_date,
+        "agreed_terms":   agreed,
+        "payment_link":   p_link,
     }
     session["payment_order"] = order_info
+
+    # Save payment_card structured message into session["messages"] for DB chat_history persistence
+    card_payload = {
+        "upfront_amount": upfront_val,
+        "deferred_date": d_date or "",
+        "total_payable": total_val,
+        "payment_link": p_link,
+        "order_id": order["id"],
+        "key_id": os.environ.get("RAZORPAY_KEY_ID", ""),
+        "amount_display": _rupees(round(amount_inr * 100)),
+        "agreed_terms": agreed,
+        "payment_order": order_info,
+    }
+    payment_card_msg = {
+        "role": "system",
+        "type": "payment_card",
+        "content": "Payment plan ready",
+        "payload": card_payload,
+    }
+
+    # Keep only the latest payment_card in messages
+    session["messages"] = [m for m in session.get("messages", []) if not (isinstance(m, dict) and m.get("type") == "payment_card")]
+    session["messages"].append(payment_card_msg)
 
     _audit(session, "razorpay_order_created",
            order_id=order["id"], amount=amount_inr)
@@ -1171,7 +1318,9 @@ _EXTRACT_INTENT_SYSTEM = (
     '"already_paid", "confirm", "reject", "question", "other".\n'
     "upfront_amount is the amount in whole rupees the debtor offers to pay now "
     '(interpret "lakh", "k", "thousand", and comma grouping). Use null when no amount is given.\n'
-    'date is the payment date the debtor mentions (e.g. "Sept 1"). Use null when none is given.\n'
+    'date is the payment date the debtor mentions. ALWAYS convert whatever date format the user types '
+    '(e.g. "sep5", "next friday", "5/9", "september 5th", "next week") into standard ISO format (YYYY-MM-DD). '
+    "If no year is specified, assume current year 2026. Use null when no payment date is mentioned.\n"
     "Do no arithmetic. Extract only what the debtor actually said."
 )
 
@@ -1184,9 +1333,9 @@ def _safe_iso(year: int, month: int, day: int) -> str | None:
 
 
 def _normalize_intent_date(value) -> str | None:
-    """Normalize an LLM-returned date ("Sept 1", "2026-09-01", …) to ISO.
+    """Normalize an LLM-returned date ("Sept 1", "sep5", "5/9", "2026-09-01", …) to ISO YYYY-MM-DD.
 
-    Returns ISO 'YYYY-MM-DD' (defaulting to the current year when the debtor
+    Returns ISO 'YYYY-MM-DD' (defaulting to current year 2026 when debtor
     doesn't give one), or None if the value can't be parsed.
     """
     if not value:
@@ -1194,11 +1343,32 @@ def _normalize_intent_date(value) -> str | None:
     s = str(value).strip().lower()
     if not s:
         return None
+
+    # Separate attached letters and numbers (e.g. "sep5" -> "sep 5", "5sep" -> "5 sep")
+    s = re.sub(r"([a-z]+)(\d+)", r"\1 \2", s)
+    s = re.sub(r"(\d+)([a-z]+)", r"\1 \2", s)
+
+    # If already ISO YYYY-MM-DD
     iso = re.fullmatch(r"(\d{4})-(\d{1,2})-(\d{1,2})", s)
     if iso:
         return _safe_iso(int(iso.group(1)), int(iso.group(2)), int(iso.group(3)))
 
-    year = date.today().year
+    today = date.today()
+    year = today.year
+
+    if s == "tomorrow":
+        return (today + timedelta(days=1)).isoformat()
+    if "next week" in s:
+        return (today + timedelta(days=7)).isoformat()
+
+    weekdays = {"monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6}
+    for day_name, day_num in weekdays.items():
+        if day_name in s:
+            days_ahead = day_num - today.weekday()
+            if days_ahead <= 0 or "next" in s:
+                days_ahead += 7
+            return (today + timedelta(days=days_ahead)).isoformat()
+
     y = re.search(r"\b(20\d{2})\b", s)
     if y:
         year = int(y.group(1))
@@ -1216,6 +1386,17 @@ def _normalize_intent_date(value) -> str | None:
         mon = _MONTH_NAMES.get(m.group(2))
         if mon:
             return _safe_iso(year, mon, int(m.group(1)))
+
+    m = re.match(r"^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?$", s)
+    if m:
+        d_val = int(m.group(1))
+        m_val = int(m.group(2))
+        y_val = int(m.group(3)) if m.group(3) else year
+        if y_val < 100:
+            y_val += 2000
+        if 1 <= m_val <= 12 and 1 <= d_val <= 31:
+            return _safe_iso(y_val, m_val, d_val)
+
     return None
 
 
@@ -1297,6 +1478,18 @@ def _extract_intent_regex(message: str, invoice_amount: int | None = None) -> di
     """
     amount = _extract_amount_rupees(message)
     dates = _extract_iso_dates(message)
+    extracted_date = dates[0] if dates else None
+    if not extracted_date:
+        words = message.split()
+        for n in (3, 2, 1):
+            for i in range(len(words) - n + 1):
+                chunk = " ".join(words[i:i+n])
+                norm = _normalize_intent_date(chunk)
+                if norm:
+                    extracted_date = norm
+                    break
+            if extracted_date:
+                break
     if amount is not None:
         if invoice_amount and amount >= invoice_amount:
             intent = "full_payment"
@@ -1317,7 +1510,7 @@ def _extract_intent_regex(message: str, invoice_amount: int | None = None) -> di
     return {
         "intent": intent,
         "upfront_amount": amount,
-        "date": dates[0] if dates else None,
+        "date": extracted_date,
     }
 
 
@@ -1521,7 +1714,17 @@ def _advance_negotiation(session: dict, engine: NegotiationEngine, msg: str,
                 # They've met our opening ask, stated a hard ceiling, or we've
                 # already pushed enough — accept their number.
                 session["debtor_agreed_amount"] = offered
-                session["future_dates"] = []
+                session["future_dates"] = [intent["date"]] if (intent and intent.get("date")) else []
+                if session["future_dates"]:
+                    plan, status = engine.build_plan(offered, session["future_dates"])
+                    if status == "ok":
+                        _set_plan_and_terms(session, engine, plan)
+                        session["state"] = "plan_ready"
+                        _audit(session, "state_transition", from_state="negotiating",
+                               to_state="plan_ready", agreed_amount=offered)
+                        plan_text = _render_plan_text(session, plan, engine)
+                        return f"Show this exact plan and ask the debtor to confirm:\n{plan_text}"
+
                 session["state"] = "collecting_dates"
                 suggested = engine.suggest_dates(engine.max_installments - 1, offered)
                 nxt = suggested[0] if suggested else engine.deadline.isoformat()
@@ -1557,7 +1760,17 @@ def _advance_negotiation(session: dict, engine: NegotiationEngine, msg: str,
                 and not _signals_cannot_pay(msg)
                 and not _is_question(msg)):
             session["debtor_agreed_amount"] = prev
-            session["future_dates"] = []
+            session["future_dates"] = [intent["date"]] if (intent and intent.get("date")) else []
+            if session["future_dates"]:
+                plan, status = engine.build_plan(prev, session["future_dates"])
+                if status == "ok":
+                    _set_plan_and_terms(session, engine, plan)
+                    session["state"] = "plan_ready"
+                    _audit(session, "state_transition", from_state="negotiating",
+                           to_state="plan_ready", agreed_amount=prev)
+                    plan_text = _render_plan_text(session, plan, engine)
+                    return f"Show this exact plan and ask the debtor to confirm:\n{plan_text}"
+
             session["state"] = "collecting_dates"
             suggested = engine.suggest_dates(engine.max_installments - 1, prev)
             nxt = suggested[0] if suggested else engine.deadline.isoformat()
@@ -1801,13 +2014,18 @@ FINALIZE_AGREEMENT_TOOL = {
     "function": {
         "name": "finalize_agreement",
         "description": (
-            "Finalize the agreed payment plan and produce the payment link. Call "
-            "this exactly once, immediately after the debtor confirms the dates and "
-            "amounts. Do not write any text when calling it."
+            "Finalize the agreed payment plan and generate payment link. "
+            "Mandate structured JSON with status 'locked', upfront_amount, and deferred_date. "
+            "Call this exactly once, immediately after the debtor confirms terms. Do not write text."
         ),
         "parameters": {
             "type": "object",
             "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": ["locked"],
+                    "description": "Lock status of agreed terms.",
+                },
                 "upfront_amount": {
                     "type": "integer",
                     "description": "Rupees the debtor pays today.",
@@ -1818,10 +2036,10 @@ FINALIZE_AGREEMENT_TOOL = {
                 },
                 "deferred_date": {
                     "type": "string",
-                    "description": "ISO date (YYYY-MM-DD) of the deferred payment.",
+                    "description": "Standard ISO date (YYYY-MM-DD) of the deferred payment.",
                 },
             },
-            "required": ["upfront_amount", "deferred_amount", "deferred_date"],
+            "required": ["status", "upfront_amount", "deferred_amount", "deferred_date"],
         },
     },
 }
@@ -1840,7 +2058,7 @@ def _finalize_agreement(session: dict, engine: NegotiationEngine) -> str:
 
     plan = session.get("installment_plan") or []
     future = [p for p in plan if p.get("status") == "scheduled"]
-    deferred_date = future[-1]["date"] if future else engine.deadline.isoformat()
+    deferred_date = future[-1]["date"] if future else (session.get("future_dates", [None])[0] or engine.deadline.isoformat())
 
     order = _handle_generate_payment_link({"amount": upfront}, session)
     session["negotiation_complete"] = True
@@ -1875,12 +2093,11 @@ def _call_llm_finalize(
 ) -> list:
     """Force the model to emit the finalize_agreement tool call (no text)."""
     system = (
-        "You are Aria, a payment recovery specialist. The debtor has confirmed the "
-        "payment plan. Finalize it now by calling the finalize_agreement function "
-        "with the agreed numbers. Do not write any text — only the function call.\n"
-        f"Upfront amount: {_inr(upfront)}\n"
-        f"Deferred amount: {_inr(deferred)}\n"
-        f"Deferred date: {deferred_date}"
+        "You are Aria, a payment recovery specialist at " + MERCHANT_NAME + ". "
+        "The debtor has confirmed the payment plan. Finalize it now by calling the "
+        "finalize_agreement tool. Mandate structured terms JSON:\n"
+        '{"status": "locked", "upfront_amount": ' + str(upfront) + ', "deferred_date": "' + str(deferred_date) + '"}\n'
+        "Do not write any text — only output the tool call."
     )
     response = client.chat.completions.create(
         model=FINALIZE_MODEL,
@@ -2026,8 +2243,28 @@ def _handle_reason_mcq_answer(
     if not reply:
         reply = f"Given your situation, we can come down to {_inr(new_min)} today. Could you manage that?"
 
+    highest_offer = session.get("highest_user_offer", 0)
+    effective_floor = max(new_min, highest_offer)
+    is_floor_locked = (highest_offer > 0 and highest_offer >= new_min)
+    floor_str = _inr(effective_floor)
+
+    if is_floor_locked:
+        badge_text = f"[Tone Detected: DISTRESSED] -> [Stance Shifted: EMPATHETIC] -> [Floor Locked: {floor_str}]"
+    else:
+        badge_text = f"[Tone Detected: DISTRESSED] -> [Stance Shifted: EMPATHETIC] -> [Floor Adjusted: {floor_str}]"
+
+    tp = {
+        "tone": "DISTRESSED",
+        "stance": "EMPATHETIC",
+        "floor_pct": f"Locked: {floor_str}" if is_floor_locked else floor_str,
+        "floor_locked": is_floor_locked,
+        "floor_display": floor_str,
+        "badge_text": badge_text
+    }
+    session["last_thought_process"] = tp
+
     session["action_type"] = "negotiate"
-    session["messages"].append({"role": "assistant", "content": reply})
+    session["messages"].append({"role": "assistant", "content": reply, "thought_process": tp})
     _record_agent_message(session, reply)
     _audit(session, "agent_turn", turn=turn, speaker="agent", message=reply,
            action_type="negotiate")
@@ -2114,11 +2351,43 @@ def process_turn(session: dict, debtor_message: str) -> tuple[str, dict]:
     # --- Python decides; DeepSeek only speaks ---
     engine = _get_engine(session)
 
+    # Step 1 (The Classifier): Analyze debtor message tone and negotiation stance
+    classifier_result = classify_debtor_message(session, debtor_message)
+    session["last_classifier_output"] = classifier_result
+
     # Extract intent + variables as JSON (LLM, with regex fallback). The model
     # does NOT do arithmetic here — it only reports what the debtor said.
     intent = extract_intent(session, debtor_message)
     session["last_intent"] = intent
     _audit(session, "intent_extracted", intent=intent)
+
+    # Track debtor offer and compute dynamic active floor (Locked vs Adjusted)
+    offered_amt = _extract_amount_rupees(debtor_message)
+    if intent and isinstance(intent.get("upfront_amount"), int):
+        offered_amt = intent["upfront_amount"]
+    if offered_amt and offered_amt > session.get("highest_user_offer", 0):
+        session["highest_user_offer"] = offered_amt
+
+    highest_offer = session.get("highest_user_offer", 0)
+    base_floor = engine.min_today
+    effective_floor = max(base_floor, highest_offer)
+    is_floor_locked = (highest_offer > 0 and highest_offer >= base_floor)
+
+    floor_str = _inr(effective_floor)
+    if is_floor_locked:
+        badge_text = f"[Tone Detected: {classifier_result['tone'].upper()}] -> [Stance Shifted: {classifier_result['stance'].upper()}] -> [Floor Locked: {floor_str}]"
+    else:
+        badge_text = f"[Tone Detected: {classifier_result['tone'].upper()}] -> [Stance Shifted: {classifier_result['stance'].upper()}] -> [Floor Adjusted: {floor_str}]"
+
+    thought_process = {
+        "tone": classifier_result["tone"].upper(),
+        "stance": classifier_result["stance"].upper(),
+        "floor_pct": f"Locked: {floor_str}" if is_floor_locked else floor_str,
+        "floor_locked": is_floor_locked,
+        "floor_display": floor_str,
+        "badge_text": badge_text
+    }
+    session["last_thought_process"] = thought_process
 
     # Special cases (already-paid / dispute) are decided in Python now that the
     # model has no function calling — they override the normal state machine.
@@ -2156,7 +2425,7 @@ def process_turn(session: dict, debtor_message: str) -> tuple[str, dict]:
 
     context = _build_context(session, engine, instruction)
     session["current_remaining_balance"] = context["numbers"]["current_remaining_balance"]
-    session["system_prompt"] = build_system_prompt(session, context)
+    session["system_prompt"] = build_system_prompt(session, context, classifier=classifier_result)
     session["messages"].append({"role": "user", "content": debtor_message})
 
     try:
@@ -2184,7 +2453,11 @@ def process_turn(session: dict, debtor_message: str) -> tuple[str, dict]:
     session["agent_thought_process"] = parsed["thought_process"]
     session["agent_suggested_action"] = parsed["action_type"]
 
-    assistant_entry = {"role": "assistant", "content": reply}
+    assistant_entry = {
+        "role": "assistant",
+        "content": reply,
+        "thought_process": thought_process
+    }
     if action_type == "trigger_reason_mcq":
         # Persist the question + options on the message so the transcript can be
         # re-rendered (and the buttons made non-clickable once answered).
@@ -2214,6 +2487,7 @@ def open_turn(session: dict) -> tuple[str, dict]:
     Send Aria's warm opening message. Pure Python — no LLM call needed.
     """
     opening = _build_opening_message(session)
+    session["last_thought_process"] = None
     session["messages"] = [{"role": "assistant", "content": opening}]
     _record_agent_message(session, opening)
     session["last_agent_ts"] = _ts()

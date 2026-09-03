@@ -54,6 +54,137 @@
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .xray-toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 5px 12px;
+      border-radius: 9999px;
+      transition: all 0.2s ease;
+    }
+
+    .xray-toggle-container:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .xray-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #F8FAFC;
+      letter-spacing: -0.2px;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .xray-switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 18px;
+    }
+
+    .xray-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .xray-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #475569;
+      transition: 0.25s ease;
+      border-radius: 20px;
+    }
+
+    .xray-slider:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.25s ease;
+      border-radius: 50%;
+    }
+
+    .xray-switch input:checked + .xray-slider {
+      background-color: #3B82F6;
+    }
+
+    .xray-switch input:checked + .xray-slider:before {
+      transform: translateX(16px);
+    }
+
+    /* X-Ray Badges above Agent Bubbles */
+    .agent-bubble-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      max-width: 85%;
+    }
+
+    .xray-badges-wrapper {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+      animation: fadeInXray 0.2s ease-in-out;
+    }
+
+    body.xray-active .xray-badges-wrapper {
+      display: flex !important;
+    }
+
+    @keyframes fadeInXray {
+      from { opacity: 0; transform: translateY(-3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .xray-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .xray-badge.tone {
+      background: #FFFBEB;
+      color: #B45309;
+      border: 1px solid #FDE68A;
+    }
+
+    .xray-badge.stance {
+      background: #EEF2FF;
+      color: #3730A3;
+      border: 1px solid #C7D2FE;
+    }
+
+    .xray-badge.floor {
+      background: #ECFDF5;
+      color: #047857;
+      border: 1px solid #A7F3D0;
+    }
+
+    .xray-arrow {
+      color: #94A3B8;
+      font-size: 11px;
+      font-weight: 700;
     }
 
     .view-dropdown-container {
@@ -1316,6 +1447,14 @@
           </a>
         </div>
       </div>
+
+      <div class="xray-toggle-container">
+        <span class="xray-label">⚡ Thought Process (X-Ray View)</span>
+        <label class="xray-switch" title="Toggle internal AI strategy & thought process badges">
+          <input type="checkbox" id="xray-switch" onchange="toggleXRayView(this.checked)">
+          <span class="xray-slider"></span>
+        </label>
+      </div>
     </div>
 
     <div class="topbar-sub">Secure Payment Recovery</div>
@@ -1474,24 +1613,78 @@
     const sendBtn = document.getElementById("send-btn");
     const chatContent = document.querySelector(".chat-content");
 
-    function addBubble(role, text, extra) {
+    let xrayActive = localStorage.getItem("recoverflow_xray_enabled") !== "false";
+
+    function toggleXRayView(enabled) {
+      xrayActive = enabled;
+      localStorage.setItem("recoverflow_xray_enabled", enabled ? "true" : "false");
+      if (enabled) {
+        document.body.classList.add("xray-active");
+      } else {
+        document.body.classList.remove("xray-active");
+      }
+      const sw = document.getElementById("xray-switch");
+      if (sw && sw.checked !== enabled) sw.checked = enabled;
+    }
+
+    function addBubble(role, text, extra, thoughtProcess) {
       const wrap = document.createElement("div");
       wrap.className = `bubble-wrap ${role}`;
       const avatar = document.createElement("div");
       avatar.className = `avatar ${role}`;
       avatar.textContent = role === "agent" ? "🤖" : "👤";
-      const bubble = document.createElement("div");
-      bubble.className = `bubble ${role}`;
+
       if (role === "agent") {
-        bubble.classList.add("rich");
+        const group = document.createElement("div");
+        group.className = "agent-bubble-group";
+
+        let tp = thoughtProcess;
+        if (!tp && extra && typeof extra === "object" && !extra.tagName) {
+          tp = extra.thought_process || extra;
+        }
+
+        // Only show X-Ray badges if thoughtProcess metadata exists for this agent turn
+        if (tp && typeof tp === "object" && (tp.tone || tp.stance || tp.badge_text)) {
+          const tone = (tp.tone || "COLLABORATIVE").toUpperCase();
+          const stance = (tp.stance || "FIRM").toUpperCase();
+          
+          let floorLabel = "Floor Adjusted";
+          let floorVal = tp.floor_display || tp.floor_pct || "100%";
+
+          if (tp.floor_locked || (typeof floorVal === "string" && floorVal.includes("Locked"))) {
+            floorLabel = "Floor Locked";
+            floorVal = typeof floorVal === "string" ? floorVal.replace(/^Locked:\s*/i, "") : floorVal;
+          }
+
+          const badgesWrap = document.createElement("div");
+          badgesWrap.className = "xray-badges-wrapper";
+          badgesWrap.innerHTML = `
+            <span class="xray-badge tone">[Tone Detected: ${escapeHtml(tone)}]</span>
+            <span class="xray-arrow">➔</span>
+            <span class="xray-badge stance">[Stance Shifted: ${escapeHtml(stance)}]</span>
+            <span class="xray-arrow">➔</span>
+            <span class="xray-badge floor">[${floorLabel}: ${escapeHtml(floorVal)}]</span>
+          `;
+          group.appendChild(badgesWrap);
+        }
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble agent rich";
         bubble.innerHTML = formatAgentMessage(text);
+        group.appendChild(bubble);
+
+        wrap.appendChild(avatar);
+        wrap.appendChild(group);
       } else {
+        const bubble = document.createElement("div");
+        bubble.className = `bubble ${role}`;
         bubble.textContent = text;
+        wrap.appendChild(avatar);
+        wrap.appendChild(bubble);
       }
-      wrap.appendChild(avatar);
-      wrap.appendChild(bubble);
+
       chatArea.appendChild(wrap);
-      if (extra) { chatArea.appendChild(extra); }
+      if (extra && extra.tagName) { chatArea.appendChild(extra); }
       scrollDown();
       return wrap;
     }
@@ -1679,6 +1872,9 @@
       const totalDisplay = fmtRupees(amountPaise);
       const deferredZero = deferredAmount === 0;
 
+      const dueIso = plan.deferred_date || plan.deferred_due_date;
+      const dueDisplay = plan.due_date_display || (dueIso ? fmtDate(dueIso) : "");
+
       let rows = `
     <div class="plan-title">📋 Your Payment Arrangement</div>
     <div class="plan-row"><span class="plan-label">💰 Pay now (today)</span><span class="plan-val green">${plan.upfront_display}</span></div>`;
@@ -1688,14 +1884,14 @@
     <div class="plan-row"><span class="plan-label">✅ Full invoice settled</span><span class="plan-val green">No deferred payment</span></div>`;
       } else {
         rows += `
-    <div class="plan-row"><span class="plan-label">📅 Pay later (${fmtDate(plan.deferred_due_date)})</span><span class="plan-val">${deferredDisplay}</span></div>`;
+    <div class="plan-row"><span class="plan-label">📅 Pay later (${dueDisplay})</span><span class="plan-val">${deferredDisplay}</span></div>`;
         rows += `
     <div class="plan-row"><span class="plan-label">📊 Total payable</span><span class="plan-val">${totalDisplay}</span></div>`;
       }
 
       const note = deferredZero
         ? `By confirming, you agree to pay the full invoice amount now.`
-        : `By confirming, you agree to pay ${deferredDisplay} by ${fmtDate(plan.deferred_due_date)}. Paying on time improves your account standing.`;
+        : `By confirming, you agree to pay ${deferredDisplay} by ${dueDisplay}. Paying on time improves your account standing.`;
 
       const confirmLabel = deferredZero
         ? `✅ Agree &amp; Pay ${plan.upfront_display} in Full`
@@ -1720,13 +1916,16 @@
 
     function showPaymentButton(order, plan) {
       currentOrder = order;
-      const p = plan || {};
+      const p = plan || (order && order.agreed_terms) || {};
       const upfrontAmount = p.upfront_amount || Math.round((order.amount || 0) * 100);
       const deferredAmount = Math.max(0, amountPaise - upfrontAmount);
       const deferredDisplay = fmtRupees(deferredAmount);
       const totalDisplay = fmtRupees(amountPaise);
       const deferredZero = deferredAmount === 0;
-      const dueDisplay = p.due_date_display || (p.deferred_due_date ? fmtDate(p.deferred_due_date) : "");
+
+      // Extract exact ISO deferred_date passed directly from structured LLM/backend output
+      const dueIso = p.deferred_date || p.deferred_due_date || (order && order.deferred_date);
+      const dueDisplay = p.due_date_display || (dueIso ? fmtDate(dueIso) : "");
 
       let rows = `
     <div class="fin-row">
@@ -2070,14 +2269,36 @@
       chatArea.innerHTML = "";
       showPartialPayHint();
       (history || []).forEach(m => {
-        if (!m || typeof m.content !== "string") return;
-        if (m.role === "user") {
-          addBubble("debtor", m.content);
-        } else if (m.role === "assistant") {
-          addBubble("agent", m.content);
-          // Re-render a persisted reason-MCQ as non-clickable once answered.
-          if (m.mcq_options && m.mcq_options.length) {
-            showReasonMcq(m.mcq_options, !!m.mcq_answered, m.mcq_selected);
+        if (!m) return;
+        if (m.type === "payment_card" || m.role === "system") {
+          if (m.type === "payment_card" || (m.payload && (m.payload.payment_order || m.payload.upfront_amount))) {
+            const p = m.payload || {};
+            const order = p.payment_order || {
+              event: "PAYMENT_LINK_READY",
+              amount: p.upfront_amount,
+              amount_display: p.amount_display || fmtRupees((p.upfront_amount || 0) * 100),
+              payment_link: p.payment_link,
+              order_id: p.order_id,
+              key_id: p.key_id,
+              deferred_date: p.deferred_date,
+              agreed_terms: p.agreed_terms
+            };
+            const plan = p.agreed_terms || {
+              upfront_amount: (p.upfront_amount || 0) * 100,
+              deferred_date: p.deferred_date,
+              deferred_due_date: p.deferred_date
+            };
+            showPaymentButton(order, plan);
+          }
+        } else if (typeof m.content === "string" && m.content) {
+          if (m.role === "user") {
+            addBubble("debtor", m.content);
+          } else if (m.role === "assistant") {
+            addBubble("agent", m.content, null, m.thought_process);
+            // Re-render a persisted reason-MCQ as non-clickable once answered.
+            if (m.mcq_options && m.mcq_options.length) {
+              showReasonMcq(m.mcq_options, !!m.mcq_answered, m.mcq_selected);
+            }
           }
         }
       });
@@ -2205,7 +2426,7 @@
 
         const agentReply = useMongo ? data.message : data.agent_reply;
         const status = useMongo ? data.status : data.session_status;
-        addBubble("agent", agentReply);
+        addBubble("agent", agentReply, null, data.thought_process);
 
         // Trust score card is static — trust_score in the turn response is ignored.
 
@@ -2267,6 +2488,7 @@
       }
     });
 
+    toggleXRayView(xrayActive);
     initChat();
   </script>
 </body>

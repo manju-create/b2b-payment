@@ -398,21 +398,27 @@ async def negotiate_turn(session_id: str, body: TurnRequest):
                 pass
 
         import json as _json
+        agreed = s.get("agreed_terms") or {}
+        order_dict = s.get("payment_order") or {}
+        d_date = agreed.get("deferred_date") or agreed.get("deferred_due_date") or order_dict.get("deferred_date")
         safe = {
+            "event":           "PAYMENT_LINK_READY" if order_dict else None,
             "agent_reply":     agent_reply,
             "session_status":  s["status"],
             "trust_score":     s.get("trust_score", s.get("score", 0)),
             "score_delta":     s.get("trust_score_delta", 0),
             "score_reason":    s.get("trust_score_reason", "initial assessment"),
-            "payment_order":   s.get("payment_order"),
+            "payment_order":   order_dict,
             "razorpay_order_id": s.get("razorpay_order_id"),
             "recovered_paise": s.get("recovered_paise", 0),
             "turn_count":      s["turn_count"],
             "identified_situation": s.get("identified_situation"),
-            "agreed_terms":    s.get("agreed_terms"),
+            "agreed_terms":    agreed,
+            "deferred_date":   d_date,
             "show_upload_card": _should_show_upload_card(s),
             "action_type":      s.get("action_type"),
             "mcq_options":      s.get("mcq_options"),
+            "thought_process":  s.get("last_thought_process"),
         }
         body = _json.dumps(safe, ensure_ascii=False)
         from fastapi.responses import Response
