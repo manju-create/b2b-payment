@@ -264,6 +264,8 @@ async def batch_status():
     worked = 0          # invoices the AI actually engaged with (labor saved)
     concessions: list[float] = []   # discount % per agreed invoice
     invoices_out = []
+    non_active_count = 0
+    non_active_outstanding = 0
     for iid, s in batch_results.items():
         md = mongo_docs.get(iid) or {}
 
@@ -277,15 +279,18 @@ async def batch_status():
                              if isinstance(m, dict) and m.get("role") == "user")
 
         counts[status if status in counts else "active"] += 1
-        total_recovered += recovered
-        if turn_count > 0 or status != "active":
+        
+        if status != "active":
+            non_active_count += 1
+            non_active_outstanding += s.get("invoice_amount_paise", 0)
+            total_recovered += recovered
             worked += 1
 
-        plan = s.get("agreed_terms")
-        inv_paise = s.get("invoice_amount_paise", 0)
-        if plan and inv_paise:
-            discount = plan.get("discount_amount", 0) or 0
-            concessions.append(discount / inv_paise * 100)
+            plan = s.get("agreed_terms")
+            inv_paise = s.get("invoice_amount_paise", 0)
+            if plan and inv_paise:
+                discount = plan.get("discount_amount", 0) or 0
+                concessions.append(discount / inv_paise * 100)
 
         plan_summary = None
         if plan and plan.get("deferred_amount", 0) > 0:
@@ -311,7 +316,10 @@ async def batch_status():
     avg_concession = round(sum(concessions) / len(concessions), 1) if concessions else 0.0
     labor_hours_saved = round(worked * (MANUAL_HOURS_PER_INVOICE - AI_HOURS_PER_INVOICE), 1)
     return {**counts, "total_recovered_paise": total_recovered,
-            "total_invoices": len(batch_results), "invoices": invoices_out,
+            "total_invoices": len(batch_results), 
+            "non_active_invoices": non_active_count,
+            "non_active_outstanding_paise": non_active_outstanding,
+            "invoices": invoices_out,
             "roi": {
                 "total_capital_recovered_paise": total_recovered,
                 "average_concession_pct": avg_concession,

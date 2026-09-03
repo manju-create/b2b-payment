@@ -521,6 +521,8 @@ td {
 }
 
 tr:hover td { background: #f8fafc; }
+tr.inactive-row td { background: #e2e8f0; }
+tr.inactive-row:hover td { background: #cbd5e1; }
 
 .action-link {
   color: #2563eb;
@@ -880,11 +882,12 @@ async function refreshStatus() {
 
 function updateMetrics(d) {
   const total = totalOutstandingPaise || 0;
+  const nonActiveTotal = d.non_active_outstanding_paise || 0;
   const recovered = d.total_recovered_paise || 0;
-  const pct = total > 0 ? ((recovered / total) * 100).toFixed(1) : 0;
+  const pct = nonActiveTotal > 0 ? ((recovered / nonActiveTotal) * 100).toFixed(1) : 0;
   document.getElementById("m-total").textContent    = fmtRupees(total);
   document.getElementById("m-recovered").textContent= fmtRupees(recovered);
-  document.getElementById("m-settled").textContent  = `${(d.settled||0) + (d.partially_settled||0)} / ${d.total_invoices||0}`;
+  document.getElementById("m-settled").textContent  = `${(d.settled||0) + (d.partially_settled||0)} / ${d.non_active_invoices||0}`;
   document.getElementById("m-disputed").textContent = d.disputed || 0;
   document.getElementById("prog-pct").textContent   = pct + "%";
   document.getElementById("prog-fill").style.width  = Math.min(pct, 100) + "%";
@@ -937,8 +940,9 @@ function renderTable() {
   const tbody = document.getElementById("inv-tbody");
   tbody.innerHTML = sorted.map(r => {
     const isOpen = expanded.has(r.invoice_id);
+    const rowClass = r.status !== 'active' ? 'inactive-row' : '';
     const row = `
-    <tr>
+    <tr class="${rowClass}">
       <td style="padding:0;text-align:center;width:36px;">
         <button class="expand-btn" onclick="toggleDetails('${r.invoice_id}')" title="Toggle details">${isOpen ? "▾" : "▸"}</button>
       </td>
