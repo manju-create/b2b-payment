@@ -739,7 +739,8 @@ VOICE & TONE:
 - Never do arithmetic. Every number you need — including the current remaining balance — is given to you above; read it, do not recalculate or invent it.
 - Never mention trust score, tier, percentages, or the word "floor"/"minimum" to the debtor.
 - Never use: "kindly", "as per", "please be advised", "I understand that", "I appreciate".
-- Never send the same message twice."""
+- Never send the same message twice.
+- CRITICAL GUARDRAIL: If the user agrees to a specific date for the remaining balance, ACCEPT IT IMMEDIATELY. NEVER split payments further or extend deadlines unless the user explicitly requests it."""
 
 
 # ---------------------------------------------------------------------------

@@ -1,947 +1,1315 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RecoverFlow — Merchant Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* White Mode Premium Header */
-.header {
-  background: #ffffff;
-  padding: 0 32px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
-}
-
-/* Left Header - Razorpay Branding */
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.razorpay-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-}
-
-.razorpay-logo-text {
-  font-size: 21px;
-  font-weight: 800;
-  color: #0c2340;
-  letter-spacing: -0.5px;
-}
-
-.header-divider {
-  color: #cbd5e1;
-  font-size: 16px;
-  font-weight: 300;
-}
-
-.header-subbrand {
-  font-size: 13px;
-  font-weight: 600;
-  color: #64748b;
-  letter-spacing: -0.2px;
-}
-
-/* Center Header - RecoverFlow AI */
-.header-center {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.recoverflow-ai-pill {
-  background: rgba(37, 99, 235, 0.06);
-  border: 1px solid rgba(37, 99, 235, 0.2);
-  padding: 6px 18px;
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
-}
-
-.ai-sparkle {
-  font-size: 14px;
-  animation: pulseSparkle 2s infinite ease-in-out;
-}
-
-@keyframes pulseSparkle {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.25); opacity: 1; }
-}
-
-.ai-brand-text {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.2px;
-}
-
-.ai-tag {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 3px;
-  letter-spacing: 0.05em;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
-}
-
-.ai-status-dot {
-  width: 7px;
-  height: 7px;
-  background: #10b981;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #10b981;
-}
-
-/* Right Header */
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.btn-customer-view {
-  color: #1d4ed8;
-  font-size: 12.5px;
-  font-weight: 600;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  padding: 6px 14px;
-  border-radius: 9999px;
-  transition: all 0.2s ease;
-}
-
-.btn-customer-view:hover {
-  background: #2563eb;
-  color: #ffffff;
-  border-color: #2563eb;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-}
-
-.btn-start {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #fff;
-  border: none;
-  padding: 8px 18px;
-  border-radius: 10px;
-  font-size: 13.5px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
-}
-
-.btn-start:hover {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
-}
-
-.btn-start:disabled {
-  background: #cbd5e1;
-  box-shadow: none;
-  cursor: not-allowed;
-  transform: none;
-  color: #64748b;
-}
-
-.refresh-badge {
-  font-size: 12px;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 500;
-}
-
-.pulse-dot {
-  width: 7px;
-  height: 7px;
-  background: #10b981;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-  box-shadow: 0 0 8px #10b981;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(1.2); }
-}
-
-/* Full Width Main Layout */
-.main {
-  padding: 32px 32px 48px;
-  max-width: 1440px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-/* Premium Cards */
-.card {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 24px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03), 0 1px 3px rgba(15, 23, 42, 0.02);
-  transition: all 0.2s ease;
-}
-
-.card-title {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #64748b;
-  margin-bottom: 18px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Metric Bar */
-.metric-bar {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-}
-
-.metric {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 22px 24px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.metric::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: #e2e8f0;
-}
-
-.metric:nth-child(1)::before { background: #94a3b8; }
-.metric:nth-child(2)::before { background: #16a34a; }
-.metric:nth-child(3)::before { background: #2563eb; }
-.metric:nth-child(4)::before { background: #d97706; }
-
-.metric:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.08);
-}
-
-.metric-value {
-  font-size: 30px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: #0f172a;
-  line-height: 1.1;
-  margin-bottom: 8px;
-  font-variant-numeric: tabular-nums;
-}
-
-.metric-label {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 600;
-}
-
-.metric-value.green  { color: #16a34a; }
-.metric-value.blue   { color: #2563eb; }
-.metric-value.yellow { color: #d97706; }
-.metric-value.red    { color: #dc2626; }
-
-/* White Mode Premium ROI Card */
-.roi-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 20px;
-  padding: 26px 28px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
-  position: relative;
-  overflow: hidden;
-}
-
-.roi-card::after {
-  content: '';
-  position: absolute;
-  top: -50px;
-  right: -50px;
-  width: 250px;
-  height: 250px;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.06) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.roi-head {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.roi-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.2px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.roi-sub {
-  font-size: 12.5px;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.roi-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-.roi-stat {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 18px 20px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
-}
-
-.roi-value {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  margin-bottom: 6px;
-  font-variant-numeric: tabular-nums;
-}
-
-.roi-value.green  { color: #16a34a; }
-.roi-value.blue   { color: #2563eb; }
-.roi-value.yellow { color: #d97706; }
-
-.roi-label {
-  font-size: 12.5px;
-  color: #64748b;
-  font-weight: 500;
-}
-
-/* Progress Section */
-.progress-section {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 22px 26px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
-}
-
-.progress-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.progress-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.progress-pct {
-  font-size: 18px;
-  font-weight: 800;
-  color: #16a34a;
-}
-
-.progress-bar {
-  height: 10px;
-  background: #f1f5f9;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #16a34a, #22c55e);
-  border-radius: 999px;
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Status Badges */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 11px;
-  border-radius: 20px;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.badge.settled          { background: #dcfce7; color: #166534; }
-.badge.partially_settled{ background: #d1fae5; color: #065f46; }
-.badge.awaiting_payment { background: #e0e7ff; color: #3730a3; }
-.badge.disputed         { background: #fef9c3; color: #854d0e; }
-.badge.active           { background: #dbeafe; color: #1e40af; }
-.badge.pending          { background: #f1f5f9; color: #64748b; }
-.badge.escalated        { background: #fee2e2; color: #991b1b; }
-.badge.payment_claimed_verified { background: #dcfce7; color: #166534; }
-.badge.disputed_verified       { background: #dcfce7; color: #166534; }
-.badge.promise_to_pay          { background: #e0e7ff; color: #3730a3; }
-.badge.verified                { background: #dcfce7; color: #166534; }
-.badge.not-verified            { background: #fee2e2; color: #991b1b; }
-.badge.needs-review            { background: #fef3c7; color: #92400e; }
-.badge.situation-cashflow     { background: #fef3c7; color: #92400e; }
-.badge.situation-dispute      { background: #fee2e2; color: #991b1b; }
-.badge.situation-paid         { background: #dbeafe; color: #1e40af; }
-.badge.situation-installments { background: #dcfce7; color: #166534; }
-.badge.situation-unknown      { background: #f1f5f9; color: #64748b; }
-
-.tier-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.tier-A { background: #dcfce7; color: #166534; }
-.tier-B { background: #dbeafe; color: #1e40af; }
-.tier-C { background: #fef9c3; color: #854d0e; }
-.tier-D { background: #fee2e2; color: #991b1b; }
-
-.score-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 5px;
-  vertical-align: middle;
-}
-
-.score-chg-up   { color: #16a34a; font-weight: 700; font-size: 12px; }
-.score-chg-down { color: #dc2626; font-weight: 700; font-size: 12px; }
-
-/* Table Styling */
-.table-wrap {
-  overflow-x: auto;
-  border-radius: 18px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #ffffff;
-  font-size: 13.5px;
-}
-
-thead tr {
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-th {
-  padding: 14px 18px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #64748b;
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
-}
-
-th:hover { color: #2563eb; }
-
-td {
-  padding: 14px 18px;
-  border-top: 1px solid #f1f5f9;
-  color: #334155;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-
-tr:hover td { background: #f8fafc; }
-tr.inactive-row td { background: #e2e8f0; }
-tr.inactive-row:hover td { background: #cbd5e1; }
-
-.action-link {
-  color: #2563eb;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 12.5px;
-  margin-right: 12px;
-  transition: color 0.15s;
-}
-
-.action-link:hover {
-  color: #1d4ed8;
-  text-decoration: underline;
-}
-
-.sim-btn {
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  color: #334155;
-  font-family: inherit;
-  transition: all 0.15s ease;
-}
-
-.sim-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-/* Modals */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(4px);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-}
-.modal-overlay.show { display: flex; }
-
-.modal {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 28px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 80vh;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
-  border: 1px solid #e2e8f0;
-}
-
-.modal-title { font-size: 17px; font-weight: 800; margin-bottom: 16px; color: #0f172a; }
-.modal-body  { font-size: 13.5px; color: #475569; white-space: pre-wrap; line-height: 1.6; max-height: 50vh; overflow-y: auto; }
-.modal-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b; }
-.modal-actions { display: flex; gap: 12px; margin-top: 20px; }
-
-.btn-ontime {
-  flex: 1; padding: 11px; background: #16a34a; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.15s;
-}
-.btn-ontime:hover { background: #15803d; }
-
-.btn-late {
-  flex: 1; padding: 11px; background: #f59e0b; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.15s;
-}
-.btn-late:hover { background: #d97706; }
-
-/* Toast */
-.toast-container { position: fixed; bottom: 28px; right: 28px; display: flex; flex-direction: column; gap: 10px; z-index: 300; }
-.toast { background: #0f172a; color: #fff; padding: 14px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); animation: slideIn 0.3s ease; max-width: 380px; }
-@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-/* Expandable detail rows */
-.expand-btn {
-  background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; width: 24px; height: 24px; font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; line-height: 1; transition: all 0.15s;
-}
-.expand-btn:hover { background: #2563eb; color: #ffffff; border-color: #2563eb; }
-
-.detail-row td { background: #f8fafc; border-top: none; padding: 0 !important; }
-.detail-cell { padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; }
-
-.escalation-banner { background: #fee2e2; border: 1px solid #fecaca; border-left: 4px solid #dc2626; border-radius: 12px; padding: 14px 18px; }
-.escalation-title { font-size: 13.5px; font-weight: 800; color: #991b1b; margin-bottom: 4px; }
-.escalation-reason { font-size: 13px; color: #7f1d1d; font-weight: 600; }
-.escalation-msg { font-size: 12px; color: #991b1b; margin-top: 8px; font-style: italic; line-height: 1.5; }
-
-.detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
-.detail-item { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
-.detail-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 4px; }
-.detail-value { font-size: 14px; font-weight: 600; color: #0f172a; }
-
-.detail-roi { border-top: 1px solid #e2e8f0; padding-top: 14px; }
-.detail-roi-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 10px; }
-
-@media (max-width: 900px) {
-  .metric-bar { grid-template-columns: repeat(2, 1fr); }
-  .roi-grid { grid-template-columns: 1fr; }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RecoverFlow — Merchant Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* White Mode Premium Header */
+    .header {
+      background: #ffffff;
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
+    }
+
+    /* Left Header - Razorpay Branding */
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .razorpay-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .razorpay-logo-text {
+      font-size: 21px;
+      font-weight: 800;
+      color: #0c2340;
+      letter-spacing: -0.5px;
+    }
+
+    .header-divider {
+      color: #cbd5e1;
+      font-size: 16px;
+      font-weight: 300;
+    }
+
+    .header-subbrand {
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      letter-spacing: -0.2px;
+    }
+
+    /* Center Header - RecoverFlow AI */
+    .header-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .recoverflow-ai-pill {
+      background: rgba(37, 99, 235, 0.06);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      padding: 6px 18px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
+    }
+
+    .ai-sparkle {
+      font-size: 14px;
+      animation: pulseSparkle 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseSparkle {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.9;
+      }
+
+      50% {
+        transform: scale(1.25);
+        opacity: 1;
+      }
+    }
+
+    .ai-brand-text {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.2px;
+    }
+
+    .ai-tag {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 3px;
+      letter-spacing: 0.05em;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    }
+
+    .ai-status-dot {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    /* Right Header */
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn-customer-view {
+      color: #1d4ed8;
+      font-size: 12.5px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-customer-view:hover {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-start:hover {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-start:disabled {
+      background: #cbd5e1;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+      color: #64748b;
+    }
+
+    .refresh-badge {
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.4;
+        transform: scale(1.2);
+      }
+    }
+
+    /* Full Width Main Layout */
+    .main {
+      padding: 32px 32px 48px;
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Premium Cards */
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 24px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03), 0 1px 3px rgba(15, 23, 42, 0.02);
+      transition: all 0.2s ease;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Metric Bar */
+    .metric-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .metric {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 22px 24px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: #e2e8f0;
+    }
+
+    .metric:nth-child(1)::before {
+      background: #94a3b8;
+    }
+
+    .metric:nth-child(2)::before {
+      background: #16a34a;
+    }
+
+    .metric:nth-child(3)::before {
+      background: #2563eb;
+    }
+
+    .metric:nth-child(4)::before {
+      background: #d97706;
+    }
+
+    .metric:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.08);
+    }
+
+    .metric-value {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #0f172a;
+      line-height: 1.1;
+      margin-bottom: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-label {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .metric-value.green {
+      color: #16a34a;
+    }
+
+    .metric-value.blue {
+      color: #2563eb;
+    }
+
+    .metric-value.yellow {
+      color: #d97706;
+    }
+
+    .metric-value.red {
+      color: #dc2626;
+    }
+
+    /* White Mode Premium ROI Card */
+    .roi-card {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border-radius: 20px;
+      padding: 26px 28px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .roi-card::after {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .roi-head {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .roi-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .roi-sub {
+      font-size: 12.5px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .roi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .roi-stat {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
+    }
+
+    .roi-value {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .roi-value.green {
+      color: #16a34a;
+    }
+
+    .roi-value.blue {
+      color: #2563eb;
+    }
+
+    .roi-value.yellow {
+      color: #d97706;
+    }
+
+    .roi-label {
+      font-size: 12.5px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    /* Progress Section */
+    .progress-section {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 22px 26px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .progress-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .progress-pct {
+      font-size: 18px;
+      font-weight: 800;
+      color: #16a34a;
+    }
+
+    .progress-bar {
+      height: 10px;
+      background: #f1f5f9;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #16a34a, #22c55e);
+      border-radius: 999px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Status Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 11px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .badge.settled {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge.partially_settled {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge.awaiting_payment {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+
+    .badge.disputed {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+
+    .badge.active {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .badge.pending {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .badge.escalated {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge.payment_claimed_verified {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge.disputed_verified {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge.promise_to_pay {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+
+    .badge.verified {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge.not-verified {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge.needs-review {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge.situation-cashflow {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge.situation-dispute {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge.situation-paid {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .badge.situation-installments {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge.situation-unknown {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tier-A {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .tier-B {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .tier-C {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+
+    .tier-D {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .score-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    .score-chg-up {
+      color: #16a34a;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .score-chg-down {
+      color: #dc2626;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    /* Table Styling */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 18px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+      font-size: 13.5px;
+    }
+
+    thead tr {
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      padding: 14px 18px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th:hover {
+      color: #2563eb;
+    }
+
+    td {
+      padding: 14px 18px;
+      border-top: 1px solid #f1f5f9;
+      color: #334155;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    tr.inactive-row td {
+      background: #e2e8f0;
+    }
+
+    tr.inactive-row:hover td {
+      background: #cbd5e1;
+    }
+
+    .action-link {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 12.5px;
+      margin-right: 12px;
+      transition: color 0.15s;
+    }
+
+    .action-link:hover {
+      color: #1d4ed8;
+      text-decoration: underline;
+    }
+
+    .sim-btn {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #334155;
+      font-family: inherit;
+      transition: all 0.15s ease;
+    }
+
+    .sim-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 28px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+      border: 1px solid #e2e8f0;
+    }
+
+    .modal-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      color: #0f172a;
+    }
+
+    .modal-body {
+      font-size: 13.5px;
+      color: #475569;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+
+    .modal-close {
+      float: right;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #64748b;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn-ontime {
+      flex: 1;
+      padding: 11px;
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .btn-ontime:hover {
+      background: #15803d;
+    }
+
+    .btn-late {
+      flex: 1;
+      padding: 11px;
+      background: #f59e0b;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .btn-late:hover {
+      background: #d97706;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 300;
+    }
+
+    .toast {
+      background: #0f172a;
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      animation: slideIn 0.3s ease;
+      max-width: 380px;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Expandable detail rows */
+    .expand-btn {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.15s;
+    }
+
+    .expand-btn:hover {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+
+    .detail-row td {
+      background: #f8fafc;
+      border-top: none;
+      padding: 0 !important;
+    }
+
+    .detail-cell {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .escalation-banner {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      border-left: 4px solid #dc2626;
+      border-radius: 12px;
+      padding: 14px 18px;
+    }
+
+    .escalation-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #991b1b;
+      margin-bottom: 4px;
+    }
+
+    .escalation-reason {
+      font-size: 13px;
+      color: #7f1d1d;
+      font-weight: 600;
+    }
+
+    .escalation-msg {
+      font-size: 12px;
+      color: #991b1b;
+      margin-top: 8px;
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 14px;
+    }
+
+    .detail-item {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .detail-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .detail-roi {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 14px;
+    }
+
+    .detail-roi-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .metric-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .roi-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- Header (White Mode Premium) -->
-<div class="header">
-  <!-- LEFT: Razorpay Branding -->
-  <div class="header-left">
-    <a href="/" class="razorpay-brand">
-      <svg width="22" height="24" viewBox="0 0 100 115" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M43.3 0L0 115H31.5L59.2 41.5L43.3 0Z" fill="#0C2340"/>
-        <path d="M52.3 0L32 52.8L46.8 115H100L77.5 45.2L52.3 0Z" fill="#0066ED"/>
-      </svg>
-      <span class="razorpay-logo-text">Razorpay</span>
-    </a>
-    <span class="header-divider">|</span>
-    <span class="header-subbrand">Merchant Portal</span>
-  </div>
-
-  <!-- MIDDLE: RecoverFlow AI -->
-  <div class="header-center">
-    <div class="recoverflow-ai-pill">
-      <span class="ai-sparkle">✨</span>
-      <span class="ai-brand-text">RecoverFlow <strong class="ai-tag">AI</strong></span>
-      <span class="ai-status-dot"></span>
+  <!-- Header (White Mode Premium) -->
+  <div class="header">
+    <!-- LEFT: Razorpay Branding -->
+    <div class="header-left">
+      <a href="/" class="razorpay-brand">
+        <svg width="22" height="24" viewBox="0 0 100 115" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M43.3 0L0 115H31.5L59.2 41.5L43.3 0Z" fill="#0C2340" />
+          <path d="M52.3 0L32 52.8L46.8 115H100L77.5 45.2L52.3 0Z" fill="#0066ED" />
+        </svg>
+        <span class="razorpay-logo-text">Razorpay</span>
+      </a>
+      <span class="header-divider">|</span>
+      <span class="header-subbrand">Merchant Portal</span>
     </div>
-  </div>
 
-  <!-- RIGHT: Action buttons & status -->
-  <div class="header-right">
-    <a href="/chat/INV-0016" class="btn-customer-view">👤 Customer View ↗</a>
-    <div class="refresh-badge"><div class="pulse-dot"></div> Live • refreshes every 5s</div>
-    <button class="btn-start" id="start-btn" onclick="startBatch()">▶ Start Batch</button>
-  </div>
-</div>
-
-<div class="main">
-  <!-- Metric bar -->
-  <div class="metric-bar">
-    <div class="metric"><div class="metric-value" id="m-total">—</div><div class="metric-label">Total Outstanding</div></div>
-    <div class="metric"><div class="metric-value green" id="m-recovered">—</div><div class="metric-label">Recovered</div></div>
-    <div class="metric"><div class="metric-value blue" id="m-settled">— / —</div><div class="metric-label">Settled</div></div>
-    <div class="metric"><div class="metric-value yellow" id="m-disputed">—</div><div class="metric-label">Disputed</div></div>
-  </div>
-
-  <!-- ROI metrics -->
-  <div class="roi-card">
-    <div class="roi-head">
-      <span class="roi-title">📈 ROI Metrics</span>
-      <span class="roi-sub">AI recovery impact</span>
-    </div>
-    <div class="roi-grid">
-      <div class="roi-stat">
-        <div class="roi-value green" id="roi-recovered">—</div>
-        <div class="roi-label">Total Capital Recovered</div>
-      </div>
-      <div class="roi-stat">
-        <div class="roi-value blue" id="roi-concession">—</div>
-        <div class="roi-label">Average Concession %</div>
-      </div>
-      <div class="roi-stat">
-        <div class="roi-value yellow" id="roi-labor">—</div>
-        <div class="roi-label">Hours of Human Labor Saved</div>
+    <!-- MIDDLE: RecoverFlow AI -->
+    <div class="header-center">
+      <div class="recoverflow-ai-pill">
+        <span class="ai-sparkle">✨</span>
+        <span class="ai-brand-text">RecoverFlow <strong class="ai-tag">AI</strong></span>
+        <span class="ai-status-dot"></span>
       </div>
     </div>
-  </div>
 
-  <!-- Progress bar -->
-  <div class="progress-section">
-    <div class="progress-header">
-      <span class="progress-title">Recovery Progress</span>
-      <span class="progress-pct" id="prog-pct">0%</span>
-    </div>
-    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
-  </div>
-
-  <!-- Invoice table -->
-  <div class="table-wrap">
-    <table id="inv-table">
-      <thead>
-        <tr>
-          <th style="width:36px;"></th>
-          <th onclick="sortTable('invoice_id')">Invoice ⇅</th>
-          <th onclick="sortTable('company_name')">Debtor ⇅</th>
-          <th onclick="sortTable('invoice_amount_paise')">Amount ⇅</th>
-          <th onclick="sortTable('dpd')">DPD ⇅</th>
-          <th onclick="sortTable('score')">Score ⇅</th>
-          <th onclick="sortTable('status')">Status ⇅</th>
-          <th>Situation</th>
-          <th onclick="sortTable('recovered_paise')">Recovered ⇅</th>
-          <th>Plan</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="inv-tbody"></tbody>
-    </table>
-  </div>
-
-  <!-- Deferred payments -->
-  <div class="card">
-    <div class="card-title">📅 Scheduled Deferred Payments</div>
-    <table style="width:100%; border-collapse:collapse; font-size:13px;">
-      <thead><tr style="background:#F8FAFC;">
-        <th style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Invoice</th>
-        <th style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Debtor</th>
-        <th style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Amount Due</th>
-        <th style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Due Date</th>
-        <th style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Status</th>
-        <th style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">Action</th>
-      </tr></thead>
-      <tbody id="deferred-tbody"></tbody>
-    </table>
-    <div id="no-deferred" style="font-size:13px; color:#94A3B8; font-style:italic; padding:12px 14px;">No deferred payments scheduled yet.</div>
-  </div>
-</div>
-
-<!-- Audit modal -->
-<div class="modal-overlay" id="audit-modal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('audit-modal')">✕</button>
-    <div class="modal-title" id="audit-title">Audit Log</div>
-    <div class="modal-body" id="audit-body"></div>
-  </div>
-</div>
-
-<!-- Simulate modal -->
-<div class="modal-overlay" id="sim-modal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('sim-modal')">✕</button>
-    <div class="modal-title" id="sim-title">Simulate Deferred Payment</div>
-    <div class="modal-body">Mark this deferred payment as received. This updates the debtor's trust score.</div>
-    <div class="modal-actions">
-      <button class="btn-ontime" onclick="simulatePayment(true)">✅ Paid On Time</button>
-      <button class="btn-late"   onclick="simulatePayment(false)">⚠️ Paid Late</button>
+    <!-- RIGHT: Action buttons & status -->
+    <div class="header-right">
+      <a href="/chat/INV-0016" class="btn-customer-view">👤 Customer View ↗</a>
+      <div class="refresh-badge">
+        <div class="pulse-dot"></div> Live • refreshes every 5s
+      </div>
+      <button class="btn-start" id="start-btn" onclick="startBatch()">▶ Start Batch</button>
     </div>
   </div>
-</div>
 
-<!-- Toast container -->
-<div class="toast-container" id="toast-container"></div>
+  <div class="main">
+    <!-- Metric bar -->
+    <div class="metric-bar">
+      <div class="metric">
+        <div class="metric-value" id="m-total">—</div>
+        <div class="metric-label">Total Outstanding</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value green" id="m-recovered">—</div>
+        <div class="metric-label">Recovered</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value blue" id="m-settled">— / —</div>
+        <div class="metric-label">Settled</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value yellow" id="m-disputed">—</div>
+        <div class="metric-label">Disputed</div>
+      </div>
+    </div>
 
-<script>
-// ── Helpers ──────────────────────────────────────────────────────────────────
-let invoicesData = [];
-let sortKey = "invoice_id";
-let sortAsc = true;
-let simInvoiceId = null;
-let totalOutstandingPaise = 0;
-let expanded = new Set();          // invoice_ids whose detail row is open
-let detailsCache = {};             // invoice_id -> detail payload from /api/invoice/{id}/details
+    <!-- ROI metrics -->
+    <div class="roi-card">
+      <div class="roi-head">
+        <span class="roi-title">📈 ROI Metrics</span>
+        <span class="roi-sub">AI recovery impact</span>
+      </div>
+      <div class="roi-grid">
+        <div class="roi-stat">
+          <div class="roi-value green" id="roi-recovered">—</div>
+          <div class="roi-label">Total Capital Recovered</div>
+        </div>
+        <div class="roi-stat">
+          <div class="roi-value blue" id="roi-concession">—</div>
+          <div class="roi-label">Average Concession %</div>
+        </div>
+        <div class="roi-stat">
+          <div class="roi-value yellow" id="roi-labor">—</div>
+          <div class="roi-label">Hours of Human Labor Saved</div>
+        </div>
+      </div>
+    </div>
 
-function fmtRupees(paise) {
-  if (!paise) return "₹0";
-  const r = Math.floor(paise / 100);
-  let s = String(r);
-  if (s.length <= 3) return "₹" + s;
-  let result = s.slice(-3); s = s.slice(0, -3);
-  while (s.length > 2) { result = s.slice(-2) + "," + result; s = s.slice(0, -2); }
-  return "₹" + s + "," + result;
-}
+    <!-- Progress bar -->
+    <div class="progress-section">
+      <div class="progress-header">
+        <span class="progress-title">Recovery Progress</span>
+        <span class="progress-pct" id="prog-pct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+      </div>
+    </div>
 
-function statusBadge(st) {
-  const labels = { settled: "✅ Settled", partially_settled: "🔄 Part. Settled",
-    awaiting_payment: "⏳ Awaiting Payment",
-    disputed: "⚠️ Disputed", active: "🔵 Active", pending: "⏳ Pending", escalated: "🔴 Escalated",
-    payment_claimed_verified: "✅ Payment Verified", disputed_verified: "✅ Dispute Verified",
-    promise_to_pay: "🤝 Promise to Pay" };
-  return `<span class="badge ${st}">${labels[st] || st}</span>`;
-}
+    <!-- Invoice table -->
+    <div class="table-wrap">
+      <table id="inv-table">
+        <thead>
+          <tr>
+            <th style="width:36px;"></th>
+            <th onclick="sortTable('invoice_id')">Invoice ⇅</th>
+            <th onclick="sortTable('company_name')">Debtor ⇅</th>
+            <th onclick="sortTable('invoice_amount_paise')">Amount ⇅</th>
+            <th onclick="sortTable('dpd')">DPD ⇅</th>
+            <th onclick="sortTable('score')">Score ⇅</th>
+            <th onclick="sortTable('status')">Status ⇅</th>
+            <th>Situation</th>
+            <th onclick="sortTable('recovered_paise')">Recovered ⇅</th>
+            <th>Plan</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="inv-tbody"></tbody>
+      </table>
+    </div>
 
-function tierBadge(t) {
-  return `<span class="tier-badge tier-${t}">${t}</span>`;
-}
+    <!-- Deferred payments -->
+    <div class="card">
+      <div class="card-title">📅 Scheduled Deferred Payments</div>
+      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <thead>
+          <tr style="background:#F8FAFC;">
+            <th
+              style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">
+              Invoice</th>
+            <th
+              style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">
+              Debtor</th>
+            <th
+              style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">
+              Amount Due</th>
+            <th
+              style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">
+              Due Date</th>
+            <th
+              style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">
+              Status</th>
+            <th
+              style="padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:#64748B;">
+              Action</th>
+          </tr>
+        </thead>
+        <tbody id="deferred-tbody"></tbody>
+      </table>
+      <div id="no-deferred" style="font-size:13px; color:#94A3B8; font-style:italic; padding:12px 14px;">No deferred
+        payments scheduled yet.</div>
+    </div>
+  </div>
 
-function situationBadge(s) {
-  const map = {
-    CASHFLOW:     ["situation-cashflow",     "💰 Cashflow Issue"],
-    DISPUTE:      ["situation-dispute",      "⚠️ Amount Disputed"],
-    ALREADY_PAID: ["situation-paid",         "🔍 Payment Claimed"],
-    INSTALLMENTS: ["situation-installments", "📅 Installment Plan"],
-  };
-  const [cls, label] = map[s] || ["situation-unknown", "🔄 In Conversation"];
-  return `<span class="badge ${cls}">${label}</span>`;
-}
+  <!-- Audit modal -->
+  <div class="modal-overlay" id="audit-modal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('audit-modal')">✕</button>
+      <div class="modal-title" id="audit-title">Audit Log</div>
+      <div class="modal-body" id="audit-body"></div>
+    </div>
+  </div>
 
-function escapeHtml(value) {
-  return String(value == null ? "" : value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+  <!-- Simulate modal -->
+  <div class="modal-overlay" id="sim-modal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('sim-modal')">✕</button>
+      <div class="modal-title" id="sim-title">Simulate Deferred Payment</div>
+      <div class="modal-body">Mark this deferred payment as received. This updates the debtor's trust score.</div>
+      <div class="modal-actions">
+        <button class="btn-ontime" onclick="simulatePayment(true)">✅ Paid On Time</button>
+        <button class="btn-late" onclick="simulatePayment(false)">⚠️ Paid Late</button>
+      </div>
+    </div>
+  </div>
 
-function verdictBadge(v) {
-  const map = {
-    VALID:        ["verified",     "✅ Verified"],
-    INVALID:      ["not-verified", "❌ Not verified"],
-    INCONCLUSIVE: ["needs-review", "⚠️ Needs review"],
-  };
-  const [cls, label] = map[v] || ["needs-review", "⚠️ Needs review"];
-  return `<span class="badge ${cls}">${label}</span>`;
-}
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // ── Helpers ──────────────────────────────────────────────────────────────────
+    let invoicesData = [];
+    let sortKey = "invoice_id";
+    let sortAsc = true;
+    let simInvoiceId = null;
+    let totalOutstandingPaise = 0;
+    let expanded = new Set();          // invoice_ids whose detail row is open
+    let detailsCache = {};             // invoice_id -> detail payload from /api/invoice/{id}/details
+
+    function fmtRupees(paise) {
+      if (!paise) return "₹0";
+      const r = Math.floor(paise / 100);
+      let s = String(r);
+      if (s.length <= 3) return "₹" + s;
+      let result = s.slice(-3); s = s.slice(0, -3);
+      while (s.length > 2) { result = s.slice(-2) + "," + result; s = s.slice(0, -2); }
+      return "₹" + s + "," + result;
+    }
+
+    function statusBadge(st) {
+      const labels = {
+        settled: "✅ Settled", partially_settled: "🔄 Part. Settled",
+        awaiting_payment: "⏳ Awaiting Payment",
+        disputed: "⚠️ Disputed", active: "🔵 Active", pending: "⏳ Pending", escalated: "🔴 Escalated",
+        payment_claimed_verified: "✅ Payment Verified", disputed_verified: "✅ Dispute Verified",
+        promise_to_pay: "🤝 Promise to Pay"
+      };
+      return `<span class="badge ${st}">${labels[st] || st}</span>`;
+    }
+
+    function tierBadge(t) {
+      return `<span class="tier-badge tier-${t}">${t}</span>`;
+    }
+
+    function situationBadge(s) {
+      const map = {
+        CASHFLOW: ["situation-cashflow", "💰 Cashflow Issue"],
+        DISPUTE: ["situation-dispute", "⚠️ Amount Disputed"],
+        ALREADY_PAID: ["situation-paid", "🔍 Payment Claimed"],
+        INSTALLMENTS: ["situation-installments", "📅 Installment Plan"],
+      };
+      const [cls, label] = map[s] || ["situation-unknown", "🔄 In Conversation"];
+      return `<span class="badge ${cls}">${label}</span>`;
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function verdictBadge(v) {
+      const map = {
+        VALID: ["verified", "✅ Verified"],
+        INVALID: ["not-verified", "❌ Not verified"],
+        INCONCLUSIVE: ["needs-review", "⚠️ Needs review"],
+      };
+      const [cls, label] = map[v] || ["needs-review", "⚠️ Needs review"];
+      return `<span class="badge ${cls}">${label}</span>`;
+    }
 
 
 
-function toast(msg) {
-  const el = document.createElement("div");
-  el.className = "toast";
-  el.textContent = msg;
-  document.getElementById("toast-container").appendChild(el);
-  setTimeout(() => el.remove(), 4000);
-}
+    function toast(msg) {
+      const el = document.createElement("div");
+      el.className = "toast";
+      el.textContent = msg;
+      document.getElementById("toast-container").appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
 
-function openModal(id) { document.getElementById(id).classList.add("show"); }
-function closeModal(id) { document.getElementById(id).classList.remove("show"); }
+    function openModal(id) { document.getElementById(id).classList.add("show"); }
+    function closeModal(id) { document.getElementById(id).classList.remove("show"); }
 
-// ── Batch start ──────────────────────────────────────────────────────────────
-async function startBatch() {
-  const btn = document.getElementById("start-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "⏳ Loading…"; }
-  try {
-    const res = await fetch("/api/batch/start", { method: "POST" });
-    const data = await res.json();
-    totalOutstandingPaise = data.total_outstanding_paise || 0;
-    if (btn) { btn.disabled = false; btn.textContent = "🔄 Reload Batch"; }
-    toast(`✅ ${data.total} invoices loaded automatically`);
-    await refreshStatus();
-  } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = "▶ Start Batch"; }
-    toast("❌ Failed to load batch");
-    await refreshStatus();
-  }
-}
+    // ── Batch start ──────────────────────────────────────────────────────────────
+    async function startBatch() {
+      const btn = document.getElementById("start-btn");
+      if (btn) { btn.disabled = true; btn.textContent = "⏳ Loading…"; }
+      try {
+        const res = await fetch("/api/batch/start", { method: "POST" });
+        const data = await res.json();
+        totalOutstandingPaise = data.total_outstanding_paise || 0;
+        if (btn) { btn.disabled = false; btn.textContent = "🔄 Reload Batch"; }
+        toast(`✅ ${data.total} invoices loaded automatically`);
+        await refreshStatus();
+      } catch (e) {
+        if (btn) { btn.disabled = false; btn.textContent = "▶ Start Batch"; }
+        toast("❌ Failed to load batch");
+        await refreshStatus();
+      }
+    }
 
-// ── Refresh status ───────────────────────────────────────────────────────────
-async function refreshStatus() {
-  try {
-    const [statusRes, deferredRes, eventsRes] = await Promise.all([
-      fetch("/api/batch/status"), fetch("/api/deferred/status"), fetch("/api/tier-events")
-    ]);
-    const status   = await statusRes.json();
-    const deferred = await deferredRes.json();
-    const events   = await eventsRes.json();
+    // ── Refresh status ───────────────────────────────────────────────────────────
+    async function refreshStatus() {
+      try {
+        const [statusRes, deferredRes, eventsRes] = await Promise.all([
+          fetch("/api/batch/status"), fetch("/api/deferred/status"), fetch("/api/tier-events")
+        ]);
+        const status = await statusRes.json();
+        const deferred = await deferredRes.json();
+        const events = await eventsRes.json();
 
-    updateMetrics(status);
-    updateRoi(status.roi);
-    updateTable(status.invoices || []);
-    updateDeferred(deferred.deferred_payments || []);
-    updateTierBars(status);
-    updateEventFeed(events.events || []);
-  } catch (e) { console.warn("Refresh failed", e); }
-}
+        updateMetrics(status);
+        updateRoi(status.roi);
+        updateTable(status.invoices || []);
+        updateDeferred(deferred.deferred_payments || []);
+        updateTierBars(status);
+        updateEventFeed(events.events || []);
+      } catch (e) { console.warn("Refresh failed", e); }
+    }
 
-function updateMetrics(d) {
-  const total = totalOutstandingPaise || 0;
-  const nonActiveTotal = d.non_active_outstanding_paise || 0;
-  const recovered = d.total_recovered_paise || 0;
-  const pct = nonActiveTotal > 0 ? ((recovered / nonActiveTotal) * 100).toFixed(1) : 0;
-  document.getElementById("m-total").textContent    = fmtRupees(total);
-  document.getElementById("m-recovered").textContent= fmtRupees(recovered);
-  document.getElementById("m-settled").textContent  = `${(d.settled||0) + (d.partially_settled||0)} / ${d.non_active_invoices||0}`;
-  document.getElementById("m-disputed").textContent = d.disputed || 0;
-  document.getElementById("prog-pct").textContent   = pct + "%";
-  document.getElementById("prog-fill").style.width  = Math.min(pct, 100) + "%";
-}
+    function updateMetrics(d) {
+      const total = totalOutstandingPaise || 0;
+      const nonActiveTotal = d.non_active_outstanding_paise || 0;
+      const recovered = d.total_recovered_paise || 0;
+      const pct = nonActiveTotal > 0 ? ((recovered / nonActiveTotal) * 100).toFixed(1) : 0;
+      document.getElementById("m-total").textContent = fmtRupees(total);
+      document.getElementById("m-recovered").textContent = fmtRupees(recovered);
+      document.getElementById("m-settled").textContent = `${(d.settled || 0) + (d.partially_settled || 0)} / ${d.non_active_invoices || 0}`;
+      document.getElementById("m-disputed").textContent = d.disputed || 0;
+      document.getElementById("prog-pct").textContent = pct + "%";
+      document.getElementById("prog-fill").style.width = Math.min(pct, 100) + "%";
+    }
 
-function updateRoi(roi) {
-  if (!roi) return;
-  document.getElementById("roi-recovered").textContent  = fmtRupees(roi.total_capital_recovered_paise);
-  document.getElementById("roi-concession").textContent = (roi.average_concession_pct ?? 0).toFixed(1) + "%";
-  document.getElementById("roi-labor").textContent      = (roi.labor_hours_saved ?? 0).toFixed(1) + "h";
-}
+    function updateRoi(roi) {
+      if (!roi) return;
+      document.getElementById("roi-recovered").textContent = fmtRupees(roi.total_capital_recovered_paise);
+      document.getElementById("roi-concession").textContent = (roi.average_concession_pct ?? 0).toFixed(1) + "%";
+      document.getElementById("roi-labor").textContent = (roi.labor_hours_saved ?? 0).toFixed(1) + "h";
+    }
 
-function updateTable(invoices) {
-  invoicesData = invoices;
-  renderTable();
-}
+    function updateTable(invoices) {
+      invoicesData = invoices;
+      renderTable();
+    }
 
-function sortTable(key) {
-  if (sortKey === key) sortAsc = !sortAsc;
-  else { sortKey = key; sortAsc = true; }
-  renderTable();
-}
+    function sortTable(key) {
+      if (sortKey === key) sortAsc = !sortAsc;
+      else { sortKey = key; sortAsc = true; }
+      renderTable();
+    }
 
-function scoreDot(score) {
-  let col;
-  if (score >= 75)      col = "#16A34A"; // green
-  else if (score >= 50) col = "#2563EB"; // blue
-  else if (score >= 25) col = "#D97706"; // amber
-  else                  col = "#DC2626"; // red
-  return `<span class="score-dot" style="background:${col}"></span>${(score||0).toFixed(1)}`;
-}
+    function scoreDot(score) {
+      let col;
+      if (score >= 75) col = "#16A34A"; // green
+      else if (score >= 50) col = "#2563EB"; // blue
+      else if (score >= 25) col = "#D97706"; // amber
+      else col = "#DC2626"; // red
+      return `<span class="score-dot" style="background:${col}"></span>${(score || 0).toFixed(1)}`;
+    }
 
-function scoreChange(inv) {
-  const old_score = inv.score_before;
-  const new_score = inv.score;
-  if (old_score == null || old_score === new_score) {
-    return scoreDot(new_score);
-  }
-  const up = new_score > old_score;
-  const arrow = up ? "&#8593;" : "&#8595;";
-  const cls   = up ? "score-chg-up" : "score-chg-down";
-  return `${scoreDot(old_score)} <span class="${cls}">&rarr; ${(new_score||0).toFixed(1)} ${arrow}</span>`;
-}
+    function scoreChange(inv) {
+      const old_score = inv.score_before;
+      const new_score = inv.score;
+      if (old_score == null || old_score === new_score) {
+        return scoreDot(new_score);
+      }
+      const up = new_score > old_score;
+      const arrow = up ? "&#8593;" : "&#8595;";
+      const cls = up ? "score-chg-up" : "score-chg-down";
+      return `${scoreDot(old_score)} <span class="${cls}">&rarr; ${(new_score || 0).toFixed(1)} ${arrow}</span>`;
+    }
 
-function renderTable() {
-  const sorted = [...invoicesData].sort((a, b) => {
-    const va = a[sortKey] ?? "", vb = b[sortKey] ?? "";
-    return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
-  });
-  const tbody = document.getElementById("inv-tbody");
-  tbody.innerHTML = sorted.map(r => {
-    const isOpen = expanded.has(r.invoice_id);
-    const rowClass = r.status !== 'active' ? 'inactive-row' : '';
-    const row = `
+    function renderTable() {
+      const sorted = [...invoicesData].sort((a, b) => {
+        const va = a[sortKey] ?? "", vb = b[sortKey] ?? "";
+        return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+      });
+      const tbody = document.getElementById("inv-tbody");
+      tbody.innerHTML = sorted.map(r => {
+        const isOpen = expanded.has(r.invoice_id);
+        const rowClass = r.status !== 'active' ? 'inactive-row' : '';
+        const row = `
     <tr class="${rowClass}">
       <td style="padding:0;text-align:center;width:36px;">
         <button class="expand-btn" onclick="toggleDetails('${r.invoice_id}')" title="Toggle details">${isOpen ? "▾" : "▸"}</button>
@@ -952,7 +1320,7 @@ function renderTable() {
         <div style="font-size:11px; color:#94A3B8;">${r.debtor_name}</div>
       </td>
       <td>${fmtRupees(r.invoice_amount_paise)}</td>
-      <td><span style="color:${r.dpd>60?'#DC2626':'#D97706'};font-weight:600;">${r.dpd}d</span></td>
+      <td><span style="color:${r.dpd > 60 ? '#DC2626' : '#D97706'};font-weight:600;">${r.dpd}d</span></td>
       <td style="white-space:nowrap;">${scoreChange(r)}</td>
       <td>${statusBadge(r.status)}</td>
       <td>${situationBadge(r.identified_situation)}</td>
@@ -964,36 +1332,36 @@ function renderTable() {
         ${r.status === "escalated" && r.session_id ? `<a class="action-link" href="/api/escalation-pdf/${r.session_id}" target="_blank">📄 Escalation Notice</a>` : ""}
       </td>
     </tr>`;
-    const detail = isOpen ? renderDetails(r.invoice_id) : "";
-    return row + detail;
-  }).join("");
-}
+        const detail = isOpen ? renderDetails(r.invoice_id) : "";
+        return row + detail;
+      }).join("");
+    }
 
-function detailBody(d) {
-  const escalationHtml = d.escalation && d.escalation.active
-    ? `<div class="escalation-banner">
+    function detailBody(d) {
+      const escalationHtml = d.escalation && d.escalation.active
+        ? `<div class="escalation-banner">
          <div class="escalation-title">🔴 Escalated</div>
          <div class="escalation-reason">${escapeHtml(d.escalation.reason || "")}</div>
          ${d.escalation.closing_message ? `<div class="escalation-msg">“${escapeHtml(d.escalation.closing_message)}”</div>` : ""}
          ${d.session_id ? `<div style="margin-top:10px;"><a class="action-link" href="/api/escalation-pdf/${d.session_id}" target="_blank">📄 Download Escalation Notice</a></div>` : ""}
        </div>`
-    : "";
+        : "";
 
-  const rows = [
-    ["Invoice amount", fmtRupees(d.invoice_amount_paise)],
-    ["Floor (minimum)", d.floor_paise != null ? fmtRupees(d.floor_paise) : "—"],
-    ["Debtor's last offer", d.last_debtor_offer_paise != null ? fmtRupees(d.last_debtor_offer_paise) : "—"],
-    ["Agreed amount", d.agreed_amount_paise != null ? fmtRupees(d.agreed_amount_paise) : "—"],
-    ["Turns", d.turn_count != null ? d.turn_count : "—"],
-    ["Situation", d.identified_situation ? situationBadge(d.identified_situation) : "—"],
-    ["Merchant flag", d.merchant_flag ? escapeHtml(d.merchant_flag) : "—"],
-  ];
-  const grid = `<div class="detail-grid">${rows.map(([label, value]) =>
-    `<div class="detail-item"><div class="detail-label">${label}</div><div class="detail-value">${value}</div></div>`
-  ).join("")}</div>`;
+      const rows = [
+        ["Invoice amount", fmtRupees(d.invoice_amount_paise)],
+        ["Floor (minimum)", d.floor_paise != null ? fmtRupees(d.floor_paise) : "—"],
+        ["Debtor's last offer", d.last_debtor_offer_paise != null ? fmtRupees(d.last_debtor_offer_paise) : "—"],
+        ["Agreed amount", d.agreed_amount_paise != null ? fmtRupees(d.agreed_amount_paise) : "—"],
+        ["Turns", d.turn_count != null ? d.turn_count : "—"],
+        ["Situation", d.identified_situation ? situationBadge(d.identified_situation) : "—"],
+        ["Merchant flag", d.merchant_flag ? escapeHtml(d.merchant_flag) : "—"],
+      ];
+      const grid = `<div class="detail-grid">${rows.map(([label, value]) =>
+        `<div class="detail-item"><div class="detail-label">${label}</div><div class="detail-value">${value}</div></div>`
+      ).join("")}</div>`;
 
-  const roi = d.roi || {};
-  const roiHtml = `
+      const roi = d.roi || {};
+      const roiHtml = `
     <div class="detail-roi">
       <div class="detail-roi-title">📈 ROI</div>
       <div class="detail-grid">
@@ -1003,43 +1371,43 @@ function detailBody(d) {
       </div>
     </div>`;
 
-  return `<div class="detail-cell">${escalationHtml}${grid}${roiHtml}</div>`;
-}
-
-function renderDetails(id) {
-  const d = detailsCache[id];
-  if (!d) return "";
-  if (d.error) {
-    return `<tr class="detail-row"><td colspan="13"><div class="detail-cell">Failed to load details.</div></td></tr>`;
-  }
-  return `<tr class="detail-row"><td colspan="13">${detailBody(d)}</td></tr>`;
-}
-
-async function toggleDetails(id) {
-  if (expanded.has(id)) {
-    expanded.delete(id);
-    renderTable();
-    return;
-  }
-  if (!detailsCache[id]) {
-    try {
-      const res = await fetch(`/api/invoice/${id}/details`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      detailsCache[id] = await res.json();
-    } catch (e) {
-      detailsCache[id] = { error: true, invoice_id: id };
+      return `<div class="detail-cell">${escalationHtml}${grid}${roiHtml}</div>`;
     }
-  }
-  expanded.add(id);
-  renderTable();
-}
 
-function updateDeferred(payments) {
-  const tbody = document.getElementById("deferred-tbody");
-  const noEl  = document.getElementById("no-deferred");
-  if (!payments.length) { tbody.innerHTML = ""; noEl.style.display = "block"; return; }
-  noEl.style.display = "none";
-  tbody.innerHTML = payments.map(([iid, p]) => `
+    function renderDetails(id) {
+      const d = detailsCache[id];
+      if (!d) return "";
+      if (d.error) {
+        return `<tr class="detail-row"><td colspan="13"><div class="detail-cell">Failed to load details.</div></td></tr>`;
+      }
+      return `<tr class="detail-row"><td colspan="13">${detailBody(d)}</td></tr>`;
+    }
+
+    async function toggleDetails(id) {
+      if (expanded.has(id)) {
+        expanded.delete(id);
+        renderTable();
+        return;
+      }
+      if (!detailsCache[id]) {
+        try {
+          const res = await fetch(`/api/invoice/${id}/details`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          detailsCache[id] = await res.json();
+        } catch (e) {
+          detailsCache[id] = { error: true, invoice_id: id };
+        }
+      }
+      expanded.add(id);
+      renderTable();
+    }
+
+    function updateDeferred(payments) {
+      const tbody = document.getElementById("deferred-tbody");
+      const noEl = document.getElementById("no-deferred");
+      if (!payments.length) { tbody.innerHTML = ""; noEl.style.display = "block"; return; }
+      noEl.style.display = "none";
+      tbody.innerHTML = payments.map(([iid, p]) => `
     <tr style="border-top:1px solid #F1F5F9;">
       <td style="padding:9px 12px;"><code style="font-size:12px;">${iid}</code></td>
       <td style="padding:9px 12px;">${p.company_name || p.debtor_name}</td>
@@ -1052,77 +1420,78 @@ function updateDeferred(payments) {
           : `<span style="font-size:12px; color:#94A3B8;">${p.status}</span>`}
       </td>
     </tr>`).join("");
-}
+    }
 
-function updateTierBars(d) {
-  const el = document.getElementById("tier-bars");
-  if (!el) return;
-  const total = d.total_invoices || 1;
-  const tiers = [
-    { t: "A", col: "#16A34A", count: 0 },
-    { t: "B", col: "#2563EB", count: 0 },
-    { t: "C", col: "#D97706", count: 0 },
-    { t: "D", col: "#DC2626", count: 0 },
-  ];
-  (d.invoices || []).forEach(inv => {
-    const tr = tiers.find(x => x.t === inv.tier);
-    if (tr) tr.count++;
-  });
-  el.innerHTML = tiers.map(tr => `
+    function updateTierBars(d) {
+      const el = document.getElementById("tier-bars");
+      if (!el) return;
+      const total = d.total_invoices || 1;
+      const tiers = [
+        { t: "A", col: "#16A34A", count: 0 },
+        { t: "B", col: "#2563EB", count: 0 },
+        { t: "C", col: "#D97706", count: 0 },
+        { t: "D", col: "#DC2626", count: 0 },
+      ];
+      (d.invoices || []).forEach(inv => {
+        const tr = tiers.find(x => x.t === inv.tier);
+        if (tr) tr.count++;
+      });
+      el.innerHTML = tiers.map(tr => `
     <div class="tier-row">
       <div class="tier-name">${tierBadge(tr.t)} Tier ${tr.t}</div>
-      <div class="tier-bar"><div class="tier-fill" style="width:${(tr.count/total)*100}%;background:${tr.col};"></div></div>
+      <div class="tier-bar"><div class="tier-fill" style="width:${(tr.count / total) * 100}%;background:${tr.col};"></div></div>
       <div class="tier-count">${tr.count}</div>
     </div>`).join("");
-}
+    }
 
-function updateEventFeed(events) {
-  const feed = document.getElementById("event-feed");
-  if (!feed) return;
-  if (!events.length) { feed.innerHTML = '<div class="no-events">No trust score events yet.</div>'; return; }
-  feed.innerHTML = [...events].reverse().map(e => `
+    function updateEventFeed(events) {
+      const feed = document.getElementById("event-feed");
+      if (!feed) return;
+      if (!events.length) { feed.innerHTML = '<div class="no-events">No trust score events yet.</div>'; return; }
+      feed.innerHTML = [...events].reverse().map(e => `
     <div class="event-item">
       <span class="event-icon">${e.icon}</span>
       <span>${e.text}</span>
     </div>`).join("");
-}
+    }
 
-// ── Audit modal ──────────────────────────────────────────────────────────────
-async function showAudit(invoiceId) {
-  document.getElementById("audit-title").textContent = `Audit Log — ${invoiceId}`;
-  document.getElementById("audit-body").textContent  = "Loading…";
-  openModal("audit-modal");
-  const res  = await fetch(`/api/audit/${invoiceId}`);
-  const data = await res.json();
-  document.getElementById("audit-body").textContent = JSON.stringify(data.audit_log, null, 2);
-}
+    // ── Audit modal ──────────────────────────────────────────────────────────────
+    async function showAudit(invoiceId) {
+      document.getElementById("audit-title").textContent = `Audit Log — ${invoiceId}`;
+      document.getElementById("audit-body").textContent = "Loading…";
+      openModal("audit-modal");
+      const res = await fetch(`/api/audit/${invoiceId}`);
+      const data = await res.json();
+      document.getElementById("audit-body").textContent = JSON.stringify(data.audit_log, null, 2);
+    }
 
-// ── Sim modal ────────────────────────────────────────────────────────────────
-function openSimModal(invoiceId) {
-  simInvoiceId = invoiceId;
-  document.getElementById("sim-title").textContent = `Simulate Deferred Payment — ${invoiceId}`;
-  openModal("sim-modal");
-}
+    // ── Sim modal ────────────────────────────────────────────────────────────────
+    function openSimModal(invoiceId) {
+      simInvoiceId = invoiceId;
+      document.getElementById("sim-title").textContent = `Simulate Deferred Payment — ${invoiceId}`;
+      openModal("sim-modal");
+    }
 
-async function simulatePayment(onTime) {
-  closeModal("sim-modal");
-  const res  = await fetch(`/api/deferred/simulate-payment/${simInvoiceId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ on_time: onTime }),
-  });
-  const data = await res.json();
-  if (data.tier_changed) {
-    toast(`🎉 ${data.company_name}: Tier ${data.old_tier} → ${data.new_tier} | Score ${data.old_score} → ${data.new_score} ${onTime ? '↑' : '↓'}`);
-  } else {
-    toast(`✅ Score updated: ${data.old_score} → ${data.new_score} ${onTime ? '↑' : '↓'} (Tier ${data.new_tier})`);
-  }
-  await refreshStatus();
-}
+    async function simulatePayment(onTime) {
+      closeModal("sim-modal");
+      const res = await fetch(`/api/deferred/simulate-payment/${simInvoiceId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ on_time: onTime }),
+      });
+      const data = await res.json();
+      if (data.tier_changed) {
+        toast(`🎉 ${data.company_name}: Tier ${data.old_tier} → ${data.new_tier} | Score ${data.old_score} → ${data.new_score} ${onTime ? '↑' : '↓'}`);
+      } else {
+        toast(`✅ Score updated: ${data.old_score} → ${data.new_score} ${onTime ? '↑' : '↓'} (Tier ${data.new_tier})`);
+      }
+      await refreshStatus();
+    }
 
-// ── Automatic Initialization & Polling ───────────────────────────────────────
-startBatch();
-setInterval(refreshStatus, 5000);
-</script>
+    // ── Automatic Initialization & Polling ───────────────────────────────────────
+    startBatch();
+    setInterval(refreshStatus, 5000);
+  </script>
 </body>
+
 </html>
