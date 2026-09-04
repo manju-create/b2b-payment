@@ -2265,7 +2265,7 @@
       "disputed_verified", "legal_hold", "escalated", "escalated_to_human",
     ];
 
-    function renderHistory(history) {
+    function renderHistory(history, status) {
       chatArea.innerHTML = "";
       showPartialPayHint();
       (history || []).forEach(m => {
@@ -2288,7 +2288,11 @@
               deferred_date: p.deferred_date,
               deferred_due_date: p.deferred_date
             };
-            showPaymentButton(order, plan);
+            if (status === "settled" || status === "partially_settled") {
+              showPaymentSuccess(order.payment_id || "Paid");
+            } else {
+              showPaymentButton(order, plan);
+            }
           }
         } else if (typeof m.content === "string" && m.content) {
           if (m.role === "user") {
@@ -2340,7 +2344,7 @@
       renderTrustCard(data.trust_score ?? data.score);
 
       if (useMongo) {
-        renderHistory(data.history);        // full transcript fetched from MongoDB
+        renderHistory(data.history, data.status);        // full transcript fetched from MongoDB
       } else {
         chatArea.innerHTML = "";
         showPartialPayHint();
@@ -2366,7 +2370,7 @@
         const res = await fetch(url, { method: "POST" });
         if (!res.ok) throw new Error("Failed to clear chat");
         const data = await res.json();
-        renderHistory(data.history);
+        renderHistory(data.history, data.status);
         inputArea.classList.add("visible");
         document.querySelectorAll(".status-screen").forEach(s => s.style.display = "none");
       } catch (err) {

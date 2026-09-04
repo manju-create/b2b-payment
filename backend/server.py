@@ -716,7 +716,6 @@ def _apply_payment(invoice_id: str, payment_id: str,
     s["payment_confirmed_at"]  = ts
     s["settled_at"]            = ts
 
-    # Append to session audit log
     s.setdefault("audit_log", []).append({
         "event":      event_name,
         "timestamp":  ts,
@@ -724,6 +723,13 @@ def _apply_payment(invoice_id: str, payment_id: str,
         "payment_id": payment_id,
         "amount_paise": amount_paise,
     })
+
+    if mongo_available():
+        try:
+            apply_payment(invoice_id, payment_id, amount_paise)
+        except Exception as exc:
+            pass
+
     return {"action": "payment_applied", "invoice_id": invoice_id,
             "new_status": new_status, "amount_paise": amount_paise}
 
