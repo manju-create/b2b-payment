@@ -1,6 +1,6 @@
 # RecoverFlow
 
-**Autonomous B2B Debt Negotiation Agent**
+**Autonomous B2B Debt or late-payment Negotiation Agent**
 
 RecoverFlow is an enterprise-grade AI agent designed to recover working capital trapped in overdue B2B invoices. It replaces manual sales team follow-ups and predatory third-party collection agencies by autonomously negotiating debt settlements, enforcing strict mathematical guardrails, and securing capital via integrated Razorpay payment links.
 
