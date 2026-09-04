@@ -697,10 +697,6 @@ def _apply_payment(invoice_id: str, payment_id: str,
     Core payment application logic — shared by the real webhook, the
     /api/payment-confirmed endpoint, and the simulate-webhook safety net.
     """
-    s = batch_results.get(invoice_id)
-    if not s:
-        return {"action": "invoice_not_found", "invoice_id": invoice_id}
-
     # Determine new status: if there is a deferred plan still pending,
     # this upfront payment makes it partially_settled; otherwise settled.
     has_deferred = invoice_id in deferred_schedule and \
@@ -708,6 +704,22 @@ def _apply_payment(invoice_id: str, payment_id: str,
     new_status = "partially_settled" if has_deferred else "settled"
 
     ts = datetime.now(timezone.utc).isoformat()
+    mongo_success = False
+
+    if mongo_available():
+        try:
+            res = apply_payment(invoice_id, payment_id, amount_paise)
+            if res.get("action") in ("payment_applied", "already_settled"):
+                mongo_success = True
+        except Exception as exc:
+            pass
+
+    s = batch_results.get(invoice_id)
+    if not s:
+        if mongo_success:
+            return {"action": "payment_applied", "invoice_id": invoice_id,
+                    "new_status": new_status, "amount_paise": amount_paise}
+        return {"action": "invoice_not_found", "invoice_id": invoice_id}
 
     s["status"]                = new_status
     s["recovered_paise"]       = amount_paise
@@ -723,12 +735,6 @@ def _apply_payment(invoice_id: str, payment_id: str,
         "payment_id": payment_id,
         "amount_paise": amount_paise,
     })
-
-    if mongo_available():
-        try:
-            apply_payment(invoice_id, payment_id, amount_paise)
-        except Exception as exc:
-            pass
 
     return {"action": "payment_applied", "invoice_id": invoice_id,
             "new_status": new_status, "amount_paise": amount_paise}
@@ -1073,6 +1079,8 @@ class PaymentConfirmBody(BaseModel):
     payment_id: str
     order_id: str
     session_id: str = ""
+    invoice_id: str = ""
+    amount_paise: int = 0
 
 
 @app.post("/api/payment-confirmed")
@@ -1084,6 +1092,11 @@ async def payment_confirmed(body: PaymentConfirmBody):
     safety net so the session updates even if the webhook is delayed. It
     reuses the same idempotent payment-application logic keyed on the order.
     """
+    if mongo_available() and body.invoice_id:
+        result = _apply_payment(body.invoice_id, body.payment_id,
+                                body.amount_paise, "payment_client_confirmed")
+        return {"status": "ok", **result}
+
     session = sessions.get(body.session_id) or find_session_by_order_id(body.order_id)
     if not session:
         raise HTTPException(404, "Session not found")
@@ -1092,7 +1105,7 @@ async def payment_confirmed(body: PaymentConfirmBody):
     if session.get("payment_captured"):
         return {"status": "already_confirmed", "payment_id": body.payment_id}
 
-    amount_paise = round((session.get("payment_amount") or 0) * 100)
+    amount_paise = body.amount_paise or round((session.get("payment_amount") or 0) * 100)
     result = _apply_payment(session["invoice_id"], body.payment_id,
                             amount_paise, "payment_client_confirmed")
     return {"status": "ok", **result}

@@ -2009,7 +2009,9 @@
               body: JSON.stringify({
                 payment_id: response.razorpay_payment_id,
                 order_id: orderData.order_id,
-                session_id: sessionId
+                session_id: sessionId,
+                invoice_id: INVOICE_ID,
+                amount_paise: Math.round((orderData.amount || 0) * 100)
               })
             }).catch(err => console.error("payment-confirmed failed", err));
           }
